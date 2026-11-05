@@ -8,6 +8,7 @@
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
+  <script src="./metro-catalog.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -117,11 +118,21 @@
     .section + .section { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
     .eyebrow { margin: 0 0 12px; color: var(--muted); font-size: .69rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
     label { color: #d4e1eb; font-size: .78rem; display: block; margin-bottom: 8px; }
-    select, input[type="date"], .profile-field input {
+    select, input[type="date"], input[type="search"], .profile-field input {
       width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 10px;
       padding: 0 12px; background: var(--field); color: var(--text);
     }
     select:hover, input:hover { border-color: rgba(93, 214, 232, .45); }
+    .field + .field { margin-top: 12px; }
+    select.result-list { min-height: 0; height: 136px; padding: 4px; }
+    select.result-list option { padding: 5px 8px; border-radius: 6px; }
+    select.result-list option:checked { background: rgba(93, 214, 232, .18); color: var(--text); }
+    .result-count { margin: 8px 0 0; color: var(--muted); font-size: .68rem; }
+    .geo-card { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .02); color: var(--text-2); font-size: .72rem; line-height: 1.5; }
+    .geo-card strong { display: block; color: var(--text); font-size: .8rem; margin-bottom: 4px; }
+    .line-pills { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .risk.none { background: rgba(150, 169, 187, .08); border-color: var(--line); color: var(--muted); }
+    .station.filtered-out { display: none; }
 
     .time-card { padding: 14px; border: 1px solid rgba(93, 214, 232, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(93, 214, 232, .08), rgba(255, 255, 255, .02)); }
     .clock { font-size: 1.9rem; font-weight: 760; letter-spacing: -.05em; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -163,21 +174,20 @@
     #networkMap { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: none; }
     #networkMap.dragging { cursor: grabbing; }
     .grid-line { stroke: rgba(159, 187, 210, .055); stroke-width: 1; vector-effect: non-scaling-stroke; }
-    .borough { fill: none; stroke: rgba(159, 187, 210, .11); stroke-width: 1.2; stroke-dasharray: 4 7; vector-effect: non-scaling-stroke; }
     .route-bg { fill: none; stroke: #081019; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
     .route { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .92; }
     .route.dim { opacity: .45; }
     .route-label circle { stroke: #081019; stroke-width: 3; vector-effect: non-scaling-stroke; }
     .route-label text { fill: #fff; font-size: 9px; font-weight: 850; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-    .station-hit { fill: transparent; cursor: default; }
-    .station.modeled .station-hit { cursor: pointer; }
+    .station-hit { fill: transparent; cursor: pointer; }
     .station-halo { opacity: .22; pointer-events: none; }
     .station-core { fill: #8193a3; stroke: #0a1420; stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
     .station.interchange .station-core { fill: #0d1b29; stroke: #9fb0bf; stroke-width: 2.6; }
     .station.modeled .station-core { fill: #e9f2f8; stroke: #0a1420; stroke-width: 3; }
     .station.selected .station-core { fill: #fff; stroke: var(--accent); stroke-width: 4; }
-    .station-label { fill: #8fa2b3; font-size: 9.5px; font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
-    .station.modeled .station-label { fill: #f4f8fb; font-size: 11px; font-weight: 800; }
+    .station-label { fill: #8fa2b3; font-size: calc(10px / var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: calc(4px / var(--z, 1)); stroke-linejoin: round; pointer-events: none; }
+    .station.modeled .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
+    #networkMap:not(.show-labels) .station:not(.modeled):not(.selected) .station-label { display: none; }
     .map-title { position: absolute; z-index: 2; left: 14px; top: 12px; max-width: calc(100% - 28px); padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .72); backdrop-filter: blur(10px); pointer-events: none; }
     .map-title h2 { margin: 0; font-size: 1rem; }
     .map-title p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
@@ -419,6 +429,14 @@
       </section>
 
       <section class="section">
+        <p class="eyebrow">Explorar la red</p>
+        <div class="field"><label for="mapSearch">Buscar estación</label><input id="mapSearch" type="search" placeholder="Nombre de estación" autocomplete="off"></div>
+        <div class="field"><label for="mapLineFilter">Filtrar línea</label><select id="mapLineFilter"><option value="">Todas las líneas</option></select></div>
+        <div class="field"><label for="mapStationList">Resultados</label><select id="mapStationList" class="result-list" size="5"></select></div>
+        <p class="result-count" id="mapResultCount" aria-live="polite"></p>
+      </section>
+
+      <section class="section">
         <p class="eyebrow">Fecha estimada</p>
         <div class="time-card">
           <div class="clock" id="dateLabel">—</div>
@@ -458,8 +476,8 @@
     </aside>
 
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red esquemática</h2><p>Pulsos solo en las 5 estaciones modeladas de Línea 3 · arrastra para mover</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa esquemático de la red del Metro con demanda diaria estimada. Usa Tab para recorrer las cinco estaciones modeladas y Enter para seleccionarlas.">
+      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · pulsos solo en las 5 estaciones modeladas de Línea 3</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada en cinco estaciones de Línea 3. Usa Tab para recorrer las estaciones modeladas o la búsqueda para elegir cualquier estación.">
         <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
         <g id="networkViewport"></g>
       </svg>
@@ -475,10 +493,12 @@
       <section class="section" aria-live="polite">
         <div class="station-head">
           <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
-          <span class="line-pill" title="Línea 3">3</span>
+          <div class="line-pills" id="detailLines"></div>
         </div>
         <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
         <p class="level-message" id="levelMessage">—</p>
+        <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
+        <div id="modelDetail">
         <div class="detail-grid">
           <div class="detail-card main"><small>Afluencia diaria estimada</small><strong id="detailEstimate">—</strong><span id="detailRange">accesos estimados</span></div>
           <div class="detail-card"><small>Vs. mediana</small><strong id="detailRelative">—</strong><span>histórica</span></div>
@@ -487,8 +507,9 @@
           <div class="detail-card"><small>MAE línea base</small><strong id="detailBase">—</strong><span>accesos/día</span></div>
         </div>
         <div class="comparison" id="comparisonNote">—</div>
+        </div>
       </section>
-      <section class="section">
+      <section class="section" id="historySection">
         <p class="eyebrow">Historial mensual</p>
         <div class="bar-chart" id="barChart" role="img" aria-label="Promedio diario observado por mes y estimación seleccionada"></div>
         <div class="chart-axis"><span id="axisStart">—</span><span id="axisMid">—</span><span id="axisEnd">—</span><span>Est.</span></div>
@@ -665,6 +686,7 @@
     });
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     $(button.dataset.view + 'View').classList.add('active');
+    if (button.dataset.view === 'explore' && typeof fitNetwork === 'function') requestAnimationFrame(fitNetwork);
   }
   navTabs.forEach((button, index) => {
     button.addEventListener('click', () => activateTab(button));
@@ -684,22 +706,12 @@
   // ---------- Mapa esquemático ----------
   const NS = 'http://www.w3.org/2000/svg';
   const lineColors = { '1': '#e94b8c', '2': '#2789c8', '3': '#b7a52b', '4': '#75c9bb', '5': '#f1cb32', '6': '#d53342', '7': '#dc762d', '8': '#36a95b', '9': '#8c5a3c', 'A': '#9b4b91', 'B': '#a7afb7', '12': '#c7a44c' };
-  const mapRoutes = {
-    '1': [['Observatorio',70,285],['Tacubaya',145,285],['Chapultepec',215,285],['Insurgentes',300,285],['Balderas',405,285],['Salto del Agua',465,285],['Pino Suárez',530,285],['Candelaria',635,285],['San Lázaro',710,285],['Pantitlán',855,285]],
-    '2': [['Cuatro Caminos',175,60],['Tacuba',175,135],['Normal',235,185],['Hidalgo',340,225],['Bellas Artes',410,225],['Zócalo',485,225],['Pino Suárez',530,285],['Chabacano',530,370],['Tasqueña',530,545]],
-    '3': [['Indios Verdes',350,45],['Deportivo 18 de Marzo',350,100],['La Raza',350,155],['Guerrero',350,195],['Hidalgo',340,225],['Balderas',405,285],['Centro Médico',420,345],['Zapata',420,430],['Universidad',420,555]],
-    '4': [['Martín Carrera',690,100],['Consulado',690,160],['Morelos',690,220],['Candelaria',635,285],['Jamaica',635,355],['Santa Anita',635,410]],
-    '5': [['Politécnico',260,45],['Instituto del Petróleo',300,100],['La Raza',350,155],['Consulado',690,160],['Oceanía',770,205],['Pantitlán',855,285]],
-    '6': [['El Rosario',75,100],['Deportivo 18 de Marzo',350,100],['Martín Carrera',690,100]],
-    '7': [['El Rosario',75,100],['Tacuba',175,135],['Tacubaya',145,285],['Mixcoac',270,430],['Barranca del Muerto',270,505]],
-    '8': [['Garibaldi',430,160],['Bellas Artes',410,225],['Salto del Agua',465,285],['Chabacano',530,370],['Santa Anita',635,410],['Constitución de 1917',835,480]],
-    '9': [['Tacubaya',145,285],['Chilpancingo',335,330],['Centro Médico',420,345],['Chabacano',530,370],['Jamaica',635,355],['Pantitlán',855,285]],
-    'A': [['Pantitlán',855,285],['Agrícola Oriental',880,325],['Guelatao',905,365],['Santa Marta',930,410],['La Paz',965,455]],
-    'B': [['Buenavista',250,165],['Guerrero',350,195],['Garibaldi',430,160],['Morelos',690,220],['San Lázaro',710,285],['Oceanía',770,205],['Ciudad Azteca',905,75]],
-    '12': [['Mixcoac',270,430],['Zapata',420,430],['Ermita',530,430],['Atlalilco',675,455],['Tláhuac',900,565]]
-  };
-  const terminals = ['Pantitlán', 'El Rosario', 'Ciudad Azteca', 'Tláhuac', 'La Paz', 'Observatorio', 'Tasqueña', 'Cuatro Caminos', 'Politécnico'];
-  const mapNodes = new Map();
+  // Catálogo geográfico oficial (SEMOVI/STC). Solo ubica estaciones; no contiene afluencia.
+  const catalog = window.METRO_CATALOG?.stations || [];
+  const project = (lon, lat) => ({ x: 55 + (lon + 99.23) / .29 * 930, y: 50 + (19.55 - lat) / .28 * 545 });
+  const mapRoutes = Object.fromEntries([...new Set(catalog.map(s => s.line))].map(line => [line, catalog.filter(s => s.line === line).map(s => { const p = project(s.lon, s.lat); return [s.name, p.x, p.y]; })]));
+  const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const mapNodes = new Map(), routeLabels = [], view = { w: 1040, h: 640 };
   const svg = $('networkMap'), viewport = $('networkViewport'), tooltip = $('tooltip');
   const make = (tag, attrs = {}, parent = viewport) => {
     const el = document.createElementNS(NS, tag);
@@ -709,46 +721,52 @@
   };
 
   function initNetworkMap() {
-    for (let x = 40; x < 1040; x += 55) make('line', { x1: x, y1: 0, x2: x, y2: 640, class: 'grid-line' });
-    for (let y = 35; y < 640; y += 55) make('line', { x1: 0, y1: y, x2: 1040, y2: y, class: 'grid-line' });
-    make('path', { d: 'M92 76 C190 20 305 28 388 62 C510 18 665 42 746 105 C860 117 976 209 954 322 C1020 410 930 564 790 596 C652 634 546 572 448 592 C304 622 174 558 129 461 C35 393 24 244 92 76Z', class: 'borough' });
+    for (let x = -460; x < 1540; x += 55) make('line', { x1: x, y1: -400, x2: x, y2: 1040, class: 'grid-line' });
+    for (let y = -405; y < 1040; y += 55) make('line', { x1: -460, y1: y, x2: 1540, y2: y, class: 'grid-line' });
 
     Object.entries(mapRoutes).forEach(([line, route]) => {
       const points = route.map(item => `${item[1]},${item[2]}`).join(' ');
-      make('polyline', { points, class: 'route-bg' });
-      make('polyline', { points, class: `route${line === '3' ? '' : ' dim'}`, stroke: lineColors[line] });
+      make('polyline', { points, class: 'route-bg', 'data-map-line': line });
+      make('polyline', { points, class: `route${line === '3' ? '' : ' dim'}`, stroke: lineColors[line] || '#a7afb7', 'data-map-line': line });
       const [, x, y] = route[0];
-      const label = make('g', { class: 'route-label', transform: `translate(${x - 18} ${y - 18})` });
-      make('circle', { r: 12, fill: lineColors[line] }, label);
+      const label = make('g', { class: 'route-label', transform: `translate(${x - 18} ${y - 18})`, 'data-map-line': line });
+      routeLabels.push({ el: label, x: x - 18, y: y - 18 });
+      make('circle', { r: 12, fill: lineColors[line] || '#a7afb7' }, label);
       make('text', { x: 0, y: 1 }, label).textContent = line;
     });
 
-    Object.entries(mapRoutes).forEach(([line, route]) => route.forEach(([name, x, y]) => {
-      if (!mapNodes.has(name)) mapNodes.set(name, { name, x, y, lines: [] });
-      const node = mapNodes.get(name);
-      if (!node.lines.includes(line)) node.lines.push(line);
-    }));
+    catalog.forEach(record => {
+      const { x, y } = project(record.lon, record.lat);
+      if (!mapNodes.has(record.name)) mapNodes.set(record.name, { name: record.name, x, y, lines: [], records: [] });
+      const node = mapNodes.get(record.name);
+      node.records.push(record);
+      if (!node.lines.includes(record.line)) node.lines.push(record.line);
+    });
+    // Respaldo: si faltara el catálogo, las cinco estaciones modeladas siguen visibles.
+    stations.forEach((station, i) => { if (!mapNodes.has(station.name)) mapNodes.set(station.name, { name: station.name, x: 420, y: 80 + i * 110, lines: ['3'], records: [] }); });
 
     mapNodes.forEach(node => {
       const modeled = byName.has(node.name);
       const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}` });
       const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 14, class: 'station-halo', fill: levelColor.media, filter: 'url(#glow)' }, group) : null;
-      make('circle', { cx: node.x, cy: node.y, r: modeled ? 7 : node.lines.length > 1 ? 5.5 : 4, class: 'station-core' }, group);
-      const hit = make('circle', { cx: node.x, cy: node.y, r: modeled ? 19 : 10, class: 'station-hit' }, group);
-      if (modeled || node.lines.length > 1 || terminals.includes(node.name)) {
-        const right = node.x < 790;
-        make('text', { x: node.x + (right ? 11 : -11), y: node.y - 10, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
+      make('circle', { cx: node.x, cy: node.y, r: modeled ? 6.5 : node.lines.length > 1 ? 4.8 : 3.4, class: 'station-core' }, group);
+      const hit = make('circle', { cx: node.x, cy: node.y, r: modeled ? 16 : 8, class: 'station-hit' }, group);
+      if (modeled || node.lines.length > 1) {
+        const right = node.x < 820;
+        make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
       }
       group.addEventListener('pointerenter', event => showTooltip(event, node));
       group.addEventListener('pointermove', moveTooltip);
       group.addEventListener('pointerleave', hideTooltip);
+      // Todas las estaciones se pueden seleccionar con el ratón; las 5 modeladas además con Tab.
+      // El resto es accesible por teclado desde la búsqueda y la lista de resultados.
+      const choose = event => { event.stopPropagation(); selectStation(node.name); };
+      hit.addEventListener('pointerdown', event => event.stopPropagation());
+      hit.addEventListener('click', choose);
       if (modeled) {
         hit.setAttribute('tabindex', '0');
         hit.setAttribute('role', 'button');
         hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
-        const choose = event => { event.stopPropagation(); selectStation(node.name); };
-        hit.addEventListener('pointerdown', event => event.stopPropagation());
-        hit.addEventListener('click', choose);
         hit.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(event); } });
       }
       node.el = { group, halo };
@@ -757,7 +775,7 @@
     svg.addEventListener('wheel', event => {
       event.preventDefault();
       const rect = svg.getBoundingClientRect();
-      setZoom(state.zoom * (event.deltaY < 0 ? 1.12 : .89), (event.clientX - rect.left) / rect.width * 1040, (event.clientY - rect.top) / rect.height * 640);
+      setZoom(state.zoom * (event.deltaY < 0 ? 1.12 : .89), (event.clientX - rect.left) / rect.width * view.w, (event.clientY - rect.top) / rect.height * view.h);
     }, { passive: false });
     svg.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
@@ -769,8 +787,8 @@
     svg.addEventListener('pointermove', event => {
       if (!state.drag) return;
       const rect = svg.getBoundingClientRect();
-      state.tx = state.drag.tx + (event.clientX - state.drag.x) * 1040 / rect.width;
-      state.ty = state.drag.ty + (event.clientY - state.drag.y) * 640 / rect.height;
+      state.tx = state.drag.tx + (event.clientX - state.drag.x) * view.w / rect.width;
+      state.ty = state.drag.ty + (event.clientY - state.drag.y) * view.h / rect.height;
       applyTransform();
     });
     const endDrag = () => { state.drag = null; svg.classList.remove('dragging'); };
@@ -799,55 +817,100 @@
     tooltip.style.top = `${y}px`;
   }
   function hideTooltip() { tooltip.classList.remove('show'); }
-  function applyTransform() { viewport.setAttribute('transform', `translate(${state.tx} ${state.ty}) scale(${state.zoom})`); }
-  function setZoom(next, cx = 520, cy = 320) {
+  const home = { zoom: 1, tx: 0, ty: 0 };
+  // El viewBox sigue el tamaño real del área del mapa para aprovechar todo el espacio.
+  function fitNetwork() {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    view.w = rect.width; view.h = rect.height;
+    svg.setAttribute('viewBox', `0 0 ${view.w} ${view.h}`);
+    const nodes = [...mapNodes.values()];
+    if (!nodes.length) return;
+    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y), pad = 30, top = 76, bottom = 20;
+    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+    home.zoom = Math.min(view.w / (maxX - minX), (view.h - top - bottom) / (maxY - minY));
+    home.tx = view.w / 2 - (minX + maxX) / 2 * home.zoom;
+    home.ty = top + (view.h - top - bottom) / 2 - (minY + maxY) / 2 * home.zoom;
+    Object.assign(state, home);
+    applyTransform();
+  }
+  function applyTransform() {
+    viewport.setAttribute('transform', `translate(${state.tx} ${state.ty}) scale(${state.zoom})`);
+    svg.style.setProperty('--z', state.zoom.toFixed(3));
+    const k = 1 / state.zoom;
+    routeLabels.forEach(item => item.el.setAttribute('transform', `translate(${item.x} ${item.y}) scale(${k.toFixed(3)})`));
+    svg.classList.toggle('show-labels', state.zoom >= home.zoom * 1.6);
+  }
+  function setZoom(next, cx = view.w / 2, cy = view.h / 2) {
     const previous = state.zoom;
-    state.zoom = Math.max(.72, Math.min(2.8, next));
+    state.zoom = Math.max(home.zoom * .7, Math.min(home.zoom * 6, next));
     state.tx = cx - (cx - state.tx) * (state.zoom / previous);
     state.ty = cy - (cy - state.ty) * (state.zoom / previous);
     applyTransform();
   }
 
   // ---------- Render principal ----------
+  const linePill = line => `<span class="line-pill" style="background:${lineColors[line] || '#a7afb7'}" title="Línea ${line}">${line}</span>`;
+
   function render() {
     const date = dates[state.index];
-    const station = byName.get(state.station);
-    const prediction = station.predictions[date];
+    const node = mapNodes.get(state.station);
+    const station = byName.get(state.station) || null;
+    const prediction = station ? station.predictions[date] : null;
     let total = 0, high = 0;
 
     const rows = stations.map(item => {
       const p = item.predictions[date];
       total += p.value;
       if (p.level === 'alta') high++;
-      const node = mapNodes.get(item.name);
-      if (node) {
-        node.el.halo.setAttribute('fill', levelColor[p.level]);
-        node.el.halo.setAttribute('r', (12 + Math.min(20, p.value / 6000)).toFixed(1));
-        node.el.halo.setAttribute('opacity', p.level === 'alta' ? '.5' : '.32');
-        node.el.group.classList.toggle('selected', item.name === state.station);
+      const modeledNode = mapNodes.get(item.name);
+      if (modeledNode?.el?.halo) {
+        modeledNode.el.halo.setAttribute('fill', levelColor[p.level]);
+        modeledNode.el.halo.setAttribute('r', (12 + Math.min(20, p.value / 6000)).toFixed(1));
+        modeledNode.el.halo.setAttribute('opacity', p.level === 'alta' ? '.5' : '.32');
       }
       return { station: item, prediction: p, rel: relative(item, p.value) };
     });
+    mapNodes.forEach(item => item.el?.group.classList.toggle('selected', item.name === state.station));
 
     // Barra superior
     $('totalFlow').textContent = format(total);
     $('highCount').textContent = String(high);
-    $('stationMae').textContent = `±${format(station.metrics.modelMae)}`;
+    $('stationMae').textContent = station ? `±${format(station.metrics.modelMae)}` : '—';
 
     // Controles
-    $('stationSelect').value = station.name;
+    $('stationSelect').value = station ? station.name : '';
     $('dateLabel').textContent = shortDate(date);
     $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
     $('dateRange').value = state.index;
     $('dateInput').value = date;
-    $('legendLow').textContent = `< ${format(station.summary.lowThreshold)}`;
-    $('legendMid').textContent = `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}`;
-    $('legendHigh').textContent = `> ${format(station.summary.highThreshold)}`;
+    $('legendLow').textContent = station ? `< ${format(station.summary.lowThreshold)}` : '—';
+    $('legendMid').textContent = station ? `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}` : '—';
+    $('legendHigh').textContent = station ? `> ${format(station.summary.highThreshold)}` : '—';
+    if ($('mapStationList').value !== state.station) $('mapStationList').value = state.station;
 
     // Detalle
+    const lines = node ? node.lines : ['3'];
+    $('detailName').textContent = state.station;
+    $('detailLines').innerHTML = lines.map(linePill).join('');
+    $('modelDetail').hidden = !station;
+    $('historySection').hidden = !station;
+    $('geoDetail').hidden = !!station;
+
+    if (!station) {
+      const records = node?.records.length || 0;
+      $('detailDate').textContent = `Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')} · estación sin modelo`;
+      $('riskBox').className = 'risk none';
+      $('riskText').textContent = 'Sin predicción';
+      $('levelMessage').textContent = 'Esta estación está disponible para exploración geográfica, pero todavía no cuenta con un modelo predictivo validado.';
+      $('geoTitle').textContent = 'Ficha geográfica';
+      $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${records} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC). El catálogo no contiene datos de afluencia.`;
+      renderHotList(rows);
+      return;
+    }
+
     const rel = relative(station, prediction.value);
-    $('detailName').textContent = station.name;
-    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea 3`;
+    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')}`;
     $('riskBox').className = `risk ${prediction.level}`;
     $('riskText').textContent = levelName[prediction.level];
     $('levelMessage').textContent = levelCopy[prediction.level];
@@ -867,6 +930,39 @@
 
     renderBars(station, prediction.value, date);
     renderHotList(rows);
+  }
+
+  // ---------- Búsqueda y filtro de la red ----------
+  function initStationSearch() {
+    const filter = $('mapLineFilter');
+    Object.keys(mapRoutes).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).forEach(line => {
+      const option = document.createElement('option');
+      option.value = line;
+      option.textContent = `Línea ${line}`;
+      filter.appendChild(option);
+    });
+    $('mapSearch').addEventListener('input', refreshStationSearch);
+    filter.addEventListener('change', refreshStationSearch);
+    $('mapStationList').addEventListener('change', event => { if (mapNodes.has(event.target.value)) selectStation(event.target.value); });
+    refreshStationSearch();
+  }
+  function refreshStationSearch() {
+    const term = normalize($('mapSearch').value.trim()), line = $('mapLineFilter').value;
+    const found = [...mapNodes.values()]
+      .filter(node => (!line || node.lines.includes(line)) && normalize(node.name).includes(term))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    const visible = new Set(found.map(node => node.name));
+    const list = $('mapStationList');
+    list.replaceChildren(...found.map(node => {
+      const option = document.createElement('option');
+      option.value = node.name;
+      option.textContent = `${node.name} · ${node.lines.join('/')}${byName.has(node.name) ? ' · con modelo' : ''}`;
+      return option;
+    }));
+    list.value = state.station;
+    $('mapResultCount').textContent = `${found.length} estaciones encontradas · ${catalog.length} registros estación-línea`;
+    mapNodes.forEach(node => node.el?.group.classList.toggle('filtered-out', !visible.has(node.name)));
+    document.querySelectorAll('[data-map-line]').forEach(el => { el.style.opacity = !line || el.dataset.mapLine === line ? '' : '.10'; });
   }
 
   function renderBars(station, prediction, date) {
@@ -914,9 +1010,10 @@
   }));
   $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.22));
   $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.22));
-  $('zoomReset').addEventListener('click', () => { state.zoom = 1; state.tx = 0; state.ty = 0; applyTransform(); });
+  $('zoomReset').addEventListener('click', () => { Object.assign(state, home); applyTransform(); });
 
   // ---------- Inicio ----------
+  $('stationSelect').appendChild(Object.assign(document.createElement('option'), { value: '', textContent: 'Estación sin modelo', disabled: true }));
   stations.forEach(station => { const option = document.createElement('option'); option.value = station.name; option.textContent = station.name; $('stationSelect').appendChild(option); });
   $('dateInput').min = dataset.forecastStart;
   $('dateInput').max = dataset.forecastEnd;
@@ -950,14 +1047,18 @@
     renderProfile();
     profileOverlay.classList.add('hidden');
     const saved = readPreferences();
-    if (saved?.station && byName.has(saved.station)) state.station = saved.station;
+    if (saved?.station && (byName.has(saved.station) || catalog.some(record => record.name === saved.station))) state.station = saved.station;
     if (saved?.date && dates.includes(saved.date)) state.index = dates.indexOf(saved.date);
   } else {
     openProfileEditor();
   }
 
   initNetworkMap();
+  initStationSearch();
+  fitNetwork();
   applyTransform();
+  let resizeTimer = null;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitNetwork, 120); });
   render();
 })();
 </script>
