@@ -414,8 +414,8 @@
     </nav>
     <div class="status" id="statusChip">Datos oficiales · copia fija</div>
     <div class="metrics" aria-label="Indicadores de la fecha seleccionada">
-      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · 5 estaciones</span></div>
-      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span>de 5 estaciones</span></div>
+      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · 163 estaciones</span></div>
+      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span>de 163 estaciones</span></div>
       <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
     </div>
     <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
@@ -426,7 +426,7 @@
     <aside class="side controls" aria-label="Parámetros de la estimación">
       <section class="section">
         <p class="eyebrow">Estación</p>
-        <label for="stationSelect">Estación modelada de Línea 3</label>
+        <label for="stationSelect">Estación del Metro CDMX</label>
         <select id="stationSelect"></select>
       </section>
 
@@ -478,8 +478,8 @@
     </aside>
 
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · pulsos solo en las 5 estaciones modeladas de Línea 3</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada en cinco estaciones de Línea 3. Usa Tab para recorrer las estaciones modeladas o la búsqueda para elegir cualquier estación.">
+      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · predicciones diarias para 163 estaciones</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con predicción diaria para 163 estaciones. Usa la búsqueda y la lista para elegir cualquier estación; cinco estaciones destacadas tienen acceso directo con Tab.">
         <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
         <g id="networkViewport"></g>
       </svg>
@@ -568,8 +568,8 @@
   const monthDate = ym => new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(ym + '-15T12:00:00Z')).replace('.', '');
   const weekday = iso => { const name = new Intl.DateTimeFormat('es-MX', { weekday: 'long', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')); return name.charAt(0).toUpperCase() + name.slice(1); };
   const signed = value => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
-  const relative = (station, value) => (value - station.summary.median) / station.summary.median * 100;
-  const gainOf = station => (station.metrics.baselineMae - station.metrics.modelMae) / station.metrics.baselineMae * 100;
+  const relative = (station, value) => station.summary.median > 0 ? (value - station.summary.median) / station.summary.median * 100 : 0;
+  const gainOf = station => station.metrics.baselineMae > 0 ? (station.metrics.baselineMae - station.metrics.modelMae) / station.metrics.baselineMae * 100 : 0;
 
   const stations = data.stations;
   const byName = new Map(stations.map(station => [station.name, station]));
@@ -927,8 +927,8 @@
     const comparison = $('comparisonNote');
     comparison.classList.toggle('warn', gain <= 0);
     comparison.textContent = gain > 0
-      ? `El modelo reduce el error absoluto ${gain.toFixed(1)}% frente a la línea base en esta estación.`
-      : `En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;
+      ? `El método seleccionado reduce el MAE ${gain.toFixed(1)}% frente a la referencia histórica en el periodo de evaluación.`
+      : `Se utiliza la referencia histórica para esta estación o no se observa una mejora en el periodo de evaluación. La selección aún requiere validación independiente.`;
     $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.`;
 
     renderBars(station, prediction.value, date);
@@ -1016,7 +1016,7 @@
   $('zoomReset').addEventListener('click', () => { Object.assign(state, home); applyTransform(); });
 
   // ---------- Inicio ----------
-  $('stationSelect').appendChild(Object.assign(document.createElement('option'), { value: '', textContent: 'Estación sin modelo', disabled: true }));
+  $('stationSelect').appendChild(Object.assign(document.createElement('option'), { value: '', textContent: 'Selecciona una estación', disabled: true }));
   stations.forEach(station => { const option = document.createElement('option'); option.value = station.name; option.textContent = station.name; $('stationSelect').appendChild(option); });
   $('dateInput').min = dataset.forecastStart;
   $('dateInput').max = dataset.forecastEnd;
@@ -1025,8 +1025,8 @@
   $('rangeEnd').textContent = shortDate(dates.at(-1));
   $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
   $('trainCutoff').textContent = shortDate(stations[0].metrics.testStart);
-  $('sourceLink').href = data.source.url;
-  $('officialSource').href = data.source.url;
+  $('sourceLink').href = data.source.url || 'https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx';
+  $('officialSource').href = data.source.url || 'https://datos.cdmx.gob.mx/dataset/afluencia-diaria-del-metro-cdmx';
 
   // Metodología y Datos
   $('featureList').innerHTML = data.model.features.map(feature => `<span>${feature}</span>`).join('');
