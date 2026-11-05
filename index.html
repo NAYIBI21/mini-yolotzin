@@ -8,6 +8,8 @@
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
+  <!-- La versión validada reemplaza el modelo inicial cuando se incorpore el archivo. -->
+  <script src="./model-data-validated.js"></script>
   <script src="./metro-catalog.js"></script>
   <style>
     :root {
@@ -742,7 +744,7 @@
       node.records.push(record);
       if (!node.lines.includes(record.line)) node.lines.push(record.line);
     });
-    // Respaldo: si faltara el catálogo, las cinco estaciones modeladas siguen visibles.
+    // Respaldo: si faltara el catálogo, las estaciones modeladas siguen visibles.
     stations.forEach((station, i) => { if (!mapNodes.has(station.name)) mapNodes.set(station.name, { name: station.name, x: 420, y: 80 + i * 110, lines: ['3'], records: [] }); });
 
     mapNodes.forEach(node => {
@@ -758,12 +760,13 @@
       group.addEventListener('pointerenter', event => showTooltip(event, node));
       group.addEventListener('pointermove', moveTooltip);
       group.addEventListener('pointerleave', hideTooltip);
-      // Todas las estaciones se pueden seleccionar con el ratón; las 5 modeladas además con Tab.
-      // El resto es accesible por teclado desde la búsqueda y la lista de resultados.
+      // Todas las estaciones se pueden seleccionar con el ratón.
+      // Para evitar 163 paradas de Tab, la navegación por teclado utiliza búsqueda y lista.
+      // Las cinco estaciones destacadas conservan acceso directo por Tab.
       const choose = event => { event.stopPropagation(); selectStation(node.name); };
       hit.addEventListener('pointerdown', event => event.stopPropagation());
       hit.addEventListener('click', choose);
-      if (modeled) {
+      if (modeled && ['Indios Verdes', 'La Raza', 'Hidalgo', 'Centro Médico', 'Universidad'].includes(node.name)) {
         hit.setAttribute('tabindex', '0');
         hit.setAttribute('role', 'button');
         hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
