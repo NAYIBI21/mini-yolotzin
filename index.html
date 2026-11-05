@@ -3,112 +3,508 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#17152d">
+  <meta name="theme-color" content="#081019">
   <title>Mini Yolotzin · Demanda diaria del Metro CDMX</title>
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2317152d'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff4f8b'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%23ffb347'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
   <style>
-    :root{--ink:#17152d;--paper:#f7f5f2;--card:#fff;--muted:#706d7c;--line:#e5e1e8;--pink:#ef3d78;--coral:#ff725e;--gold:#ffb347;--teal:#1fa89a;--green:#2ca66f;--shadow:0 18px 50px rgba(32,25,63,.10)}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;line-height:1.45}button,input,select{font:inherit}button{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid rgba(239,61,120,.28);outline-offset:2px}a{color:inherit}.app{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto}
-    .topbar{height:76px;padding:0 28px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:26px;position:sticky;top:0;z-index:20;box-shadow:0 8px 24px rgba(23,21,45,.15)}.brand{display:flex;align-items:center;gap:12px;min-width:244px}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,var(--pink),var(--coral));box-shadow:0 9px 26px rgba(239,61,120,.28)}.brand-mark svg{width:25px;height:25px}.brand h1{margin:0;font-size:1rem;letter-spacing:.055em;text-transform:uppercase}.brand p{margin:2px 0 0;color:#b9b4ce;font-size:.71rem;letter-spacing:.04em}.nav{display:flex;align-self:stretch}.nav-btn{border:0;background:transparent;color:#aaa5bd;padding:0 18px;cursor:pointer;position:relative;font-weight:650;font-size:.84rem}.nav-btn:hover,.nav-btn.active{color:#fff}.nav-btn.active::after{content:"";height:3px;border-radius:4px 4px 0 0;background:var(--pink);position:absolute;left:18px;right:18px;bottom:0}.verified{margin-left:auto;display:flex;align-items:center;gap:9px;padding:8px 11px;border:1px solid rgba(255,255,255,.13);border-radius:10px;color:#d8d4e4;font-size:.72rem;white-space:nowrap}.verified::before{content:"✓";width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:rgba(31,168,154,.22);color:#65ded0;font-size:.7rem;font-weight:900}
-    main{width:min(1480px,100%);margin:0 auto;padding:24px 28px 36px}.view{display:none}.view.active{display:block}.page-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:4px 0 20px}.kicker{margin:0 0 5px;color:var(--pink);font-weight:800;text-transform:uppercase;letter-spacing:.11em;font-size:.68rem}.page-intro h2{margin:0;font-size:clamp(1.5rem,2.4vw,2.15rem);letter-spacing:-.045em;line-height:1.1}.page-intro p{margin:7px 0 0;color:var(--muted);max-width:670px;font-size:.84rem}.source-chip{display:flex;align-items:center;gap:8px;background:#ece9ee;border-radius:999px;padding:8px 12px;font-size:.7rem;color:#625f6d;white-space:nowrap}.source-chip i{width:7px;height:7px;border-radius:50%;background:var(--teal)}
-    .dashboard{display:grid;grid-template-columns:300px minmax(0,1fr) 284px;gap:18px;align-items:start}.card{background:var(--card);border:1px solid rgba(68,57,94,.10);border-radius:18px;box-shadow:var(--shadow)}.control-card{padding:20px;position:sticky;top:100px}.card-label{margin:0 0 16px;color:#827e8c;text-transform:uppercase;letter-spacing:.12em;font-size:.67rem;font-weight:850}.field+.field{margin-top:17px}.field label{display:block;margin:0 0 7px;font-size:.77rem;font-weight:700;color:#4e4a5b}select,input[type=date]{width:100%;height:46px;border:1px solid var(--line);border-radius:11px;background:#faf9fb;color:var(--ink);padding:0 12px}select:hover,input:hover{border-color:#c9c3cf}.model-note{margin:15px 0 0;padding:12px;background:#f4f1f5;border-radius:11px;color:#666171;font-size:.7rem;line-height:1.55}.model-note strong{color:var(--ink)}.predict-btn{width:100%;height:48px;margin-top:18px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--coral));color:#fff;font-weight:800;cursor:pointer;box-shadow:0 12px 28px rgba(239,61,120,.22);transition:transform .16s ease,box-shadow .16s ease}.predict-btn:hover{transform:translateY(-1px);box-shadow:0 15px 34px rgba(239,61,120,.28)}.predict-btn:active{transform:translateY(1px)}.control-footer{display:flex;gap:7px;align-items:flex-start;margin-top:15px;color:#888391;font-size:.65rem}.control-footer svg{flex:0 0 auto;margin-top:2px}
-    .result-stack{display:grid;gap:18px}.result-card{overflow:hidden;position:relative}.result-card::after{content:"";position:absolute;width:250px;height:250px;border-radius:50%;right:-95px;top:-120px;background:radial-gradient(circle,rgba(239,61,120,.12),transparent 70%);pointer-events:none}.result-top{padding:22px 24px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid var(--line)}.result-top small{display:block;color:var(--muted);font-size:.69rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800}.result-value{display:flex;align-items:baseline;gap:8px;margin-top:5px}.result-value strong{font-size:clamp(2.35rem,4.5vw,3.75rem);letter-spacing:-.065em;line-height:1;font-variant-numeric:tabular-nums}.result-value span{color:var(--muted);font-size:.75rem;max-width:70px;line-height:1.2}.level-badge{display:flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;font-size:.77rem;font-weight:800;text-transform:capitalize;background:#fff0f4;color:#c72960;border:1px solid #ffd0df}.level-badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px currentColor;opacity:.75}.level-badge.baja{background:#edf9f3;color:#258557;border-color:#c8ecd9}.level-badge.media{background:#fff8e8;color:#a36b0a;border-color:#f4dfac}.level-badge.alta{background:#fff0f4;color:#c72960;border-color:#ffd0df}.result-copy{padding:17px 24px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(180px,.6fr);gap:18px;background:#fcfbfc}.message{font-size:.84rem;color:#4f4a59}.message strong{color:var(--ink)}.relative{text-align:right;color:var(--muted);font-size:.69rem}.relative strong{display:block;color:var(--ink);font-size:1rem;margin-bottom:2px}
-    .chart-card{padding:21px 24px 19px}.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}.card-head h3{margin:0;font-size:.92rem}.card-head p{margin:3px 0 0;color:var(--muted);font-size:.68rem}.legend{display:flex;gap:13px;color:var(--muted);font-size:.65rem}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:8px;height:8px;border-radius:50%;background:var(--teal)}.legend span:last-child i{background:var(--pink)}#historyChart{width:100%;height:235px;display:block;overflow:visible}.thresholds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}.threshold{padding:9px 11px;border-radius:9px;background:#f7f5f7;font-size:.66rem;color:var(--muted)}.threshold strong{display:block;color:var(--ink);font-size:.78rem;margin-top:2px}.threshold.low{border-left:3px solid var(--green)}.threshold.mid{border-left:3px solid var(--gold)}.threshold.high{border-left:3px solid var(--pink)}
-    .side-stack{display:grid;gap:18px}.metric-card{padding:18px}.metric-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.metric-row:first-of-type{padding-top:0}.metric-row:last-of-type{border-bottom:0;padding-bottom:0}.metric-row span{font-size:.7rem;color:var(--muted)}.metric-row strong{font-size:.82rem;font-variant-numeric:tabular-nums;text-align:right}.comparison{margin-top:13px;padding:10px;border-radius:10px;background:#f3f7f6;color:#447068;font-size:.68rem;line-height:1.45}.comparison.warn{background:#fff7e9;color:#8a641e}.data-card{padding:18px;background:var(--ink);color:#fff;box-shadow:var(--shadow);border:0}.data-card .card-label{color:#a9a4ba}.data-stat{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.10);font-size:.7rem;color:#bdb8cb}.data-stat strong{color:#fff;font-size:.76rem}.data-card a{display:inline-flex;margin-top:14px;color:#ff9fbd;font-size:.7rem;text-underline-offset:3px}
-    .method-grid,.data-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}.method-hero{grid-column:span 8;padding:26px;background:var(--ink);color:#fff;overflow:hidden;position:relative}.method-hero::after{content:"";position:absolute;inset:auto -30px -80px auto;width:270px;height:270px;border-radius:50%;background:radial-gradient(circle,rgba(239,61,120,.30),transparent 65%)}.method-hero h3{margin:0;font-size:1.4rem;letter-spacing:-.03em}.method-hero p{color:#c1bdcd;max-width:620px;font-size:.82rem}.feature-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.feature-list span{border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:7px 10px;color:#e2dfe9;font-size:.68rem}.principle-card{grid-column:span 4;padding:24px}.principle-card blockquote{margin:0;font-size:1rem;line-height:1.55;font-weight:680;letter-spacing:-.015em}.principle-card p{margin:14px 0 0;color:var(--muted);font-size:.7rem}.pipeline{grid-column:1/-1;padding:24px}.steps{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:18px}.step{padding:15px 12px;border-radius:12px;background:#f7f5f7;min-height:116px}.step span{width:25px;height:25px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:.65rem;font-weight:850}.step strong{display:block;font-size:.74rem;margin-top:11px}.step p{margin:4px 0 0;color:var(--muted);font-size:.64rem;line-height:1.45}.limit-card{grid-column:span 6;padding:22px}.limit-card h3{margin:0 0 10px;font-size:.9rem}.clean-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}.clean-list li{position:relative;padding-left:18px;color:#5f5a68;font-size:.73rem}.clean-list li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal);position:absolute;left:0;top:.43em}.clean-list.no li::before{background:var(--pink)}
-    .data-overview{grid-column:span 5;padding:24px}.big-stat{font-size:2.6rem;font-weight:850;letter-spacing:-.06em;margin:4px 0 0}.big-stat-label{color:var(--muted);font-size:.72rem}.quality-list{margin-top:19px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.quality-item{padding:12px;background:#f7f5f7;border-radius:10px}.quality-item span{display:block;color:var(--muted);font-size:.62rem;text-transform:uppercase;letter-spacing:.07em}.quality-item strong{display:block;margin-top:4px;font-size:.86rem}.station-table-card{grid-column:span 7;padding:24px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:.72rem}th{text-align:left;color:var(--muted);font-weight:700;padding:9px 8px;border-bottom:1px solid var(--line)}td{padding:11px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}tr:last-child td{border-bottom:0}.source-card{grid-column:1/-1;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}.source-card h3{margin:0;font-size:.92rem}.source-card p{margin:5px 0 0;color:var(--muted);font-size:.72rem}.source-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 15px;border-radius:10px;background:var(--ink);color:#fff;text-decoration:none;font-size:.72rem;font-weight:750;white-space:nowrap}
-    .map-dashboard{display:grid;grid-template-columns:268px minmax(0,1fr) 270px;gap:18px;align-items:stretch}.map-controls,.map-detail{padding:19px}.map-controls{display:flex;flex-direction:column}.map-day{padding:14px;border-radius:13px;background:linear-gradient(145deg,#f7eef2,#f4f1f5);margin-bottom:14px}.map-day strong{display:block;font-size:1.35rem;letter-spacing:-.03em}.map-day span{display:block;color:var(--muted);font-size:.68rem;margin-top:2px}.map-range{width:100%;accent-color:var(--pink);cursor:pointer}.range-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.59rem;margin-top:3px}.play-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.map-btn{min-height:42px;border:1px solid var(--line);border-radius:10px;background:#f7f5f7;cursor:pointer;font-weight:750;font-size:.72rem}.map-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}.speed-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.speed-btn{border:1px solid var(--line);border-radius:8px;background:#fff;padding:7px;cursor:pointer;color:var(--muted);font-size:.68rem}.speed-btn.active{color:var(--ink);background:#fbeaf0;border-color:#f5b5cb;font-weight:800}.map-legend{display:grid;gap:8px;margin-top:19px;padding-top:17px;border-top:1px solid var(--line)}.map-legend div{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:.67rem}.legend-name{display:flex;align-items:center;gap:8px}.demand-dot{width:10px;height:10px;border-radius:50%;display:inline-block}.demand-dot.low{background:var(--green)}.demand-dot.mid{background:var(--gold)}.demand-dot.high{background:var(--pink)}.map-note{margin-top:auto;padding-top:18px;color:var(--muted);font-size:.65rem;line-height:1.5}.map-stage{position:relative;min-height:620px;overflow:hidden;background:radial-gradient(circle at 50% 35%,#292540,#151329 70%);border:0}.map-stage-head{position:absolute;z-index:3;left:20px;top:17px;color:#fff;pointer-events:none}.map-stage-head h3{margin:0;font-size:.88rem}.map-stage-head p{margin:3px 0 0;color:#aaa5ba;font-size:.64rem}#networkMap{display:block;width:100%;height:620px;cursor:grab;touch-action:none;user-select:none}#networkMap.dragging{cursor:grabbing}.net-grid{stroke:rgba(255,255,255,.035);stroke-width:1;vector-effect:non-scaling-stroke}.net-route-bg{fill:none;stroke:#121024;stroke-width:12;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}.net-route{fill:none;stroke-width:6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.84}.net-station-core{fill:#c9c5d4;stroke:#17152d;stroke-width:2;vector-effect:non-scaling-stroke}.net-station.modeled .net-station-core{fill:#fff;stroke-width:3}.net-station.selected .net-station-core{stroke:#fff;stroke-width:4}.net-halo{pointer-events:none;opacity:.2}.net-hit{fill:rgba(255,255,255,.001);pointer-events:all;cursor:pointer}.net-label{fill:#d9d5e2;font-size:9px;font-weight:650;paint-order:stroke;stroke:#17152d;stroke-width:3px;stroke-linejoin:round;pointer-events:none}.net-label.modeled{fill:#fff;font-size:10px;font-weight:850}.map-zoom{position:absolute;right:14px;bottom:14px;display:grid;gap:6px}.zoom-btn{width:38px;height:38px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(23,21,45,.92);color:#fff;cursor:pointer;font-size:1rem}.map-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px}.map-stat{padding:11px;border-radius:10px;background:#f7f5f7}.map-stat span{display:block;color:var(--muted);font-size:.59rem;text-transform:uppercase;letter-spacing:.06em}.map-stat strong{display:block;font-size:.95rem;margin-top:4px}.station-lines{display:flex;gap:5px;margin-top:8px}.station-lines i{width:24px;height:24px;border-radius:7px;color:#fff;display:grid;place-items:center;font-style:normal;font-size:.61rem;font-weight:850}.map-recommendation{margin-top:14px;padding:12px;border-left:3px solid var(--pink);border-radius:0 10px 10px 0;background:#fff4f7;color:#5e5360;font-size:.69rem;line-height:1.5}.map-summary{margin-top:17px;padding-top:15px;border-top:1px solid var(--line)}.map-summary div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;color:var(--muted);font-size:.67rem}.map-summary strong{color:var(--ink)}
-    .profile-button{margin-left:auto;display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px 5px 6px;border:1px solid rgba(255,255,255,.13);border-radius:12px;background:rgba(255,255,255,.04);color:#fff;cursor:pointer;text-align:left}.profile-button:hover{background:rgba(255,255,255,.08)}.profile-avatar{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;background:var(--pink);color:#fff;font-size:.69rem;font-weight:900}.profile-copy{display:grid}.profile-copy strong{font-size:.69rem;line-height:1.2;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile-copy span{color:#aaa5bd;font-size:.58rem;line-height:1.3}.profile-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(13,11,28,.86);backdrop-filter:blur(15px)}.profile-overlay.hidden{display:none}.profile-dialog{width:min(760px,100%);display:grid;grid-template-columns:.85fr 1.15fr;overflow:hidden;border-radius:24px;background:#fff;box-shadow:0 35px 100px rgba(0,0,0,.35)}.profile-welcome{padding:34px;background:linear-gradient(155deg,#17152d,#31264b);color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:460px}.profile-welcome-mark{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(145deg,var(--pink),var(--coral));font-weight:900}.profile-welcome h2{margin:24px 0 10px;font-size:1.65rem;line-height:1.1;letter-spacing:-.045em}.profile-welcome p{margin:0;color:#c6c1d2;font-size:.78rem;line-height:1.6}.profile-privacy{padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;color:#aaa5ba;font-size:.65rem;line-height:1.5}.profile-form{padding:34px}.profile-form h3{margin:0;font-size:1.25rem;letter-spacing:-.03em}.profile-form>p{margin:7px 0 24px;color:var(--muted);font-size:.75rem}.profile-field+.profile-field{margin-top:16px}.profile-field label{display:block;margin-bottom:7px;color:#4f4a58;font-size:.72rem;font-weight:750}.profile-field input{width:100%;height:46px;border:1px solid var(--line);border-radius:11px;background:#faf9fb;padding:0 12px;color:var(--ink)}.profile-field small{display:block;margin-top:6px;color:#96909d;font-size:.61rem}.color-label{margin:18px 0 8px;color:#4f4a58;font-size:.72rem;font-weight:750}.color-picker{display:flex;gap:9px}.color-choice{width:32px;height:32px;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 1px #ddd7df;cursor:pointer}.color-choice.active{box-shadow:0 0 0 2px var(--ink);transform:scale(1.06)}.profile-submit{width:100%;height:48px;margin-top:24px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--coral));color:#fff;font-weight:850;cursor:pointer}.profile-secondary{width:100%;margin-top:9px;border:0;background:transparent;color:var(--muted);font-size:.68rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.profile-error{min-height:18px;margin-top:5px;color:#c72960;font-size:.65rem}.profile-open{overflow:hidden}
-    footer{padding:17px 28px;background:#ece9ee;color:#6b6673;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.68rem}footer strong{color:var(--ink)}.animate{animation:lift .35s ease both}@keyframes lift{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:none}}
-    @media(max-width:1120px){.dashboard{grid-template-columns:280px minmax(0,1fr)}.side-stack{grid-column:1/-1;grid-template-columns:1fr 1fr}.control-card{position:static}.steps{grid-template-columns:repeat(3,1fr)}.map-dashboard{grid-template-columns:235px minmax(0,1fr)}.map-detail{grid-column:1/-1}.map-stage{min-height:560px}#networkMap{height:560px}}
-    @media(max-width:760px){.topbar{height:auto;min-height:70px;padding:11px 16px;flex-wrap:wrap;gap:4px 12px}.brand{min-width:0;flex:1}.verified{display:none}.profile-button{margin-left:0}.profile-copy{display:none}.nav{width:100%;height:40px;order:3;overflow-x:auto}.nav-btn{flex:1;padding:0 7px;white-space:nowrap}.nav-btn.active::after{left:8px;right:8px}main{padding:20px 14px 30px}.page-intro{align-items:flex-start;flex-direction:column}.source-chip{white-space:normal}.dashboard{display:block}.control-card,.result-stack,.side-stack{margin-bottom:15px}.side-stack{display:grid;grid-template-columns:1fr}.result-copy{grid-template-columns:1fr}.relative{text-align:left}.result-top{padding:20px;flex-direction:column}.thresholds{grid-template-columns:1fr}.method-hero,.principle-card,.limit-card,.data-overview,.station-table-card{grid-column:1/-1}.steps{grid-template-columns:1fr 1fr}.source-card{align-items:flex-start;flex-direction:column}#historyChart{height:210px}.map-dashboard{display:block}.map-controls,.map-stage{margin-bottom:15px}.map-stage{min-height:500px}#networkMap{height:500px}.map-note{margin-top:15px}.profile-dialog{grid-template-columns:1fr}.profile-welcome{min-height:auto;padding:24px}.profile-welcome .profile-privacy{margin-top:22px}.profile-form{padding:24px}}
-    @media(max-width:450px){.steps{grid-template-columns:1fr}.quality-list{grid-template-columns:1fr}.brand p{display:none}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+    :root {
+      color-scheme: dark;
+      --bg: #081019;
+      --panel: rgba(14, 27, 41, .86);
+      --panel-solid: #0e1b29;
+      --field: #132333;
+      --button: #142536;
+      --soft: rgba(255, 255, 255, .025);
+      --line: rgba(194, 216, 236, .14);
+      --text: #f4f8fb;
+      --text-2: #ccdae5;
+      --muted: #96a9bb;
+      --accent: #ff6b35;
+      --accent-hover: #ff7c4c;
+      --cyan: #5dd6e8;
+      --good: #62d394;
+      --warning: #ffbd59;
+      --danger: #ff5d73;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .34);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 78% 15%, rgba(50, 148, 170, .13), transparent 28rem),
+        radial-gradient(circle at 8% 82%, rgba(255, 107, 53, .10), transparent 25rem),
+        var(--bg);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      overflow: hidden;
+    }
+    button, select, input { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+    button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+    }
+
+    /* ---------- Estructura general ---------- */
+    .shell { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+    .view:not(.active) { display: none !important; }
+
+    .topbar {
+      min-height: 76px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(8, 16, 25, .78);
+      backdrop-filter: blur(18px);
+      position: relative;
+      z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+    .logo {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: var(--accent); color: #fff;
+      font-weight: 900; font-size: .95rem;
+      box-shadow: 0 10px 28px rgba(255, 107, 53, .26);
+    }
+    .brand h1 { margin: 0; font-size: 1rem; letter-spacing: -.01em; }
+    .brand p { margin: 3px 0 0; color: var(--muted); font-size: .76rem; }
+
+    .nav { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+    .nav-btn {
+      border: 0; background: transparent; color: var(--muted);
+      padding: 8px 13px; border-radius: 9px; cursor: pointer;
+      font-size: .78rem; font-weight: 650; white-space: nowrap;
+    }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active { color: var(--text); background: rgba(93, 214, 232, .12); box-shadow: inset 0 0 0 1px rgba(93, 214, 232, .35); }
+
+    .status { display: inline-flex; align-items: center; gap: 7px; color: #bdd0df; font-size: .75rem; white-space: nowrap; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px rgba(98, 211, 148, .10); }
+
+    .metrics { display: flex; gap: 10px; margin-left: auto; }
+    .metric { min-width: 132px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .metric small { display: block; color: var(--muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; }
+    .metric strong { display: block; margin-top: 2px; font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+    .metric span { color: var(--muted); font-size: .7rem; font-weight: 500; }
+
+    .profile-button {
+      display: flex; align-items: center; gap: 8px; min-height: 42px;
+      padding: 5px 10px 5px 6px; border: 1px solid var(--line); border-radius: 10px;
+      background: var(--soft); cursor: pointer; text-align: left;
+    }
+    .profile-button:hover { border-color: rgba(93, 214, 232, .45); }
+    .profile-avatar { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: .69rem; font-weight: 900; }
+    .profile-copy { display: grid; }
+    .profile-copy strong { font-size: .7rem; line-height: 1.2; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .profile-copy span { color: var(--muted); font-size: .6rem; line-height: 1.3; }
+
+    /* ---------- Vista Explorar: tres columnas ---------- */
+    .workspace { min-height: 0; display: grid; grid-template-columns: 272px minmax(0, 1fr) 300px; }
+    .side { min-height: 0; overflow: auto; padding: 18px; background: var(--panel); backdrop-filter: blur(18px); position: relative; z-index: 10; }
+    .controls { border-right: 1px solid var(--line); }
+    .details { border-left: 1px solid var(--line); }
+    .section + .section { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .eyebrow { margin: 0 0 12px; color: var(--muted); font-size: .69rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
+    label { color: #d4e1eb; font-size: .78rem; display: block; margin-bottom: 8px; }
+    select, input[type="date"], .profile-field input {
+      width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 10px;
+      padding: 0 12px; background: var(--field); color: var(--text);
+    }
+    select:hover, input:hover { border-color: rgba(93, 214, 232, .45); }
+
+    .time-card { padding: 14px; border: 1px solid rgba(93, 214, 232, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(93, 214, 232, .08), rgba(255, 255, 255, .02)); }
+    .clock { font-size: 1.9rem; font-weight: 760; letter-spacing: -.05em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .period { color: var(--cyan); font-size: .74rem; margin: 3px 0 10px; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: .64rem; }
+    .date-field { margin-top: 12px; }
+    .date-field label { font-size: .7rem; color: var(--muted); margin-bottom: 6px; }
+    .transport { display: grid; grid-template-columns: 52px 1fr 52px; gap: 8px; margin-top: 12px; }
+    .icon-btn, .play-btn, .zoom-btn, .ghost-btn {
+      border: 1px solid var(--line); background: var(--button); border-radius: 10px; min-height: 42px; cursor: pointer;
+      font-size: .76rem; font-weight: 650;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .icon-btn:hover, .zoom-btn:hover, .ghost-btn:hover { border-color: rgba(93, 214, 232, .45); background: #192e42; }
+    .icon-btn:active, .zoom-btn:active, .play-btn:active, .ghost-btn:active { transform: scale(.96); }
+    .play-btn { border-color: transparent; background: var(--accent); color: #fff; font-weight: 750; }
+    .play-btn:hover { background: var(--accent-hover); }
+    .speed-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+    .speed-btn { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 7px; cursor: pointer; font-size: .72rem; }
+    .speed-btn.active { color: var(--text); background: rgba(93, 214, 232, .12); border-color: rgba(93, 214, 232, .35); }
+    .ghost-btn { width: 100%; margin-top: 8px; min-height: 36px; background: transparent; color: var(--text-2); }
+
+    .legend { display: grid; gap: 9px; }
+    .legend-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--text-2); font-size: .75rem; }
+    .legend-row > span:last-child { color: var(--muted); font-size: .7rem; font-variant-numeric: tabular-nums; }
+    .legend-key { display: flex; align-items: center; gap: 9px; }
+    .heat-dot { border-radius: 50%; display: inline-block; }
+    .dot-low { width: 7px; height: 7px; background: var(--good); }
+    .dot-mid { width: 11px; height: 11px; background: var(--warning); }
+    .dot-high { width: 15px; height: 15px; background: var(--danger); box-shadow: 0 0 14px rgba(255, 93, 115, .4); }
+    .note { color: var(--muted); font-size: .7rem; line-height: 1.55; margin: 12px 0 0; }
+    .note strong { color: var(--text-2); }
+    .note a { color: var(--cyan); text-underline-offset: 3px; }
+    .disclaimer { margin-top: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 189, 89, .16); background: rgba(255, 189, 89, .07); color: #e7c989; font-size: .68rem; line-height: 1.5; }
+
+    /* Mapa */
+    .map-wrap { min-width: 0; min-height: 0; position: relative; overflow: hidden; }
+    #networkMap { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: none; }
+    #networkMap.dragging { cursor: grabbing; }
+    .grid-line { stroke: rgba(159, 187, 210, .055); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .borough { fill: none; stroke: rgba(159, 187, 210, .11); stroke-width: 1.2; stroke-dasharray: 4 7; vector-effect: non-scaling-stroke; }
+    .route-bg { fill: none; stroke: #081019; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .route { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .92; }
+    .route.dim { opacity: .45; }
+    .route-label circle { stroke: #081019; stroke-width: 3; vector-effect: non-scaling-stroke; }
+    .route-label text { fill: #fff; font-size: 9px; font-weight: 850; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+    .station-hit { fill: transparent; cursor: default; }
+    .station.modeled .station-hit { cursor: pointer; }
+    .station-halo { opacity: .22; pointer-events: none; }
+    .station-core { fill: #8193a3; stroke: #0a1420; stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+    .station.interchange .station-core { fill: #0d1b29; stroke: #9fb0bf; stroke-width: 2.6; }
+    .station.modeled .station-core { fill: #e9f2f8; stroke: #0a1420; stroke-width: 3; }
+    .station.selected .station-core { fill: #fff; stroke: var(--accent); stroke-width: 4; }
+    .station-label { fill: #8fa2b3; font-size: 9.5px; font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+    .station.modeled .station-label { fill: #f4f8fb; font-size: 11px; font-weight: 800; }
+    .map-title { position: absolute; z-index: 2; left: 20px; top: 18px; pointer-events: none; }
+    .map-title h2 { margin: 0; font-size: 1rem; }
+    .map-title p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
+    .zoom-controls { position: absolute; z-index: 2; right: 16px; bottom: 18px; display: grid; gap: 7px; }
+    .zoom-btn { width: 40px; height: 40px; min-height: 0; display: grid; place-items: center; font-size: 1rem; box-shadow: var(--shadow); }
+    .tooltip {
+      position: absolute; pointer-events: none; z-index: 30; min-width: 170px; padding: 10px 12px;
+      border: 1px solid var(--line); border-radius: 10px; background: rgba(8, 16, 25, .96); box-shadow: var(--shadow);
+      opacity: 0; transform: translateY(5px); transition: opacity .12s ease, transform .12s ease;
+    }
+    .tooltip.show { opacity: 1; transform: translateY(0); }
+    .tooltip strong { display: block; font-size: .8rem; }
+    .tooltip span { display: block; color: var(--muted); font-size: .69rem; margin-top: 4px; }
+
+    /* Detalle */
+    .station-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .station-head h2 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em; }
+    .station-head p { margin: 5px 0 0; color: var(--muted); font-size: .72rem; }
+    .line-pill { min-width: 25px; height: 25px; border-radius: 7px; display: grid; place-items: center; font-size: .66rem; font-weight: 850; color: #fff; border: 1px solid rgba(255, 255, 255, .2); background: #b7a52b; }
+    .risk { margin-top: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 10px; border: 1px solid; }
+    .risk span { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; }
+    .risk strong { font-size: .84rem; }
+    .risk.baja { background: rgba(98, 211, 148, .08); border-color: rgba(98, 211, 148, .2); color: var(--good); }
+    .risk.media { background: rgba(255, 189, 89, .08); border-color: rgba(255, 189, 89, .18); color: var(--warning); }
+    .risk.alta { background: rgba(255, 93, 115, .08); border-color: rgba(255, 93, 115, .22); color: var(--danger); }
+    .risk span { color: inherit; opacity: .85; }
+    .level-message { margin: 10px 0 0; color: var(--text-2); font-size: .72rem; line-height: 1.5; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
+    .detail-card { padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .02); }
+    .detail-card small { display: block; color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; }
+    .detail-card strong { display: block; font-size: 1rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .detail-card span { font-size: .66rem; color: var(--muted); }
+    .detail-card.main { grid-column: 1 / -1; border-color: rgba(255, 107, 53, .28); background: linear-gradient(135deg, rgba(255, 107, 53, .12), rgba(255, 255, 255, .02)); }
+    .detail-card.main strong { font-size: 1.9rem; letter-spacing: -.05em; line-height: 1.1; }
+    .comparison { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .18); background: rgba(93, 214, 232, .07); color: #a8e6ef; font-size: .68rem; line-height: 1.45; }
+    .comparison.warn { border-color: rgba(255, 189, 89, .16); background: rgba(255, 189, 89, .07); color: #e7c989; }
+    .bar-chart { height: 118px; display: flex; align-items: flex-end; gap: 4px; padding-top: 12px; }
+    .bar { flex: 1; min-width: 4px; border-radius: 3px 3px 1px 1px; background: linear-gradient(to top, rgba(93, 214, 232, .25), var(--cyan)); opacity: .75; }
+    .bar.current { background: linear-gradient(to top, rgba(255, 107, 53, .32), var(--accent)); opacity: 1; margin-left: 6px; }
+    .chart-axis { display: flex; justify-content: space-between; color: var(--muted); font-size: .62rem; margin-top: 6px; }
+    .hot-list { display: grid; gap: 6px; }
+    .hot-item { width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 7px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
+    .hot-item:hover, .hot-item.active { background: rgba(255, 255, 255, .05); }
+    .hot-item.active .rank { background: var(--accent); color: #fff; }
+    .rank { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: var(--muted); background: rgba(255, 255, 255, .05); font-size: .66rem; }
+    .hot-name { font-size: .73rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hot-value { font-size: .71rem; font-variant-numeric: tabular-nums; }
+
+    /* ---------- Páginas Metodología y Datos ---------- */
+    .page { min-height: 0; overflow: auto; padding: 24px 24px 36px; }
+    .page-inner { width: min(1280px, 100%); margin: 0 auto; }
+    .page-intro { margin: 4px 0 20px; }
+    .kicker { margin: 0 0 6px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: .11em; font-size: .68rem; }
+    .page-intro h2 { margin: 0; font-size: clamp(1.45rem, 2.4vw, 2rem); letter-spacing: -.04em; line-height: 1.1; }
+    .page-intro p { margin: 7px 0 0; color: var(--muted); max-width: 680px; font-size: .84rem; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+    .card-label { margin: 0 0 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: .67rem; font-weight: 700; }
+    .method-grid, .data-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .method-hero { grid-column: span 8; padding: 26px; position: relative; overflow: hidden; border-color: rgba(255, 107, 53, .22); background: linear-gradient(135deg, rgba(255, 107, 53, .13), rgba(14, 27, 41, .9)); }
+    .method-hero h3 { margin: 0; font-size: 1.35rem; letter-spacing: -.03em; }
+    .method-hero p { color: #c4d3df; max-width: 620px; font-size: .82rem; }
+    .feature-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .feature-list span { border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; background: var(--soft); color: #d4e1eb; font-size: .68rem; }
+    .principle-card { grid-column: span 4; padding: 24px; }
+    .principle-card blockquote { margin: 0; font-size: 1rem; line-height: 1.55; font-weight: 680; letter-spacing: -.015em; }
+    .principle-card p { margin: 14px 0 0; color: var(--muted); font-size: .72rem; }
+    .pipeline { grid-column: 1 / -1; padding: 24px; }
+    .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .step { padding: 15px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); min-height: 116px; }
+    .step span { width: 25px; height: 25px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: .65rem; font-weight: 850; }
+    .step strong { display: block; font-size: .76rem; margin-top: 11px; }
+    .step p { margin: 4px 0 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
+    .limit-card { grid-column: span 6; padding: 22px; }
+    .limit-card h3 { margin: 0 0 12px; font-size: .92rem; }
+    .clean-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .clean-list li { position: relative; padding-left: 18px; color: var(--text-2); font-size: .75rem; }
+    .clean-list li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); position: absolute; left: 0; top: .45em; }
+    .clean-list.no li::before { background: var(--danger); }
+    .data-overview { grid-column: span 5; padding: 24px; }
+    .big-stat { font-size: 2.5rem; font-weight: 800; letter-spacing: -.06em; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+    .big-stat-label { color: var(--muted); font-size: .72rem; }
+    .quality-list { margin-top: 19px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quality-item { padding: 12px; border: 1px solid var(--line); background: var(--soft); border-radius: 10px; }
+    .quality-item span { display: block; color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; }
+    .quality-item strong { display: block; margin-top: 4px; font-size: .86rem; }
+    .station-table-card { grid-column: span 7; padding: 24px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .74rem; }
+    th { text-align: left; color: var(--muted); font-weight: 700; padding: 9px 8px; border-bottom: 1px solid var(--line); }
+    td { padding: 11px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: 0; }
+    .source-card { grid-column: 1 / -1; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .source-card h3 { margin: 0; font-size: .92rem; }
+    .source-card p { margin: 5px 0 0; color: var(--muted); font-size: .72rem; }
+    .source-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 15px; border-radius: 10px; background: var(--accent); color: #fff; text-decoration: none; font-size: .74rem; font-weight: 750; white-space: nowrap; }
+    .source-link:hover { background: var(--accent-hover); }
+    .page-footer { margin-top: 22px; color: var(--muted); font-size: .7rem; text-align: center; }
+    .page-footer strong { color: var(--text-2); }
+
+    /* ---------- Perfil ---------- */
+    .profile-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(4, 9, 15, .86); backdrop-filter: blur(15px); }
+    .profile-overlay.hidden { display: none; }
+    .profile-dialog { width: min(760px, 100%); display: grid; grid-template-columns: .85fr 1.15fr; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: var(--panel-solid); box-shadow: 0 35px 100px rgba(0, 0, 0, .5); }
+    .profile-welcome { padding: 32px; background: linear-gradient(155deg, rgba(93, 214, 232, .10), rgba(255, 107, 53, .08)), #0b1824; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; min-height: 450px; }
+    .profile-welcome-mark { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 900; box-shadow: 0 10px 28px rgba(255, 107, 53, .26); }
+    .profile-welcome h2 { margin: 24px 0 10px; font-size: 1.6rem; line-height: 1.1; letter-spacing: -.045em; }
+    .profile-welcome p { margin: 0; color: #c4d3df; font-size: .78rem; line-height: 1.6; }
+    .profile-privacy { padding: 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font-size: .66rem; line-height: 1.5; }
+    .profile-privacy strong { color: var(--text-2); }
+    .profile-form { padding: 32px; }
+    .profile-form h3 { margin: 0; font-size: 1.22rem; letter-spacing: -.03em; }
+    .profile-form > p { margin: 7px 0 22px; color: var(--muted); font-size: .75rem; }
+    .profile-field + .profile-field { margin-top: 16px; }
+    .profile-field label { font-size: .72rem; font-weight: 700; margin-bottom: 7px; }
+    .profile-field label span { font-weight: 500; color: var(--muted); }
+    .profile-field small { display: block; margin-top: 6px; color: var(--muted); font-size: .62rem; }
+    .color-label { margin: 18px 0 8px; color: #d4e1eb; font-size: .72rem; font-weight: 700; }
+    .color-picker { display: flex; gap: 9px; }
+    .color-choice { width: 32px; height: 32px; border: 3px solid var(--panel-solid); border-radius: 10px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+    .color-choice.active { box-shadow: 0 0 0 2px var(--text); transform: scale(1.06); }
+    .profile-submit { width: 100%; height: 48px; margin-top: 22px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 12px 28px rgba(255, 107, 53, .22); }
+    .profile-submit:hover { background: var(--accent-hover); }
+    .profile-secondary { width: 100%; margin-top: 9px; border: 0; background: transparent; color: var(--muted); font-size: .68rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .profile-error { min-height: 18px; margin-top: 5px; color: var(--danger); font-size: .66rem; }
+    .profile-open { overflow: hidden; }
+
+    /* ---------- Adaptación a pantallas ---------- */
+    @media (max-width: 1380px) { .status { display: none; } }
+    @media (max-width: 1180px) {
+      body { overflow: auto; }
+      .shell { height: auto; min-height: 100%; }
+      .topbar { flex-wrap: wrap; }
+      .metrics { order: 4; width: 100%; margin: 0; }
+      .metric { flex: 1; min-width: 0; }
+      .profile-button { margin-left: auto; }
+      .workspace { grid-template-columns: 260px minmax(0, 1fr); }
+      .side { overflow: visible; }
+      .map-wrap { min-height: 640px; }
+      .details { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 24px; }
+      .details .section + .section { margin-top: 0; padding-top: 0; border-top: 0; }
+      .page { overflow: visible; }
+      .steps { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .topbar { gap: 10px; padding: 12px 14px; }
+      .brand { min-width: 0; flex: 1; }
+      .profile-copy { display: none; }
+      .nav { order: 3; width: 100%; }
+      .nav-btn { flex: 1; padding: 8px 6px; }
+      .metrics { gap: 6px; }
+      .metric { padding: 8px 9px; }
+      .metric strong { font-size: .95rem; }
+      .workspace { display: flex; flex-direction: column; }
+      .controls { border-right: 0; border-bottom: 1px solid var(--line); }
+      .map-wrap { min-height: 0; height: 420px; }
+      .details { display: block; }
+      .details .section + .section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+      .page { padding: 20px 14px 30px; }
+      .method-hero, .principle-card, .limit-card, .data-overview, .station-table-card { grid-column: 1 / -1; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .source-card { align-items: flex-start; flex-direction: column; }
+      .profile-dialog { grid-template-columns: 1fr; }
+      .profile-welcome { min-height: auto; padding: 24px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .profile-welcome .profile-privacy { margin-top: 20px; }
+      .profile-form { padding: 24px; }
+    }
+    @media (max-width: 450px) {
+      .brand p { display: none; }
+      .metric span { display: none; }
+      .steps, .quality-list { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
   </style>
 </head>
 <body>
 <div class="profile-overlay" id="profileOverlay" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
   <div class="profile-dialog">
     <section class="profile-welcome">
-      <div><div class="profile-welcome-mark">MY</div><h2>Tu viaje comienza aquí</h2><p>Crea un perfil de clase para personalizar Mini Yolotzin y conservar tus preferencias en este dispositivo.</p></div>
+      <div>
+        <div class="profile-welcome-mark">MY</div>
+        <h2>Tu viaje comienza aquí</h2>
+        <p>Crea un perfil de clase para personalizar Mini Yolotzin y conservar tus preferencias en este dispositivo.</p>
+      </div>
       <div class="profile-privacy"><strong>Privacidad simple:</strong> tu nombre, grupo y preferencias se guardan únicamente en este navegador. No usamos contraseñas ni enviamos estos datos a un servidor.</div>
     </section>
     <form class="profile-form" id="profileForm">
-      <h3 id="profileTitle">Crear perfil de clase</h3><p>Tardarás menos de un minuto y podrás modificarlo después.</p>
-      <div class="profile-field"><label for="profileNameInput">Nombre o apodo</label><input id="profileNameInput" name="name" maxlength="32" autocomplete="nickname" placeholder="Ej. Nayibi" required><small>Este nombre aparecerá solamente dentro de la app.</small></div>
-      <div class="profile-field"><label for="profileGroupInput">Grupo o equipo <span style="font-weight:500;color:#96909d">(opcional)</span></label><input id="profileGroupInput" name="group" maxlength="24" placeholder="Ej. IA · Equipo 3"></div>
-      <p class="color-label">Color del perfil</p><div class="color-picker" id="colorPicker" role="group" aria-label="Color del perfil"><button type="button" class="color-choice active" aria-pressed="true" data-color="#ef3d78" style="background:#ef3d78" aria-label="Rosa"></button><button type="button" class="color-choice" aria-pressed="false" data-color="#ff725e" style="background:#ff725e" aria-label="Coral"></button><button type="button" class="color-choice" aria-pressed="false" data-color="#1fa89a" style="background:#1fa89a" aria-label="Turquesa"></button><button type="button" class="color-choice" aria-pressed="false" data-color="#6c63c7" style="background:#6c63c7" aria-label="Violeta"></button><button type="button" class="color-choice" aria-pressed="false" data-color="#d99419" style="background:#d99419" aria-label="Dorado"></button></div>
+      <h3 id="profileTitle">Crear perfil de clase</h3>
+      <p>Tardarás menos de un minuto y podrás modificarlo después.</p>
+      <div class="profile-field">
+        <label for="profileNameInput">Nombre o apodo</label>
+        <input id="profileNameInput" name="name" maxlength="32" autocomplete="nickname" placeholder="Ej. Nayibi" required>
+        <small>Este nombre aparecerá solamente dentro de la app.</small>
+      </div>
+      <div class="profile-field">
+        <label for="profileGroupInput">Grupo o equipo <span>(opcional)</span></label>
+        <input id="profileGroupInput" name="group" maxlength="24" placeholder="Ej. IA · Equipo 3">
+      </div>
+      <p class="color-label">Color del perfil</p>
+      <div class="color-picker" id="colorPicker" role="group" aria-label="Color del perfil">
+        <button type="button" class="color-choice active" aria-pressed="true" data-color="#ff6b35" style="background:#ff6b35" aria-label="Naranja"></button>
+        <button type="button" class="color-choice" aria-pressed="false" data-color="#e94b8c" style="background:#e94b8c" aria-label="Rosa"></button>
+        <button type="button" class="color-choice" aria-pressed="false" data-color="#1fa89a" style="background:#1fa89a" aria-label="Turquesa"></button>
+        <button type="button" class="color-choice" aria-pressed="false" data-color="#6c63c7" style="background:#6c63c7" aria-label="Violeta"></button>
+        <button type="button" class="color-choice" aria-pressed="false" data-color="#d99419" style="background:#d99419" aria-label="Dorado"></button>
+      </div>
       <div class="profile-error" id="profileError" role="alert"></div>
-      <button class="profile-submit" type="submit">Entrar a Mini Yolotzin</button><button class="profile-secondary" id="newProfileButton" type="button" hidden>Crear otro perfil en este dispositivo</button>
+      <button class="profile-submit" type="submit">Entrar a Mini Yolotzin</button>
+      <button class="profile-secondary" id="newProfileButton" type="button" hidden>Crear otro perfil en este dispositivo</button>
     </form>
   </div>
 </div>
-<div class="app">
+
+<div class="shell">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M3 17h6l3-8 6 15 4-10 3 3h4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><h1>Mini Yolotzin</h1><p>Pulso urbano · CDMX</p></div></div>
-    <nav class="nav" aria-label="Secciones" role="tablist"><button class="nav-btn active" data-view="prediction" role="tab" id="tab-prediction" aria-controls="predictionView" aria-selected="true">Predicción</button><button class="nav-btn" data-view="map" role="tab" id="tab-map" aria-controls="mapView" aria-selected="false" tabindex="-1">Mapa de red</button><button class="nav-btn" data-view="method" role="tab" id="tab-method" aria-controls="methodView" aria-selected="false" tabindex="-1">Metodología</button><button class="nav-btn" data-view="data" role="tab" id="tab-data" aria-controls="dataView" aria-selected="false" tabindex="-1">Datos</button></nav>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">MY</div>
+      <div><h1>Mini Yolotzin</h1><p>Pulso urbano · CDMX</p></div>
+    </div>
+    <nav class="nav" aria-label="Secciones" role="tablist">
+      <button class="nav-btn active" data-view="explore" role="tab" id="tab-explore" aria-controls="exploreView" aria-selected="true">Explorar</button>
+      <button class="nav-btn" data-view="method" role="tab" id="tab-method" aria-controls="methodView" aria-selected="false" tabindex="-1">Metodología</button>
+      <button class="nav-btn" data-view="data" role="tab" id="tab-data" aria-controls="dataView" aria-selected="false" tabindex="-1">Datos</button>
+    </nav>
+    <div class="status" id="statusChip">Datos oficiales · copia fija</div>
+    <div class="metrics" aria-label="Indicadores de la fecha seleccionada">
+      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · 5 estaciones</span></div>
+      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span>de 5 estaciones</span></div>
+      <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
+    </div>
     <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
-    <div class="verified" id="verifiedChip">Dataset oficial · copia fija</div>
   </header>
-  <main>
-    <section class="view active" id="predictionView" role="tabpanel" aria-labelledby="tab-prediction" tabindex="-1">
-      <div class="page-intro"><div><p class="kicker">Demostración del MVP</p><h2>Anticipa la demanda diaria</h2><p>Selecciona una estación de Línea 3 y una fecha futura. El modelo compara patrones de calendario contra el histórico oficial.</p></div><div class="source-chip"><i></i><span id="coverageChip">Cargando cobertura…</span></div></div>
-      <div class="dashboard">
-        <aside class="card control-card" aria-label="Parámetros de predicción">
-          <p class="card-label">Configurar estimación</p>
-          <div class="field"><label for="stationSelect">Estación</label><select id="stationSelect"></select></div>
-          <div class="field"><label for="dateInput">Fecha de viaje</label><input type="date" id="dateInput"></div>
-          <div class="model-note"><strong>Modelo activo:</strong> Random Forest con variables de calendario, entrenado con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente.</div>
-          <button class="predict-btn" id="predictButton">Predecir demanda</button>
-          <div class="control-footer"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#8b8593"/><path d="M10 9v5M10 6.2v.2" stroke="#8b8593" stroke-width="1.7" stroke-linecap="round"/></svg><span>Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</span></div>
-        </aside>
-        <div class="result-stack">
-          <section class="card result-card" aria-live="polite"><div class="result-top"><div><small>Afluencia diaria estimada</small><div class="result-value"><strong id="predictionValue">—</strong><span>accesos estimados</span></div></div><div class="level-badge media" id="levelBadge">Media</div></div><div class="result-copy"><div class="message" id="resultMessage">Selecciona una estación y una fecha para generar la estimación.</div><div class="relative"><strong id="relativeValue">—</strong><span>frente a la mediana histórica</span></div></div></section>
-          <section class="card chart-card"><div class="card-head"><div><h3>Contexto histórico</h3><p>Promedio mensual observado y estimación seleccionada</p></div><div class="legend"><span><i></i>Histórico</span><span><i></i>Estimación</span></div></div><svg id="historyChart" role="img" aria-label="Comparación de afluencia histórica mensual con la estimación"></svg><div class="thresholds"><div class="threshold low">Demanda baja<strong id="lowThreshold">—</strong></div><div class="threshold mid">Demanda media<strong id="midThreshold">—</strong></div><div class="threshold high">Demanda alta<strong id="highThreshold">—</strong></div></div></section>
+
+  <!-- Vista principal: controles · mapa · detalle -->
+  <main class="workspace view active" id="exploreView" role="tabpanel" aria-labelledby="tab-explore">
+    <aside class="side controls" aria-label="Parámetros de la estimación">
+      <section class="section">
+        <p class="eyebrow">Estación</p>
+        <label for="stationSelect">Estación modelada de Línea 3</label>
+        <select id="stationSelect"></select>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Fecha estimada</p>
+        <div class="time-card">
+          <div class="clock" id="dateLabel">—</div>
+          <div class="period" id="dayLabel">Afluencia diaria estimada</div>
+          <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
+          <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
+          <div class="date-field"><label for="dateInput">Elegir fecha exacta</label><input type="date" id="dateInput"></div>
         </div>
-        <aside class="side-stack">
-          <section class="card metric-card"><p class="card-label">Validación temporal</p><div class="metric-row"><span>MAE modelo</span><strong id="modelMae">—</strong></div><div class="metric-row"><span>MAE línea base</span><strong id="baselineMae">—</strong></div><div class="metric-row"><span>Periodo de prueba</span><strong id="testPeriod">—</strong></div><div class="comparison" id="comparisonNote">—</div></section>
-          <section class="card data-card"><p class="card-label">Ficha de los datos</p><div class="data-stat"><span>Fuente</span><strong>SEMOVI CDMX</strong></div><div class="data-stat"><span>Unidad</span><strong>Estación / día</strong></div><div class="data-stat"><span>Selección</span><strong>Línea 3 · 5 estaciones</strong></div><div class="data-stat"><span>Licencia</span><strong>CC BY 4.0</strong></div><a id="sourceLink" href="#" target="_blank" rel="noopener">Consultar fuente oficial</a></section>
-        </aside>
+        <div class="transport">
+          <button class="icon-btn" id="stepBack" aria-label="Retroceder un día">−1 d</button>
+          <button class="play-btn" id="playPause">Reproducir</button>
+          <button class="icon-btn" id="stepForward" aria-label="Avanzar un día">+1 d</button>
+        </div>
+        <div class="speed-row" role="group" aria-label="Velocidad de reproducción">
+          <button class="speed-btn active" data-speed="1" aria-pressed="true">1 día</button>
+          <button class="speed-btn" data-speed="3" aria-pressed="false">3 días</button>
+          <button class="speed-btn" data-speed="7" aria-pressed="false">7 días</button>
+        </div>
+        <button class="ghost-btn" id="resetDate">Ir a mañana</button>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Lectura de demanda</p>
+        <div class="legend">
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-low"></i> Baja</span><span id="legendLow">—</span></div>
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Media</span><span id="legendMid">—</span></div>
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Alta</span><span id="legendHigh">—</span></div>
+        </div>
+        <p class="note">Niveles relativos al histórico de cada estación (percentiles 33 y 67). El tamaño y color del pulso en el mapa representan la estimación diaria.</p>
+      </section>
+
+      <section class="section">
+        <p class="eyebrow">Sobre el modelo</p>
+        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+        <div class="disclaimer">Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</div>
+      </section>
+    </aside>
+
+    <section class="map-wrap" aria-label="Mapa esquemático del Metro">
+      <div class="map-title"><h2>Red esquemática</h2><p>Pulsos solo en las 5 estaciones modeladas de Línea 3 · arrastra para mover</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa esquemático de la red del Metro con demanda diaria estimada. Usa Tab para recorrer las cinco estaciones modeladas y Enter para seleccionarlas.">
+        <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+        <g id="networkViewport"></g>
+      </svg>
+      <div class="tooltip" id="tooltip" aria-hidden="true"></div>
+      <div class="zoom-controls" aria-label="Controles del mapa">
+        <button class="zoom-btn" id="zoomIn" aria-label="Acercar">+</button>
+        <button class="zoom-btn" id="zoomOut" aria-label="Alejar">−</button>
+        <button class="zoom-btn" id="zoomReset" aria-label="Restablecer vista">⌂</button>
       </div>
     </section>
 
-    <section class="view" id="mapView" role="tabpanel" aria-labelledby="tab-map" tabindex="-1">
-      <div class="page-intro"><div><p class="kicker">Exploración espacial</p><h2>El pulso diario sobre la red</h2><p>Reproduce el horizonte día por día. Los pulsos coloreados corresponden únicamente a las cinco estaciones modeladas de Línea 3; el resto de la red es contexto esquemático.</p></div><div class="source-chip"><i></i><span>Animación diaria · datos del modelo</span></div></div>
-      <div class="map-dashboard">
-        <aside class="card map-controls">
-          <p class="card-label">Recorrido temporal</p>
-          <div class="map-day"><strong id="mapDateLabel">—</strong><span id="mapDayLabel">Demanda diaria estimada</span></div>
-          <input class="map-range" id="mapDateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la animación">
-          <div class="range-ends"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
-          <div class="play-row"><button class="map-btn primary" id="mapPlay">Reproducir</button><button class="map-btn" id="mapResetDate">Volver a hoy</button></div>
-          <div class="speed-row" aria-label="Velocidad de reproducción"><button class="speed-btn active" data-map-speed="1">1 día</button><button class="speed-btn" data-map-speed="3">3 días</button><button class="speed-btn" data-map-speed="7">7 días</button></div>
-          <div class="map-legend">
-            <div><span class="legend-name"><i class="demand-dot low"></i>Baja</span><span>relativa</span></div>
-            <div><span class="legend-name"><i class="demand-dot mid"></i>Media</span><span>relativa</span></div>
-            <div><span class="legend-name"><i class="demand-dot high"></i>Alta</span><span>relativa</span></div>
-          </div>
-          <p class="map-note">Arrastra el mapa para moverlo y usa la rueda o los botones para acercar. Selecciona un nodo con pulso para ver su detalle.</p>
-        </aside>
-        <section class="card map-stage" aria-label="Mapa esquemático interactivo del Metro">
-          <div class="map-stage-head"><h3>Red del Metro CDMX</h3><p>Vista esquemática · selección modelada en Línea 3</p></div>
-          <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa esquemático de la red del Metro con demanda diaria estimada. Usa Tab para recorrer las cinco estaciones modeladas y Enter para seleccionarlas."><g id="networkViewport"></g></svg>
-          <div class="map-zoom" aria-label="Controles de zoom"><button class="zoom-btn" id="mapZoomIn" aria-label="Acercar">+</button><button class="zoom-btn" id="mapZoomOut" aria-label="Alejar">−</button><button class="zoom-btn" id="mapZoomReset" aria-label="Restablecer">⌂</button></div>
-        </section>
-        <aside class="card map-detail">
-          <p class="card-label">Estación seleccionada</p>
-          <h3 id="mapStationName" style="margin:0;font-size:1.3rem;letter-spacing:-.035em">Indios Verdes</h3>
-          <div class="station-lines"><i style="background:#b7a52b">3</i><span class="level-badge media" id="mapLevel" style="min-height:24px;padding:4px 9px">Media</span></div>
-          <div class="map-stat-grid"><div class="map-stat"><span>Estimación</span><strong id="mapEstimate">—</strong></div><div class="map-stat"><span>Vs. mediana</span><strong id="mapRelative">—</strong></div><div class="map-stat"><span>MAE modelo</span><strong id="mapMae">—</strong></div><div class="map-stat"><span>Observaciones</span><strong id="mapObservations">—</strong></div></div>
-          <div class="map-recommendation" id="mapRecommendation">Selecciona una fecha para explorar la demanda esperada.</div>
-          <div class="map-summary"><p class="card-label" style="margin-bottom:7px">Resumen de la selección</p><div><span>Afluencia combinada</span><strong id="mapNetworkTotal">—</strong></div><div><span>Demanda alta</span><strong id="mapHighCount">—</strong></div><div><span>Estaciones modeladas</span><strong>5 de Línea 3</strong></div></div>
-        </aside>
-      </div>
-    </section>
+    <aside class="side details" aria-label="Detalle de la estación">
+      <section class="section" aria-live="polite">
+        <div class="station-head">
+          <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
+          <span class="line-pill" title="Línea 3">3</span>
+        </div>
+        <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
+        <p class="level-message" id="levelMessage">—</p>
+        <div class="detail-grid">
+          <div class="detail-card main"><small>Afluencia diaria estimada</small><strong id="detailEstimate">—</strong><span id="detailRange">accesos estimados</span></div>
+          <div class="detail-card"><small>Vs. mediana</small><strong id="detailRelative">—</strong><span>histórica</span></div>
+          <div class="detail-card"><small>Observaciones</small><strong id="detailObs">—</strong><span>días con dato</span></div>
+          <div class="detail-card"><small>MAE modelo</small><strong id="detailMae">—</strong><span>accesos/día</span></div>
+          <div class="detail-card"><small>MAE línea base</small><strong id="detailBase">—</strong><span>accesos/día</span></div>
+        </div>
+        <div class="comparison" id="comparisonNote">—</div>
+      </section>
+      <section class="section">
+        <p class="eyebrow">Historial mensual</p>
+        <div class="bar-chart" id="barChart" role="img" aria-label="Promedio diario observado por mes y estimación seleccionada"></div>
+        <div class="chart-axis"><span id="axisStart">—</span><span id="axisMid">—</span><span id="axisEnd">—</span><span>Est.</span></div>
+        <p class="note" id="testPeriod">—</p>
+      </section>
+      <section class="section">
+        <p class="eyebrow">Mayor demanda relativa</p>
+        <div class="hot-list" id="hotList"></div>
+      </section>
+    </aside>
+  </main>
 
-    <section class="view" id="methodView" role="tabpanel" aria-labelledby="tab-method" tabindex="-1">
-      <div class="page-intro"><div><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div></div>
+  <!-- Metodología -->
+  <main class="page view" id="methodView" role="tabpanel" aria-labelledby="tab-method" tabindex="-1">
+    <div class="page-inner">
+      <div class="page-intro"><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div>
       <div class="method-grid">
         <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>El modelo aprende patrones de calendario por estación. Se entrena con el pasado y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal.</p><div class="feature-list" id="featureList"></div></section>
         <section class="card principle-card"><p class="card-label">Principio rector</p><blockquote>Una demo estable, honesta y reproducible vale más que muchas funciones incompletas.</blockquote><p>La interfaz distingue predicción diaria de ocupación física y evita recomendaciones horarias sin datos que las respalden.</p></section>
@@ -116,101 +512,453 @@
         <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li></ul></section>
         <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, cámaras, sensores o datos en tiempo real.</li><li>No sustituye información operativa del STC Metro.</li></ul></section>
       </div>
-    </section>
+      <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
+    </div>
+  </main>
 
-    <section class="view" id="dataView" role="tabpanel" aria-labelledby="tab-data" tabindex="-1">
-      <div class="page-intro"><div><p class="kicker">Trazabilidad</p><h2>Qué contiene realmente el recurso</h2><p>Resumen calculado directamente sobre la descarga oficial utilizada para esta demostración.</p></div></div>
+  <!-- Datos -->
+  <main class="page view" id="dataView" role="tabpanel" aria-labelledby="tab-data" tabindex="-1">
+    <div class="page-inner">
+      <div class="page-intro"><p class="kicker">Trazabilidad</p><h2>Qué contiene realmente el recurso</h2><p>Resumen calculado directamente sobre la descarga oficial utilizada para esta demostración.</p></div>
       <div class="data-grid">
         <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Filas seleccionadas</span><strong id="selectedRows">—</strong></div></div></section>
         <section class="card station-table-card"><p class="card-label">Resultados de validación por estación</p><table><thead><tr><th>Estación</th><th>Observaciones</th><th>MAE base</th><th>MAE modelo</th><th>Resultado</th></tr></thead><tbody id="stationTable"></tbody></table></section>
         <section class="card source-card"><div><h3 id="sourceName">Afluencia diaria del Metro CDMX</h3><p id="sourceDescription">Publicada por SEMOVI bajo licencia abierta.</p></div><a class="source-link" id="officialSource" href="#" target="_blank" rel="noopener">Abrir recurso oficial</a></section>
       </div>
-    </section>
+      <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
+    </div>
   </main>
-  <footer><span><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</span></footer>
 </div>
+
 <script>
 (() => {
-  const data=window.MINI_YOLOTZIN_DATA;
-  if(!data){document.body.innerHTML='<main style="padding:40px;font-family:system-ui"><h1>No se pudo cargar el modelo</h1><p>Verifica que model-data.js esté junto al archivo HTML.</p></main>';return}
-  const $=id=>document.getElementById(id);const format=n=>Number(n).toLocaleString('es-MX');
-  const shortDate=iso=>new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(iso+'T12:00:00Z')).replace('.','');
-  const monthDate=ym=>new Intl.DateTimeFormat('es-MX',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(ym+'-15T12:00:00Z')).replace('.','');
-  let currentStation=data.stations[0];
-  const PROFILE_KEY='mini_yolotzin_profile_v1',PREFS_PREFIX='mini_yolotzin_prefs_v1_',profileOverlay=$('profileOverlay'),profileForm=$('profileForm');let activeProfile=null,selectedProfileColor='#ef3d78';
-  const safeRead=key=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}},safeWrite=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));return true}catch{return false}};
-  const profileInitials=name=>name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase()||'MY';
-  function renderProfile(){if(!activeProfile)return;$('profileAvatar').textContent=profileInitials(activeProfile.name);$('profileAvatar').style.background=activeProfile.color;$('profileDisplayName').textContent=activeProfile.name;$('profileDisplayGroup').textContent=activeProfile.group||'Perfil local'}
-  function chooseProfileColor(color){selectedProfileColor=color;document.querySelectorAll('.color-choice').forEach(choice=>{const isActive=choice.dataset.color===color;choice.classList.toggle('active',isActive);choice.setAttribute('aria-pressed',String(isActive))})}
-  const appShell=document.querySelector('.app');let profileReturnFocus=null;
-  function openProfileEditor(){profileReturnFocus=document.activeElement;profileOverlay.classList.remove('hidden');document.body.classList.add('profile-open');appShell.inert=true;appShell.setAttribute('aria-hidden','true');$('profileTitle').textContent=activeProfile?'Editar perfil':'Crear perfil de clase';$('profileNameInput').value=activeProfile?.name||'';$('profileGroupInput').value=activeProfile?.group||'';chooseProfileColor(activeProfile?.color||'#ef3d78');$('newProfileButton').hidden=!activeProfile;$('profileError').textContent='';setTimeout(()=>$('profileNameInput').focus(),0)}
-  function closeProfileEditor(){if(!activeProfile)return;profileOverlay.classList.add('hidden');document.body.classList.remove('profile-open');appShell.inert=false;appShell.removeAttribute('aria-hidden');const target=profileReturnFocus&&document.contains(profileReturnFocus)&&profileReturnFocus!==document.body?profileReturnFocus:$('profileButton');profileReturnFocus=null;target.focus()}
-  profileOverlay.addEventListener('keydown',event=>{if(event.key==='Escape'){if(activeProfile){event.preventDefault();closeProfileEditor()}return}if(event.key!=='Tab')return;const focusable=[...profileOverlay.querySelectorAll('input,button')].filter(el=>!el.hidden&&!el.disabled);if(!focusable.length)return;const first=focusable[0],last=focusable.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}});
-  function preferencesKey(){return activeProfile?PREFS_PREFIX+activeProfile.id:null}
-  function readPreferences(){const key=preferencesKey();return key?safeRead(key):null}
-  function savePreferences(){const key=preferencesKey();if(!key)return;safeWrite(key,{station:$('stationSelect').value,date:$('dateInput').value,updatedAt:new Date().toISOString()})}
-  document.querySelectorAll('.color-choice').forEach(choice=>choice.addEventListener('click',()=>chooseProfileColor(choice.dataset.color)));
-  profileForm.addEventListener('submit',event=>{event.preventDefault();const name=$('profileNameInput').value.trim(),group=$('profileGroupInput').value.trim();if(name.length<2){$('profileError').textContent='Escribe un nombre o apodo de al menos dos caracteres.';return}activeProfile={id:activeProfile?.id||`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`,name,group,color:selectedProfileColor,createdAt:activeProfile?.createdAt||new Date().toISOString()};safeWrite(PROFILE_KEY,activeProfile);renderProfile();closeProfileEditor()});
-  $('profileButton').addEventListener('click',openProfileEditor);$('newProfileButton').addEventListener('click',()=>{activeProfile=null;$('profileNameInput').value='';$('profileGroupInput').value='';$('profileTitle').textContent='Crear otro perfil';$('newProfileButton').hidden=true;chooseProfileColor('#ef3d78');$('profileNameInput').focus()});
-  activeProfile=safeRead(PROFILE_KEY);if(activeProfile){renderProfile();profileOverlay.classList.add('hidden')}else{document.body.classList.add('profile-open');openProfileEditor()}
-  const navTabs=[...document.querySelectorAll('.nav-btn')];
-  function activateTab(button){navTabs.forEach(item=>{const isActive=item===button;item.classList.toggle('active',isActive);item.setAttribute('aria-selected',String(isActive));item.tabIndex=isActive?0:-1});document.querySelectorAll('.view').forEach(view=>view.classList.remove('active'));$(button.dataset.view+'View').classList.add('active')}
-  navTabs.forEach((button,index)=>{button.addEventListener('click',()=>activateTab(button));button.addEventListener('keydown',event=>{let next=null;if(event.key==='ArrowRight')next=navTabs[(index+1)%navTabs.length];else if(event.key==='ArrowLeft')next=navTabs[(index-1+navTabs.length)%navTabs.length];else if(event.key==='Home')next=navTabs[0];else if(event.key==='End')next=navTabs.at(-1);if(!next)return;event.preventDefault();activateTab(next);next.focus()})});
-  data.stations.forEach(station=>{const option=document.createElement('option');option.value=station.name;option.textContent=station.name;$('stationSelect').appendChild(option)});
-  $('dateInput').min=data.dataset.forecastStart;$('dateInput').max=data.dataset.forecastEnd;const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);const localIso=[tomorrow.getFullYear(),String(tomorrow.getMonth()+1).padStart(2,'0'),String(tomorrow.getDate()).padStart(2,'0')].join('-');$('dateInput').value=localIso>=data.dataset.forecastStart&&localIso<=data.dataset.forecastEnd?localIso:data.dataset.forecastStart;const savedPreferences=readPreferences();if(savedPreferences?.station&&data.stations.some(station=>station.name===savedPreferences.station))$('stationSelect').value=savedPreferences.station;if(savedPreferences?.date&&savedPreferences.date>=data.dataset.forecastStart&&savedPreferences.date<=data.dataset.forecastEnd)$('dateInput').value=savedPreferences.date;
-  $('coverageChip').textContent=`Cobertura validada: ${shortDate(data.dataset.startDate)} – ${shortDate(data.dataset.endDate)}`;$('verifiedChip').textContent=`Dataset oficial · corte al ${shortDate(data.dataset.endDate)}`;$('trainCutoff').textContent=shortDate(data.stations[0].metrics.testStart);$('sourceLink').href=data.source.url;$('officialSource').href=data.source.url;
-  const levelCopy={baja:'Se espera una afluencia inferior a la habitual para esta estación en esa fecha.',media:'Se espera una afluencia cercana al comportamiento habitual de esta estación.',alta:'Se espera una afluencia superior a la habitual para esta estación en esa fecha.'};
-  function updatePrediction(){
-    currentStation=data.stations.find(s=>s.name===$('stationSelect').value)||data.stations[0];const date=$('dateInput').value;const prediction=currentStation.predictions[date];if(!prediction){$('resultMessage').textContent='Selecciona una fecha dentro del horizonte disponible.';return}
-    const median=currentStation.summary.median;const delta=(prediction.value-median)/median*100;$('predictionValue').textContent=format(prediction.value);$('levelBadge').textContent=prediction.level;$('levelBadge').className='level-badge '+prediction.level;$('resultMessage').innerHTML=`<strong>${currentStation.name} · ${shortDate(date)}.</strong> ${levelCopy[prediction.level]}`;$('relativeValue').textContent=`${delta>=0?'+':''}${Math.round(delta)}%`;
-    $('lowThreshold').textContent=`Menos de ${format(currentStation.summary.lowThreshold)}`;$('midThreshold').textContent=`${format(currentStation.summary.lowThreshold)} – ${format(currentStation.summary.highThreshold)}`;$('highThreshold').textContent=`Más de ${format(currentStation.summary.highThreshold)}`;$('modelMae').textContent=format(currentStation.metrics.modelMae);$('baselineMae').textContent=format(currentStation.metrics.baselineMae);$('testPeriod').textContent=`${shortDate(currentStation.metrics.testStart)} – ${shortDate(currentStation.metrics.testEnd)}`;
-    const gain=(currentStation.metrics.baselineMae-currentStation.metrics.modelMae)/currentStation.metrics.baselineMae*100;const comparison=$('comparisonNote');comparison.classList.toggle('warn',gain<=0);comparison.textContent=gain>0?`El modelo reduce el error absoluto ${gain.toFixed(1)}% frente a la línea base en esta estación.`:`En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;drawChart(currentStation,prediction.value,date);document.querySelector('.result-card').classList.remove('animate');requestAnimationFrame(()=>document.querySelector('.result-card').classList.add('animate'))
+  const data = window.MINI_YOLOTZIN_DATA;
+  if (!data) {
+    document.body.innerHTML = '<main style="padding:40px;font-family:system-ui;color:#f4f8fb;background:#081019;min-height:100vh"><h1>No se pudo cargar el modelo</h1><p>Verifica que model-data.js esté junto al archivo HTML.</p></main>';
+    return;
   }
-  function drawChart(station,prediction,date){
-    const svg=$('historyChart'),width=760,height=235,pad={l:52,r:24,t:15,b:34};svg.setAttribute('viewBox',`0 0 ${width} ${height}`);const values=station.history.map(item=>item.value).concat(prediction),max=Math.max(...values)*1.12,min=Math.max(0,Math.min(...values)*.72),x=i=>pad.l+i*(width-pad.l-pad.r)/(station.history.length),y=v=>pad.t+(max-v)*(height-pad.t-pad.b)/(max-min||1),ticks=[min,(min+max)/2,max];let html=ticks.map(v=>`<line x1="${pad.l}" y1="${y(v)}" x2="${width-pad.r}" y2="${y(v)}" stroke="#ebe7ec"/><text x="${pad.l-9}" y="${y(v)+4}" text-anchor="end" fill="#8a8592" font-size="10">${Math.round(v/1000)}k</text>`).join('');const points=station.history.map((item,i)=>`${x(i)},${y(item.value)}`).join(' '),area=`${pad.l},${height-pad.b} ${points} ${x(station.history.length-1)},${height-pad.b}`;html+=`<polygon points="${area}" fill="rgba(31,168,154,.09)"/><polyline points="${points}" fill="none" stroke="#1fa89a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;station.history.forEach((item,i)=>{if(i%3===0||i===station.history.length-1)html+=`<text x="${x(i)}" y="${height-10}" text-anchor="middle" fill="#8a8592" font-size="9">${monthDate(item.month)}</text>`});const lastX=x(station.history.length-1),forecastX=x(station.history.length);html+=`<line x1="${lastX}" y1="${y(station.history.at(-1).value)}" x2="${forecastX}" y2="${y(prediction)}" stroke="#ef3d78" stroke-width="2" stroke-dasharray="5 5"/><line x1="${forecastX}" y1="${pad.t}" x2="${forecastX}" y2="${height-pad.b}" stroke="#ef3d78" stroke-opacity=".16"/><circle cx="${forecastX}" cy="${y(prediction)}" r="7" fill="#ef3d78" stroke="white" stroke-width="3"><title>${shortDate(date)}: ${format(prediction)}</title></circle><text x="${forecastX}" y="${Math.max(13,y(prediction)-13)}" text-anchor="end" fill="#b72558" font-size="10" font-weight="700">${format(prediction)}</text>`;svg.innerHTML=html;
-    const first=station.history[0],last=station.history.at(-1),peak=station.history.reduce((a,b)=>b.value>a.value?b:a),low=station.history.reduce((a,b)=>b.value<a.value?b:a);svg.setAttribute('aria-label',`${station.name}: promedio mensual observado de ${monthDate(first.month)} a ${monthDate(last.month)}. Último mes ${format(last.value)}; máximo ${format(peak.value)} en ${monthDate(peak.month)}; mínimo ${format(low.value)} en ${monthDate(low.month)}. Estimación para ${shortDate(date)}: ${format(prediction)}.`)
-  }
-  const NS='http://www.w3.org/2000/svg',lineColors={'1':'#e94b8c','2':'#2789c8','3':'#b7a52b','4':'#75c9bb','5':'#f1cb32','6':'#d53342','7':'#dc762d','8':'#36a95b','9':'#8c5a3c','A':'#9b4b91','B':'#a7afb7','12':'#c7a44c'};
-  const mapRoutes={
-    '1':[['Observatorio',70,285],['Tacubaya',145,285],['Chapultepec',215,285],['Insurgentes',300,285],['Balderas',405,285],['Salto del Agua',465,285],['Pino Suárez',530,285],['Candelaria',635,285],['San Lázaro',710,285],['Pantitlán',855,285]],
-    '2':[['Cuatro Caminos',175,60],['Tacuba',175,135],['Normal',235,185],['Hidalgo',340,225],['Bellas Artes',410,225],['Zócalo',485,225],['Pino Suárez',530,285],['Chabacano',530,370],['Tasqueña',530,545]],
-    '3':[['Indios Verdes',350,45],['Deportivo 18 de Marzo',350,100],['La Raza',350,155],['Guerrero',350,195],['Hidalgo',340,225],['Balderas',405,285],['Centro Médico',420,345],['Zapata',420,430],['Universidad',420,555]],
-    '4':[['Martín Carrera',690,100],['Consulado',690,160],['Morelos',690,220],['Candelaria',635,285],['Jamaica',635,355],['Santa Anita',635,410]],
-    '5':[['Politécnico',260,45],['Instituto del Petróleo',300,100],['La Raza',350,155],['Consulado',690,160],['Oceanía',770,205],['Pantitlán',855,285]],
-    '6':[['El Rosario',75,100],['Deportivo 18 de Marzo',350,100],['Martín Carrera',690,100]],
-    '7':[['El Rosario',75,100],['Tacuba',175,135],['Tacubaya',145,285],['Mixcoac',270,430],['Barranca del Muerto',270,505]],
-    '8':[['Garibaldi',430,160],['Bellas Artes',410,225],['Salto del Agua',465,285],['Chabacano',530,370],['Santa Anita',635,410],['Constitución de 1917',835,480]],
-    '9':[['Tacubaya',145,285],['Chilpancingo',335,330],['Centro Médico',420,345],['Chabacano',530,370],['Jamaica',635,355],['Pantitlán',855,285]],
-    'A':[['Pantitlán',855,285],['Agrícola Oriental',880,325],['Guelatao',905,365],['Santa Marta',930,410],['La Paz',965,455]],
-    'B':[['Buenavista',250,165],['Guerrero',350,195],['Garibaldi',430,160],['Morelos',690,220],['San Lázaro',710,285],['Oceanía',770,205],['Ciudad Azteca',905,75]],
-    '12':[['Mixcoac',270,430],['Zapata',420,430],['Ermita',530,430],['Atlalilco',675,455],['Tláhuac',900,565]]
+
+  // ---------- Utilidades ----------
+  const $ = id => document.getElementById(id);
+  const format = n => Math.round(Number(n)).toLocaleString('es-MX');
+  const shortDate = iso => new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')).replace('.', '');
+  const monthDate = ym => new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(ym + '-15T12:00:00Z')).replace('.', '');
+  const weekday = iso => { const name = new Intl.DateTimeFormat('es-MX', { weekday: 'long', timeZone: 'UTC' }).format(new Date(iso + 'T12:00:00Z')); return name.charAt(0).toUpperCase() + name.slice(1); };
+  const signed = value => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
+  const relative = (station, value) => (value - station.summary.median) / station.summary.median * 100;
+  const gainOf = station => (station.metrics.baselineMae - station.metrics.modelMae) / station.metrics.baselineMae * 100;
+
+  const stations = data.stations;
+  const byName = new Map(stations.map(station => [station.name, station]));
+  const dates = Object.keys(stations[0].predictions);
+  const dataset = data.dataset;
+  const levelName = { baja: 'Demanda baja', media: 'Demanda media', alta: 'Demanda alta' };
+  const levelColor = { baja: '#62d394', media: '#ffbd59', alta: '#ff5d73' };
+  const levelCopy = {
+    baja: 'Se espera una afluencia inferior a la habitual para esta estación en esa fecha.',
+    media: 'Se espera una afluencia cercana al comportamiento habitual de esta estación.',
+    alta: 'Se espera una afluencia superior a la habitual para esta estación en esa fecha.'
   };
-  const modelByName=new Map(data.stations.map(station=>[station.name,station])),mapNodes=new Map(),mapDates=Object.keys(data.stations[0].predictions),mapState={dateIndex:Math.max(0,mapDates.indexOf($('dateInput').value)),selected:'Indios Verdes',playing:false,speed:1,zoom:1,tx:0,ty:0,drag:null,timer:null};
-  const demandColor=level=>level==='baja'?'#2ca66f':level==='media'?'#ffb347':'#ef3d78';
-  const svgMake=(tag,attrs={},parent=$('networkViewport'))=>{const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([key,value])=>el.setAttribute(key,value));parent.appendChild(el);return el};
-  function initNetworkMap(){
-    const viewport=$('networkViewport');
-    for(let x=35;x<1040;x+=55)svgMake('line',{x1:x,y1:0,x2:x,y2:640,class:'net-grid'});
-    for(let y=35;y<640;y+=55)svgMake('line',{x1:0,y1:y,x2:1040,y2:y,class:'net-grid'});
-    Object.entries(mapRoutes).forEach(([line,route])=>{const points=route.map(item=>`${item[1]},${item[2]}`).join(' ');svgMake('polyline',{points,class:'net-route-bg'});svgMake('polyline',{points,class:'net-route',stroke:lineColors[line]});const [name,x,y]=route[0];const group=svgMake('g',{transform:`translate(${x-18} ${y-18})`});svgMake('circle',{r:11,fill:lineColors[line],stroke:'#151329','stroke-width':3},group);const text=svgMake('text',{x:0,y:3,'text-anchor':'middle',fill:'#fff','font-size':8,'font-weight':850},group);text.textContent=line});
-    Object.entries(mapRoutes).forEach(([line,route])=>route.forEach(([name,x,y])=>{if(mapNodes.has(name)){const node=mapNodes.get(name);if(!node.lines.includes(line))node.lines.push(line);return}mapNodes.set(name,{name,x,y,lines:[line]})}));
-    mapNodes.forEach(node=>{const modeled=modelByName.has(node.name),group=svgMake('g',{class:`net-station${modeled?' modeled':''}`});let halo=null;if(modeled)halo=svgMake('circle',{cx:node.x,cy:node.y,r:18,class:'net-halo',fill:'#ffb347'},group);const core=svgMake('circle',{cx:node.x,cy:node.y,r:modeled?7:4.2,class:'net-station-core'},group);const hit=svgMake('circle',{cx:node.x,cy:node.y,r:modeled?19:10,class:'net-hit'},group);if(modeled){hit.setAttribute('tabindex','0');hit.setAttribute('role','button');hit.setAttribute('aria-label',`Ver ${node.name}`);const choose=event=>{event.stopPropagation();mapState.selected=node.name;$('stationSelect').value=node.name;updatePrediction();updateNetworkMap();savePreferences()};hit.addEventListener('pointerdown',event=>event.stopPropagation());hit.addEventListener('click',choose);hit.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(event)}})}
-      const showLabel=modeled||node.lines.length>1||['Pantitlán','El Rosario','Ciudad Azteca','Tláhuac','La Paz','Observatorio'].includes(node.name);if(showLabel){const right=node.x<790,label=svgMake('text',{x:node.x+(right?10:-10),y:node.y-9,class:`net-label${modeled?' modeled':''}`,'text-anchor':right?'start':'end'},group);label.textContent=node.name}node.el={group,halo,core}});
-    const map=$('networkMap');map.addEventListener('wheel',event=>{event.preventDefault();const rect=map.getBoundingClientRect(),cx=(event.clientX-rect.left)/rect.width*1040,cy=(event.clientY-rect.top)/rect.height*640;setMapZoom(mapState.zoom*(event.deltaY<0?1.12:.89),cx,cy)},{passive:false});map.addEventListener('pointerdown',event=>{if(event.button!==0)return;map.setPointerCapture(event.pointerId);mapState.drag={x:event.clientX,y:event.clientY,tx:mapState.tx,ty:mapState.ty};map.classList.add('dragging')});map.addEventListener('pointermove',event=>{if(!mapState.drag)return;const rect=map.getBoundingClientRect();mapState.tx=mapState.drag.tx+(event.clientX-mapState.drag.x)*1040/rect.width;mapState.ty=mapState.drag.ty+(event.clientY-mapState.drag.y)*640/rect.height;applyMapTransform()});const finish=()=>{mapState.drag=null;map.classList.remove('dragging')};map.addEventListener('pointerup',finish);map.addEventListener('pointercancel',finish)
+  const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
+  const defaultIndex = () => Math.max(0, dates.indexOf(tomorrowIso));
+
+  const state = { station: stations[0].name, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
+
+  // ---------- Perfil local ----------
+  const PROFILE_KEY = 'mini_yolotzin_profile_v1', PREFS_PREFIX = 'mini_yolotzin_prefs_v1_', DEFAULT_COLOR = '#ff6b35';
+  const profileOverlay = $('profileOverlay'), profileForm = $('profileForm'), appShell = document.querySelector('.shell');
+  let activeProfile = null, selectedProfileColor = DEFAULT_COLOR, profileReturnFocus = null;
+  const safeRead = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
+  const safeWrite = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
+  const profileInitials = name => name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'MY';
+
+  function renderProfile() {
+    if (!activeProfile) return;
+    $('profileAvatar').textContent = profileInitials(activeProfile.name);
+    $('profileAvatar').style.background = activeProfile.color;
+    $('profileDisplayName').textContent = activeProfile.name;
+    $('profileDisplayGroup').textContent = activeProfile.group || 'Perfil local';
   }
-  function applyMapTransform(){$('networkViewport').setAttribute('transform',`translate(${mapState.tx} ${mapState.ty}) scale(${mapState.zoom})`)}
-  function setMapZoom(next,cx=520,cy=320){const previous=mapState.zoom;mapState.zoom=Math.max(.72,Math.min(2.8,next));mapState.tx=cx-(cx-mapState.tx)*(mapState.zoom/previous);mapState.ty=cy-(cy-mapState.ty)*(mapState.zoom/previous);applyMapTransform()}
-  function updateNetworkMap(){
-    const date=mapDates[mapState.dateIndex],dayName=new Intl.DateTimeFormat('es-MX',{weekday:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));$('mapDateLabel').textContent=shortDate(date);$('mapDayLabel').textContent=dayName.charAt(0).toUpperCase()+dayName.slice(1)+' · demanda diaria estimada';$('mapDateRange').value=mapState.dateIndex;$('dateInput').value=date;
-    let total=0,high=0;data.stations.forEach(station=>{const prediction=station.predictions[date];total+=prediction.value;if(prediction.level==='alta')high++;const node=mapNodes.get(station.name);if(!node)return;node.el.halo.setAttribute('fill',demandColor(prediction.level));node.el.halo.setAttribute('r',String(14+Math.min(18,prediction.value/7000)));node.el.halo.setAttribute('opacity',prediction.level==='alta'?'.42':'.27');node.el.core.setAttribute('stroke',station.name===mapState.selected?'#ffffff':demandColor(prediction.level));node.el.group.classList.toggle('selected',station.name===mapState.selected)});
-    const station=modelByName.get(mapState.selected),prediction=station.predictions[date],relative=(prediction.value-station.summary.median)/station.summary.median*100;$('mapStationName').textContent=station.name;$('mapLevel').textContent=prediction.level;$('mapLevel').className='level-badge '+prediction.level;$('mapLevel').style.minHeight='24px';$('mapLevel').style.padding='4px 9px';$('mapEstimate').textContent=format(prediction.value);$('mapRelative').textContent=`${relative>=0?'+':''}${Math.round(relative)}%`;$('mapMae').textContent=format(station.metrics.modelMae);$('mapObservations').textContent=format(station.summary.observations);$('mapRecommendation').textContent=levelCopy[prediction.level];$('mapNetworkTotal').textContent=format(total);$('mapHighCount').textContent=`${high} de 5`;updatePrediction()
+  function chooseProfileColor(color) {
+    selectedProfileColor = color;
+    document.querySelectorAll('.color-choice').forEach(choice => {
+      const isActive = choice.dataset.color === color;
+      choice.classList.toggle('active', isActive);
+      choice.setAttribute('aria-pressed', String(isActive));
+    });
   }
-  function setMapDateFromMain(){const index=mapDates.indexOf($('dateInput').value);if(index>=0){mapState.dateIndex=index;updateNetworkMap()}}
-  function toggleMapPlayback(){mapState.playing=!mapState.playing;$('mapPlay').textContent=mapState.playing?'Pausar':'Reproducir';if(mapState.timer)clearInterval(mapState.timer);if(mapState.playing)mapState.timer=setInterval(()=>{mapState.dateIndex=(mapState.dateIndex+mapState.speed)%mapDates.length;updateNetworkMap()},850)}
-  initNetworkMap();$('rangeStart').textContent=shortDate(mapDates[0]);$('rangeEnd').textContent=shortDate(mapDates.at(-1));$('mapDateRange').max=mapDates.length-1;$('mapDateRange').addEventListener('input',event=>{mapState.dateIndex=+event.target.value;updateNetworkMap();savePreferences()});$('mapPlay').addEventListener('click',toggleMapPlayback);$('mapResetDate').addEventListener('click',()=>{const index=mapDates.indexOf(localIso);mapState.dateIndex=index>=0?index:0;updateNetworkMap();savePreferences()});document.querySelectorAll('[data-map-speed]').forEach(button=>button.addEventListener('click',()=>{mapState.speed=+button.dataset.mapSpeed;document.querySelectorAll('[data-map-speed]').forEach(item=>item.classList.toggle('active',item===button))}));$('mapZoomIn').addEventListener('click',()=>setMapZoom(mapState.zoom*1.22));$('mapZoomOut').addEventListener('click',()=>setMapZoom(mapState.zoom/1.22));$('mapZoomReset').addEventListener('click',()=>{mapState.zoom=1;mapState.tx=0;mapState.ty=0;applyMapTransform()});
-  $('predictButton').addEventListener('click',()=>{updatePrediction();savePreferences()});$('stationSelect').addEventListener('change',event=>{mapState.selected=event.target.value;updateNetworkMap();savePreferences()});$('dateInput').addEventListener('change',()=>{setMapDateFromMain();savePreferences()});
-  $('featureList').innerHTML=data.model.features.map(feature=>`<span>${feature}</span>`).join('');$('totalRows').textContent=format(data.dataset.validRows);$('dataPeriod').textContent=`${shortDate(data.dataset.startDate)} – ${shortDate(data.dataset.endDate)}`;$('stationCount').textContent=format(data.dataset.stations);$('lineCount').textContent=format(data.dataset.lines);$('duplicateCount').textContent=format(data.dataset.duplicateKeys);$('nullCount').textContent=format(Object.values(data.dataset.nulls).reduce((a,b)=>a+b,0));$('selectedRows').textContent=format(data.dataset.selectedRows);$('sourceName').textContent=data.source.name;$('sourceDescription').textContent=`${data.source.publisher} · ${data.source.license} · Descarga utilizada hasta ${shortDate(data.dataset.endDate)}.`;
-  $('stationTable').innerHTML=data.stations.map(station=>{const gain=(station.metrics.baselineMae-station.metrics.modelMae)/station.metrics.baselineMae*100;return `<tr><td><strong>${station.name}</strong></td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain>0?'#258557':'#9b6b14'}">${gain>0?`−${gain.toFixed(1)}% error`:'Base competitiva'}</td></tr>`}).join('');updatePrediction();setMapDateFromMain();
+  function openProfileEditor() {
+    profileReturnFocus = document.activeElement;
+    profileOverlay.classList.remove('hidden');
+    document.body.classList.add('profile-open');
+    appShell.inert = true;
+    appShell.setAttribute('aria-hidden', 'true');
+    $('profileTitle').textContent = activeProfile ? 'Editar perfil' : 'Crear perfil de clase';
+    $('profileNameInput').value = activeProfile?.name || '';
+    $('profileGroupInput').value = activeProfile?.group || '';
+    chooseProfileColor(activeProfile?.color || DEFAULT_COLOR);
+    $('newProfileButton').hidden = !activeProfile;
+    $('profileError').textContent = '';
+    $('profileNameInput').focus();
+  }
+  function closeProfileEditor() {
+    if (!activeProfile) return;
+    profileOverlay.classList.add('hidden');
+    document.body.classList.remove('profile-open');
+    appShell.inert = false;
+    appShell.removeAttribute('aria-hidden');
+    const target = profileReturnFocus && document.contains(profileReturnFocus) && profileReturnFocus !== document.body ? profileReturnFocus : $('profileButton');
+    profileReturnFocus = null;
+    target.focus();
+  }
+  const preferencesKey = () => activeProfile ? PREFS_PREFIX + activeProfile.id : null;
+  const readPreferences = () => { const key = preferencesKey(); return key ? safeRead(key) : null; };
+  function savePreferences() {
+    const key = preferencesKey();
+    if (key) safeWrite(key, { station: state.station, date: dates[state.index], updatedAt: new Date().toISOString() });
+  }
+
+  document.querySelectorAll('.color-choice').forEach(choice => choice.addEventListener('click', () => chooseProfileColor(choice.dataset.color)));
+  document.addEventListener('keydown', event => {
+    if (profileOverlay.classList.contains('hidden')) return;
+    if (event.key === 'Escape') { if (activeProfile) { event.preventDefault(); closeProfileEditor(); } return; }
+    if (event.key !== 'Tab') return;
+    const focusable = [...profileOverlay.querySelectorAll('input,button')].filter(el => !el.hidden && !el.disabled);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
+  profileForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const name = $('profileNameInput').value.trim(), group = $('profileGroupInput').value.trim();
+    if (name.length < 2) { $('profileError').textContent = 'Escribe un nombre o apodo de al menos dos caracteres.'; return; }
+    activeProfile = {
+      id: activeProfile?.id || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      name, group, color: selectedProfileColor,
+      createdAt: activeProfile?.createdAt || new Date().toISOString()
+    };
+    safeWrite(PROFILE_KEY, activeProfile);
+    renderProfile();
+    closeProfileEditor();
+    savePreferences();
+  });
+  $('profileButton').addEventListener('click', openProfileEditor);
+  $('newProfileButton').addEventListener('click', () => {
+    activeProfile = null;
+    $('profileNameInput').value = '';
+    $('profileGroupInput').value = '';
+    $('profileTitle').textContent = 'Crear otro perfil';
+    $('newProfileButton').hidden = true;
+    chooseProfileColor(DEFAULT_COLOR);
+    $('profileNameInput').focus();
+  });
+
+  // ---------- Pestañas ----------
+  const navTabs = [...document.querySelectorAll('.nav-btn')];
+  function activateTab(button) {
+    navTabs.forEach(item => {
+      const isActive = item === button;
+      item.classList.toggle('active', isActive);
+      item.setAttribute('aria-selected', String(isActive));
+      item.tabIndex = isActive ? 0 : -1;
+    });
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    $(button.dataset.view + 'View').classList.add('active');
+  }
+  navTabs.forEach((button, index) => {
+    button.addEventListener('click', () => activateTab(button));
+    button.addEventListener('keydown', event => {
+      let next = null;
+      if (event.key === 'ArrowRight') next = navTabs[(index + 1) % navTabs.length];
+      else if (event.key === 'ArrowLeft') next = navTabs[(index - 1 + navTabs.length) % navTabs.length];
+      else if (event.key === 'Home') next = navTabs[0];
+      else if (event.key === 'End') next = navTabs.at(-1);
+      if (!next) return;
+      event.preventDefault();
+      activateTab(next);
+      next.focus();
+    });
+  });
+
+  // ---------- Mapa esquemático ----------
+  const NS = 'http://www.w3.org/2000/svg';
+  const lineColors = { '1': '#e94b8c', '2': '#2789c8', '3': '#b7a52b', '4': '#75c9bb', '5': '#f1cb32', '6': '#d53342', '7': '#dc762d', '8': '#36a95b', '9': '#8c5a3c', 'A': '#9b4b91', 'B': '#a7afb7', '12': '#c7a44c' };
+  const mapRoutes = {
+    '1': [['Observatorio',70,285],['Tacubaya',145,285],['Chapultepec',215,285],['Insurgentes',300,285],['Balderas',405,285],['Salto del Agua',465,285],['Pino Suárez',530,285],['Candelaria',635,285],['San Lázaro',710,285],['Pantitlán',855,285]],
+    '2': [['Cuatro Caminos',175,60],['Tacuba',175,135],['Normal',235,185],['Hidalgo',340,225],['Bellas Artes',410,225],['Zócalo',485,225],['Pino Suárez',530,285],['Chabacano',530,370],['Tasqueña',530,545]],
+    '3': [['Indios Verdes',350,45],['Deportivo 18 de Marzo',350,100],['La Raza',350,155],['Guerrero',350,195],['Hidalgo',340,225],['Balderas',405,285],['Centro Médico',420,345],['Zapata',420,430],['Universidad',420,555]],
+    '4': [['Martín Carrera',690,100],['Consulado',690,160],['Morelos',690,220],['Candelaria',635,285],['Jamaica',635,355],['Santa Anita',635,410]],
+    '5': [['Politécnico',260,45],['Instituto del Petróleo',300,100],['La Raza',350,155],['Consulado',690,160],['Oceanía',770,205],['Pantitlán',855,285]],
+    '6': [['El Rosario',75,100],['Deportivo 18 de Marzo',350,100],['Martín Carrera',690,100]],
+    '7': [['El Rosario',75,100],['Tacuba',175,135],['Tacubaya',145,285],['Mixcoac',270,430],['Barranca del Muerto',270,505]],
+    '8': [['Garibaldi',430,160],['Bellas Artes',410,225],['Salto del Agua',465,285],['Chabacano',530,370],['Santa Anita',635,410],['Constitución de 1917',835,480]],
+    '9': [['Tacubaya',145,285],['Chilpancingo',335,330],['Centro Médico',420,345],['Chabacano',530,370],['Jamaica',635,355],['Pantitlán',855,285]],
+    'A': [['Pantitlán',855,285],['Agrícola Oriental',880,325],['Guelatao',905,365],['Santa Marta',930,410],['La Paz',965,455]],
+    'B': [['Buenavista',250,165],['Guerrero',350,195],['Garibaldi',430,160],['Morelos',690,220],['San Lázaro',710,285],['Oceanía',770,205],['Ciudad Azteca',905,75]],
+    '12': [['Mixcoac',270,430],['Zapata',420,430],['Ermita',530,430],['Atlalilco',675,455],['Tláhuac',900,565]]
+  };
+  const terminals = ['Pantitlán', 'El Rosario', 'Ciudad Azteca', 'Tláhuac', 'La Paz', 'Observatorio', 'Tasqueña', 'Cuatro Caminos', 'Politécnico'];
+  const mapNodes = new Map();
+  const svg = $('networkMap'), viewport = $('networkViewport'), tooltip = $('tooltip');
+  const make = (tag, attrs = {}, parent = viewport) => {
+    const el = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+    parent.appendChild(el);
+    return el;
+  };
+
+  function initNetworkMap() {
+    for (let x = 40; x < 1040; x += 55) make('line', { x1: x, y1: 0, x2: x, y2: 640, class: 'grid-line' });
+    for (let y = 35; y < 640; y += 55) make('line', { x1: 0, y1: y, x2: 1040, y2: y, class: 'grid-line' });
+    make('path', { d: 'M92 76 C190 20 305 28 388 62 C510 18 665 42 746 105 C860 117 976 209 954 322 C1020 410 930 564 790 596 C652 634 546 572 448 592 C304 622 174 558 129 461 C35 393 24 244 92 76Z', class: 'borough' });
+
+    Object.entries(mapRoutes).forEach(([line, route]) => {
+      const points = route.map(item => `${item[1]},${item[2]}`).join(' ');
+      make('polyline', { points, class: 'route-bg' });
+      make('polyline', { points, class: `route${line === '3' ? '' : ' dim'}`, stroke: lineColors[line] });
+      const [, x, y] = route[0];
+      const label = make('g', { class: 'route-label', transform: `translate(${x - 18} ${y - 18})` });
+      make('circle', { r: 12, fill: lineColors[line] }, label);
+      make('text', { x: 0, y: 1 }, label).textContent = line;
+    });
+
+    Object.entries(mapRoutes).forEach(([line, route]) => route.forEach(([name, x, y]) => {
+      if (!mapNodes.has(name)) mapNodes.set(name, { name, x, y, lines: [] });
+      const node = mapNodes.get(name);
+      if (!node.lines.includes(line)) node.lines.push(line);
+    }));
+
+    mapNodes.forEach(node => {
+      const modeled = byName.has(node.name);
+      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}` });
+      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 14, class: 'station-halo', fill: levelColor.media, filter: 'url(#glow)' }, group) : null;
+      make('circle', { cx: node.x, cy: node.y, r: modeled ? 7 : node.lines.length > 1 ? 5.5 : 4, class: 'station-core' }, group);
+      const hit = make('circle', { cx: node.x, cy: node.y, r: modeled ? 19 : 10, class: 'station-hit' }, group);
+      if (modeled || node.lines.length > 1 || terminals.includes(node.name)) {
+        const right = node.x < 790;
+        make('text', { x: node.x + (right ? 11 : -11), y: node.y - 10, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
+      }
+      group.addEventListener('pointerenter', event => showTooltip(event, node));
+      group.addEventListener('pointermove', moveTooltip);
+      group.addEventListener('pointerleave', hideTooltip);
+      if (modeled) {
+        hit.setAttribute('tabindex', '0');
+        hit.setAttribute('role', 'button');
+        hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
+        const choose = event => { event.stopPropagation(); selectStation(node.name); };
+        hit.addEventListener('pointerdown', event => event.stopPropagation());
+        hit.addEventListener('click', choose);
+        hit.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(event); } });
+      }
+      node.el = { group, halo };
+    });
+
+    svg.addEventListener('wheel', event => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      setZoom(state.zoom * (event.deltaY < 0 ? 1.12 : .89), (event.clientX - rect.left) / rect.width * 1040, (event.clientY - rect.top) / rect.height * 640);
+    }, { passive: false });
+    svg.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      svg.setPointerCapture(event.pointerId);
+      state.drag = { x: event.clientX, y: event.clientY, tx: state.tx, ty: state.ty };
+      svg.classList.add('dragging');
+      hideTooltip();
+    });
+    svg.addEventListener('pointermove', event => {
+      if (!state.drag) return;
+      const rect = svg.getBoundingClientRect();
+      state.tx = state.drag.tx + (event.clientX - state.drag.x) * 1040 / rect.width;
+      state.ty = state.drag.ty + (event.clientY - state.drag.y) * 640 / rect.height;
+      applyTransform();
+    });
+    const endDrag = () => { state.drag = null; svg.classList.remove('dragging'); };
+    svg.addEventListener('pointerup', endDrag);
+    svg.addEventListener('pointercancel', endDrag);
+  }
+
+  function showTooltip(event, node) {
+    if (state.drag) return;
+    const station = byName.get(node.name);
+    if (station) {
+      const prediction = station.predictions[dates[state.index]];
+      tooltip.innerHTML = `<strong>${node.name}</strong><span>${format(prediction.value)} accesos estimados · ${levelName[prediction.level].toLowerCase()}</span>`;
+    } else {
+      tooltip.innerHTML = `<strong>${node.name}</strong><span>Línea ${node.lines.join(', ')} · contexto de red, sin modelo</span>`;
+    }
+    tooltip.classList.add('show');
+    moveTooltip(event);
+  }
+  function moveTooltip(event) {
+    const box = svg.parentElement.getBoundingClientRect();
+    let x = event.clientX - box.left + 14, y = event.clientY - box.top + 14;
+    if (x + 210 > box.width) x -= 225;
+    if (y + 70 > box.height) y -= 82;
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+  }
+  function hideTooltip() { tooltip.classList.remove('show'); }
+  function applyTransform() { viewport.setAttribute('transform', `translate(${state.tx} ${state.ty}) scale(${state.zoom})`); }
+  function setZoom(next, cx = 520, cy = 320) {
+    const previous = state.zoom;
+    state.zoom = Math.max(.72, Math.min(2.8, next));
+    state.tx = cx - (cx - state.tx) * (state.zoom / previous);
+    state.ty = cy - (cy - state.ty) * (state.zoom / previous);
+    applyTransform();
+  }
+
+  // ---------- Render principal ----------
+  function render() {
+    const date = dates[state.index];
+    const station = byName.get(state.station);
+    const prediction = station.predictions[date];
+    let total = 0, high = 0;
+
+    const rows = stations.map(item => {
+      const p = item.predictions[date];
+      total += p.value;
+      if (p.level === 'alta') high++;
+      const node = mapNodes.get(item.name);
+      if (node) {
+        node.el.halo.setAttribute('fill', levelColor[p.level]);
+        node.el.halo.setAttribute('r', (12 + Math.min(20, p.value / 6000)).toFixed(1));
+        node.el.halo.setAttribute('opacity', p.level === 'alta' ? '.5' : '.32');
+        node.el.group.classList.toggle('selected', item.name === state.station);
+      }
+      return { station: item, prediction: p, rel: relative(item, p.value) };
+    });
+
+    // Barra superior
+    $('totalFlow').textContent = format(total);
+    $('highCount').textContent = String(high);
+    $('stationMae').textContent = `±${format(station.metrics.modelMae)}`;
+
+    // Controles
+    $('stationSelect').value = station.name;
+    $('dateLabel').textContent = shortDate(date);
+    $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
+    $('dateRange').value = state.index;
+    $('dateInput').value = date;
+    $('legendLow').textContent = `< ${format(station.summary.lowThreshold)}`;
+    $('legendMid').textContent = `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}`;
+    $('legendHigh').textContent = `> ${format(station.summary.highThreshold)}`;
+
+    // Detalle
+    const rel = relative(station, prediction.value);
+    $('detailName').textContent = station.name;
+    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea 3`;
+    $('riskBox').className = `risk ${prediction.level}`;
+    $('riskText').textContent = levelName[prediction.level];
+    $('levelMessage').textContent = levelCopy[prediction.level];
+    $('detailEstimate').textContent = format(prediction.value);
+    $('detailRange').textContent = `accesos estimados · error típico ±${format(station.metrics.modelMae)}`;
+    $('detailRelative').textContent = signed(rel);
+    $('detailObs').textContent = format(station.summary.observations);
+    $('detailMae').textContent = format(station.metrics.modelMae);
+    $('detailBase').textContent = format(station.metrics.baselineMae);
+    const gain = gainOf(station);
+    const comparison = $('comparisonNote');
+    comparison.classList.toggle('warn', gain <= 0);
+    comparison.textContent = gain > 0
+      ? `El modelo reduce el error absoluto ${gain.toFixed(1)}% frente a la línea base en esta estación.`
+      : `En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;
+    $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.`;
+
+    renderBars(station, prediction.value, date);
+    renderHotList(rows);
+  }
+
+  function renderBars(station, prediction, date) {
+    const history = station.history;
+    const max = Math.max(prediction, ...history.map(item => item.value));
+    const bars = history.map(item => `<div class="bar" style="height:${Math.max(4, item.value / max * 100)}%" title="${monthDate(item.month)} · ${format(item.value)} accesos/día"></div>`);
+    bars.push(`<div class="bar current" style="height:${Math.max(4, prediction / max * 100)}%" title="${shortDate(date)} · ${format(prediction)} estimados"></div>`);
+    $('barChart').innerHTML = bars.join('');
+    $('axisStart').textContent = monthDate(history[0].month);
+    $('axisMid').textContent = monthDate(history[Math.floor(history.length / 2)].month);
+    $('axisEnd').textContent = monthDate(history.at(-1).month);
+    const peak = history.reduce((a, b) => b.value > a.value ? b : a), low = history.reduce((a, b) => b.value < a.value ? b : a);
+    $('barChart').setAttribute('aria-label', `${station.name}: promedio diario observado por mes de ${monthDate(history[0].month)} a ${monthDate(history.at(-1).month)}. Último mes ${format(history.at(-1).value)}; máximo ${format(peak.value)} en ${monthDate(peak.month)}; mínimo ${format(low.value)} en ${monthDate(low.month)}. Estimación para ${shortDate(date)}: ${format(prediction)}.`);
+  }
+
+  function renderHotList(rows) {
+    const sorted = [...rows].sort((a, b) => b.rel - a.rel);
+    $('hotList').innerHTML = sorted.map((row, i) => `<button class="hot-item${row.station.name === state.station ? ' active' : ''}" data-station="${row.station.name}" aria-label="${row.station.name}: ${signed(row.rel)} frente a su mediana"><span class="rank">${i + 1}</span><span class="hot-name">${row.station.name}</span><span class="hot-value" style="color:${levelColor[row.prediction.level]}">${signed(row.rel)}</span></button>`).join('');
+  }
+
+  function selectStation(name) { state.station = name; render(); savePreferences(); }
+  function setIndex(index, save = true) { state.index = Math.max(0, Math.min(dates.length - 1, index)); render(); if (save) savePreferences(); }
+
+  function setPlaying(playing) {
+    state.playing = playing;
+    $('playPause').textContent = playing ? 'Pausar' : 'Reproducir';
+    if (state.timer) clearInterval(state.timer);
+    state.timer = null;
+    if (playing) state.timer = setInterval(() => { state.index = (state.index + state.speed) % dates.length; render(); }, 850);
+    else savePreferences();
+  }
+
+  // ---------- Eventos ----------
+  $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station); });
+  $('stationSelect').addEventListener('change', event => selectStation(event.target.value));
+  $('dateRange').addEventListener('input', event => setIndex(+event.target.value));
+  $('dateInput').addEventListener('change', event => { const index = dates.indexOf(event.target.value); if (index >= 0) setIndex(index); else render(); });
+  $('stepBack').addEventListener('click', () => setIndex(state.index - 1));
+  $('stepForward').addEventListener('click', () => setIndex(state.index + 1));
+  $('playPause').addEventListener('click', () => setPlaying(!state.playing));
+  $('resetDate').addEventListener('click', () => setIndex(defaultIndex()));
+  document.querySelectorAll('.speed-btn').forEach(button => button.addEventListener('click', () => {
+    state.speed = +button.dataset.speed;
+    document.querySelectorAll('.speed-btn').forEach(item => { item.classList.toggle('active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
+  }));
+  $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.22));
+  $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.22));
+  $('zoomReset').addEventListener('click', () => { state.zoom = 1; state.tx = 0; state.ty = 0; applyTransform(); });
+
+  // ---------- Inicio ----------
+  stations.forEach(station => { const option = document.createElement('option'); option.value = station.name; option.textContent = station.name; $('stationSelect').appendChild(option); });
+  $('dateInput').min = dataset.forecastStart;
+  $('dateInput').max = dataset.forecastEnd;
+  $('dateRange').max = dates.length - 1;
+  $('rangeStart').textContent = shortDate(dates[0]);
+  $('rangeEnd').textContent = shortDate(dates.at(-1));
+  $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
+  $('trainCutoff').textContent = shortDate(stations[0].metrics.testStart);
+  $('sourceLink').href = data.source.url;
+  $('officialSource').href = data.source.url;
+
+  // Metodología y Datos
+  $('featureList').innerHTML = data.model.features.map(feature => `<span>${feature}</span>`).join('');
+  $('totalRows').textContent = format(dataset.validRows);
+  $('dataPeriod').textContent = `${shortDate(dataset.startDate)} – ${shortDate(dataset.endDate)}`;
+  $('stationCount').textContent = format(dataset.stations);
+  $('lineCount').textContent = format(dataset.lines);
+  $('duplicateCount').textContent = format(dataset.duplicateKeys);
+  $('nullCount').textContent = format(Object.values(dataset.nulls).reduce((a, b) => a + b, 0));
+  $('selectedRows').textContent = format(dataset.selectedRows);
+  $('sourceName').textContent = data.source.name;
+  $('sourceDescription').textContent = `${data.source.publisher} · ${data.source.license} · Descarga utilizada hasta ${shortDate(dataset.endDate)}.`;
+  $('stationTable').innerHTML = stations.map(station => {
+    const gain = gainOf(station);
+    return `<tr><td><strong>${station.name}</strong></td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain > 0 ? '#62d394' : '#ffbd59'}">${gain > 0 ? `−${gain.toFixed(1)}% error` : 'Base competitiva'}</td></tr>`;
+  }).join('');
+
+  // Perfil y preferencias guardadas
+  activeProfile = safeRead(PROFILE_KEY);
+  if (activeProfile) {
+    renderProfile();
+    profileOverlay.classList.add('hidden');
+    const saved = readPreferences();
+    if (saved?.station && byName.has(saved.station)) state.station = saved.station;
+    if (saved?.date && dates.includes(saved.date)) state.index = dates.indexOf(saved.date);
+  } else {
+    openProfileEditor();
+  }
+
+  initNetworkMap();
+  applyTransform();
+  render();
 })();
 </script>
 </body>
