@@ -12,13 +12,20 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 ## Qué incluye
 
-- Predicción diaria para Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad.
+- Vista **Explorar** a pantalla completa en tres columnas: controles de estación y fecha, mapa esquemático y detalle de la estación.
+- Predicción diaria para Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad, con su error típico (MAE).
 - Comparación del modelo Random Forest contra una línea base histórica.
-- Mapa esquemático con reproducción por fecha, zoom y selección de estaciones.
+- Mapa esquemático con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección de estaciones con ratón o teclado.
+- Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
+- Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
 - Perfiles locales de clase que se guardan solamente en el navegador.
 - Información de metodología, cobertura, errores y limitaciones.
 
 Las estimaciones no representan ocupación dentro de los trenes, saturación de andenes ni datos en tiempo real.
+
+| Mapa y detalle | Perfil local |
+|---|---|
+| ![Mapa con detalle de estación](assets/preview-map.png) | ![Creación del perfil local](assets/preview-profile.png) |
 
 ## Abrirla en una computadora
 
@@ -90,7 +97,8 @@ El script reemplaza `model-data.js`. El CSV está ignorado por Git y no debe sub
 
 ## Archivos principales
 
-- `index.html`: interfaz, estilos e interacciones.
+- `index.html`: interfaz, estilos e interacciones (tema oscuro, sin dependencias externas).
+- `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
 - `AGENTS.md`: reglas para asistentes de programación.
