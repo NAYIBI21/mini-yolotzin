@@ -23,7 +23,8 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 
 ## Archivos y publicación
 
-- `index.html` y `model-data.js` deben permanecer en la raíz para GitHub Pages.
+- `index.html`, `model-data.js` y `metro-catalog.js` deben permanecer en la raíz para GitHub Pages.
+- `metro-catalog.js` solo contiene ubicación de estaciones; no debe usarse para mostrar afluencia de estaciones sin modelo.
 - `scripts/build_model_data.py` genera `model-data.js` a partir de `afluencia_simple.csv`.
 - El CSV original no se versiona; está incluido en `.gitignore`.
 - Un cambio visual ordinario no debe modificar las predicciones.
@@ -33,10 +34,11 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 Antes de entregar un cambio:
 
 1. Verificar que la página abra sin errores de JavaScript.
-2. Probar las pestañas Predicción, Mapa, Metodología y Datos.
-3. Confirmar que la selección de estación y fecha actualiza la estimación.
-4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones y hacer zoom.
-5. Probar la creación y edición del perfil local.
-6. Revisar la presentación en pantalla pequeña.
-7. Resumir los archivos cambiados y cualquier limitación de la verificación.
+2. Probar las pestañas Explorar, Metodología y Datos, con clic y con las flechas del teclado.
+3. Confirmar que la selección de estación y fecha (lista, barra, fecha exacta y ±1 día) actualiza la estimación y el mapa.
+4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom.
+5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones y que las estaciones sin modelo muestran su ficha geográfica sin predicción.
+6. Probar la creación y edición del perfil local.
+7. Revisar la presentación en pantalla pequeña.
+8. Resumir los archivos cambiados y cualquier limitación de la verificación.
 
