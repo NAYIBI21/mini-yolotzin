@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 afluencia_simple.csv
 
+clima_openmeteo.json
