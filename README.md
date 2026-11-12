@@ -1,6 +1,6 @@
 # Mini Yolotzin
 
-Aplicación web académica para explorar estimaciones de afluencia diaria en cinco estaciones de la Línea 3 del Metro de la Ciudad de México.
+Aplicación web académica para explorar estimaciones de afluencia diaria en las 163 estaciones (195 registros estación-línea) del Metro de la Ciudad de México.
 
 ![Vista principal de Mini Yolotzin](assets/preview.png)
 
@@ -13,7 +13,8 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 ## Qué incluye
 
 - Vista **Explorar** a pantalla completa en tres columnas: controles de estación y fecha, mapa esquemático y detalle de la estación.
-- Predicción diaria para Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad, con su error típico (MAE).
+- Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
+- En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
 - Comparación del modelo Random Forest contra una línea base histórica.
 - Mapa geográfico de la red completa (catálogo oficial SEMOVI/STC: 163 estaciones, 195 registros estación-línea) con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
 - Búsqueda de estaciones (sin importar acentos), filtro por línea y ficha geográfica para las estaciones que no tienen modelo.
@@ -73,7 +74,7 @@ Selecciona la rama `main`, la carpeta `/(root)` y pulsa **Save**. Los cambios en
 
 Esto solo es necesario cuando se quiera actualizar el archivo oficial o volver a entrenar el modelo.
 
-1. Descarga el CSV oficial de afluencia y guárdalo en la raíz con el nombre `afluencia_simple.csv`.
+1. Descarga el CSV oficial de afluencia y guárdalo en la raíz con el nombre `afluencia_simple.csv`. SEMOVI lo actualiza una vez al mes; basta con repetir este proceso cuando se quiera incorporar un mes nuevo. El portal puede rechazar conexiones desde servidores en la nube: descárgalo desde un navegador.
 2. Crea un entorno de Python e instala las dependencias:
 
 ```bash
@@ -88,7 +89,14 @@ pip install -r requirements.txt
 python scripts/build_model_data.py
 ```
 
-El script reemplaza `model-data.js`. El CSV está ignorado por Git y no debe subirse al repositorio.
+El script reemplaza `model-data.js` (también acepta rutas: `python scripts/build_model_data.py ruta/al.csv salida.js`). Tarda alrededor de un minuto. Reglas que aplica:
+
+- Un modelo Random Forest por estación y línea; validación con los últimos 180 días observados.
+- Los días con afluencia 0 (cierres u obras, como en las Líneas 1 y 12) se excluyen del entrenamiento y la validación.
+- Los nombres que el recurso escribe distinto desde el 1 de junio de 2023 («Gómez Farias», «Peñón viejo») se unifican.
+- Las estaciones sin datos recientes o con historial insuficiente no reciben pronóstico y se reportan en `skipped`.
+
+El CSV está ignorado por Git y no debe subirse al repositorio.
 
 ## Fuente de datos
 

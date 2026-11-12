@@ -131,6 +131,14 @@
     .geo-card { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .02); color: var(--text-2); font-size: .72rem; line-height: 1.5; }
     .geo-card strong { display: block; color: var(--text); font-size: .8rem; margin-bottom: 4px; }
     .line-pills { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .station-head .line-pills { flex-wrap: nowrap; flex-shrink: 0; }
+    button.line-pill { cursor: pointer; padding: 0 6px; opacity: .55; }
+    button.line-pill.active { opacity: 1; box-shadow: 0 0 0 2px var(--panel-solid), 0 0 0 4px var(--text); }
+    .hot-name .line-pill { display: inline-grid; min-width: 18px; height: 18px; font-size: .58rem; border-radius: 5px; margin-right: 6px; vertical-align: middle; }
+    .reliability { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 93, 115, .25); background: rgba(255, 93, 115, .07); color: #ffb3bf; font-size: .68rem; line-height: 1.45; }
+    .table-summary { margin: -4px 0 12px; color: var(--muted); font-size: .72rem; }
+    .table-scroll { max-height: 460px; overflow: auto; }
+    .table-scroll thead th { position: sticky; top: 0; background: var(--panel-solid); }
     .risk.none { background: rgba(150, 169, 187, .08); border-color: var(--line); color: var(--muted); }
     .station.filtered-out { display: none; }
 
@@ -186,8 +194,8 @@
     .station.modeled .station-core { fill: #e9f2f8; stroke: #0a1420; stroke-width: 3; }
     .station.selected .station-core { fill: #fff; stroke: var(--accent); stroke-width: 4; }
     .station-label { fill: #8fa2b3; font-size: calc(10px / var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: calc(4px / var(--z, 1)); stroke-linejoin: round; pointer-events: none; }
-    .station.modeled .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
-    #networkMap:not(.show-labels) .station:not(.modeled):not(.selected) .station-label { display: none; }
+    .station.featured .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
+    #networkMap:not(.show-labels) .station:not(.featured):not(.selected) .station-label { display: none; }
     .map-title { position: absolute; z-index: 2; left: 14px; top: 12px; max-width: calc(100% - 28px); padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .72); backdrop-filter: blur(10px); pointer-events: none; }
     .map-title h2 { margin: 0; font-size: 1rem; }
     .map-title p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
@@ -412,8 +420,8 @@
     </nav>
     <div class="status" id="statusChip">Datos oficiales · copia fija</div>
     <div class="metrics" aria-label="Indicadores de la fecha seleccionada">
-      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · 5 estaciones</span></div>
-      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span>de 5 estaciones</span></div>
+      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · red completa</span></div>
+      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span id="highCountLabel">estaciones por línea</span></div>
       <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
     </div>
     <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
@@ -424,7 +432,7 @@
     <aside class="side controls" aria-label="Parámetros de la estimación">
       <section class="section">
         <p class="eyebrow">Estación</p>
-        <label for="stationSelect">Estación modelada de Línea 3</label>
+        <label for="stationSelect">Estación y línea</label>
         <select id="stationSelect"></select>
       </section>
 
@@ -465,19 +473,19 @@
           <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Media</span><span id="legendMid">—</span></div>
           <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Alta</span><span id="legendHigh">—</span></div>
         </div>
-        <p class="note">Niveles relativos al histórico de cada estación (percentiles 33 y 67). El tamaño y color del pulso en el mapa representan la estimación diaria.</p>
+        <p class="note">Niveles relativos al histórico de cada estación y línea (percentiles 33 y 67 de su entrenamiento). Como se comparan contra todos los días, los días hábiles suelen salir en demanda media o alta y los domingos en baja. El tamaño del pulso en el mapa representa la afluencia estimada y su color, el nivel más alto entre las líneas de la estación.</p>
       </section>
 
       <section class="section">
         <p class="eyebrow">Sobre el modelo</p>
-        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado por estación y línea con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
         <div class="disclaimer">Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</div>
       </section>
     </aside>
 
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · pulsos solo en las 5 estaciones modeladas de Línea 3</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada en cinco estaciones de Línea 3. Usa Tab para recorrer las estaciones modeladas o la búsqueda para elegir cualquier estación.">
+      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · demanda diaria estimada en toda la red</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada por estación. Usa Tab para recorrer las estaciones destacadas o la búsqueda para elegir cualquier estación.">
         <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
         <g id="networkViewport"></g>
       </svg>
@@ -507,6 +515,7 @@
           <div class="detail-card"><small>MAE línea base</small><strong id="detailBase">—</strong><span>accesos/día</span></div>
         </div>
         <div class="comparison" id="comparisonNote">—</div>
+        <div class="reliability" id="reliabilityNote" hidden></div>
         </div>
       </section>
       <section class="section" id="historySection">
@@ -527,11 +536,11 @@
     <div class="page-inner">
       <div class="page-intro"><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div>
       <div class="method-grid">
-        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>El modelo aprende patrones de calendario por estación. Se entrena con el pasado y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal.</p><div class="feature-list" id="featureList"></div></section>
+        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>Un modelo por cada estación y línea de la red (195 registros, como los publica el recurso oficial). Aprende patrones de calendario, se entrena con el pasado y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal. Los días sin servicio (afluencia 0 por cierres u obras) se excluyen para no confundirlos con demanda baja.</p><div class="feature-list" id="featureList"></div></section>
         <section class="card principle-card"><p class="card-label">Principio rector</p><blockquote>Una demo estable, honesta y reproducible vale más que muchas funciones incompletas.</blockquote><p>La interfaz distingue predicción diaria de ocupación física y evita recomendaciones horarias sin datos que las respalden.</p></section>
         <section class="card pipeline"><p class="card-label">Arquitectura mínima</p><div class="steps"><div class="step"><span>01</span><strong>CSV oficial</strong><p>Afluencia diaria simple del Metro CDMX.</p></div><div class="step"><span>02</span><strong>Limpieza</strong><p>Fechas, nulos, duplicados y etiquetas.</p></div><div class="step"><span>03</span><strong>Calendario</strong><p>Mes, semana, día y ciclo anual.</p></div><div class="step"><span>04</span><strong>Entrenamiento</strong><p>Línea base y Random Forest por estación.</p></div><div class="step"><span>05</span><strong>Validación</strong><p>MAE y RMSE con corte cronológico.</p></div><div class="step"><span>06</span><strong>Interfaz</strong><p>Estimación y nivel relativo interpretable.</p></div></div></section>
-        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li></ul></section>
-        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, cámaras, sensores o datos en tiempo real.</li><li>No sustituye información operativa del STC Metro.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li><li>Aviso de confiabilidad baja cuando el error típico supera el 30% del valor habitual.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, cámaras, sensores o datos en tiempo real.</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
     </div>
@@ -542,8 +551,8 @@
     <div class="page-inner">
       <div class="page-intro"><p class="kicker">Trazabilidad</p><h2>Qué contiene realmente el recurso</h2><p>Resumen calculado directamente sobre la descarga oficial utilizada para esta demostración.</p></div>
       <div class="data-grid">
-        <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Filas seleccionadas</span><strong id="selectedRows">—</strong></div></div></section>
-        <section class="card station-table-card"><p class="card-label">Resultados de validación por estación</p><table><thead><tr><th>Estación</th><th>Observaciones</th><th>MAE base</th><th>MAE modelo</th><th>Resultado</th></tr></thead><tbody id="stationTable"></tbody></table></section>
+        <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Estaciones por línea modeladas</span><strong id="selectedRows">—</strong></div></div></section>
+        <section class="card station-table-card"><p class="card-label">Resultados de validación por estación y línea</p><p class="table-summary" id="tableSummary"></p><div class="table-scroll"><table><thead><tr><th>Estación</th><th>Línea</th><th>Observaciones</th><th>MAE base</th><th>MAE modelo</th><th>Resultado</th></tr></thead><tbody id="stationTable"></tbody></table></div></section>
         <section class="card source-card"><div><h3 id="sourceName">Afluencia diaria del Metro CDMX</h3><p id="sourceDescription">Publicada por SEMOVI bajo licencia abierta.</p></div><a class="source-link" id="officialSource" href="#" target="_blank" rel="noopener">Abrir recurso oficial</a></section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
@@ -569,21 +578,35 @@
   const relative = (station, value) => (value - station.summary.median) / station.summary.median * 100;
   const gainOf = station => (station.metrics.baselineMae - station.metrics.modelMae) / station.metrics.baselineMae * 100;
 
-  const stations = data.stations;
-  const byName = new Map(stations.map(station => [station.name, station]));
-  const dates = Object.keys(stations[0].predictions);
+  // Un registro por estación y línea (opción A). Las predicciones vienen como un entero por día
+  // desde dataset.forecastStart; el nivel se calcula aquí con los umbrales del entrenamiento.
+  const records = data.stations;
   const dataset = data.dataset;
+  const dates = Array.from({ length: dataset.forecastDays || records[0].predictions.length }, (_, i) => {
+    const d = new Date(dataset.forecastStart + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + i); return d.toISOString().slice(0, 10);
+  });
+  const levelOf = (record, value) => value < record.summary.lowThreshold ? 'baja' : value < record.summary.highThreshold ? 'media' : 'alta';
+  const predictionOf = (record, index) => { const value = record.predictions[index]; return { value, level: levelOf(record, value) }; };
+  // El CSV oficial y el catálogo geográfico escriben algunos nombres distinto
+  // (acentos, guiones, «Niños Héroes/Poder Judicial CDMX», «Mixhiuca»). Se comparan por una clave.
+  const KEY_ALIASES = { mixhiuca: 'mixiuhca' };
+  const stationKey = name => { const k = name.split('/')[0].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); return KEY_ALIASES[k] || k; };
+  const recordByLineKey = new Map(records.map(r => [`${r.line}|${stationKey(r.name)}`, r]));
+  const featuredKeys = new Set((data.featured || []).map(f => `${f.line}|${stationKey(f.name)}`));
   const levelName = { baja: 'Demanda baja', media: 'Demanda media', alta: 'Demanda alta' };
   const levelColor = { baja: '#62d394', media: '#ffbd59', alta: '#ff5d73' };
+  const levelRank = { baja: 0, media: 1, alta: 2 };
   const levelCopy = {
     baja: 'Se espera una afluencia inferior a la habitual para esta estación en esa fecha.',
     media: 'Se espera una afluencia cercana al comportamiento habitual de esta estación.',
     alta: 'Se espera una afluencia superior a la habitual para esta estación en esa fecha.'
   };
+  const LOW_RELIABILITY = .30; // error típico mayor al 30% de la mediana
   const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
   const defaultIndex = () => Math.max(0, dates.indexOf(tomorrowIso));
+  const firstFeatured = data.featured?.[0] || { line: records[0].line, name: records[0].name };
 
-  const state = { station: stations[0].name, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
+  const state = { station: firstFeatured.name, line: firstFeatured.line, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
 
   // ---------- Perfil local ----------
   const PROFILE_KEY = 'mini_yolotzin_profile_v1', PREFS_PREFIX = 'mini_yolotzin_prefs_v1_', DEFAULT_COLOR = '#ff6b35';
@@ -636,7 +659,7 @@
   const readPreferences = () => { const key = preferencesKey(); return key ? safeRead(key) : null; };
   function savePreferences() {
     const key = preferencesKey();
-    if (key) safeWrite(key, { station: state.station, date: dates[state.index], updatedAt: new Date().toISOString() });
+    if (key) safeWrite(key, { station: state.station, line: state.line, date: dates[state.index], updatedAt: new Date().toISOString() });
   }
 
   document.querySelectorAll('.color-choice').forEach(choice => choice.addEventListener('click', () => chooseProfileColor(choice.dataset.color)));
@@ -712,6 +735,7 @@
   const mapRoutes = Object.fromEntries([...new Set(catalog.map(s => s.line))].map(line => [line, catalog.filter(s => s.line === line).map(s => { const p = project(s.lon, s.lat); return [s.name, p.x, p.y]; })]));
   const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const mapNodes = new Map(), routeLabels = [], view = { w: 1040, h: 640 };
+  const nodeByKey = name => [...mapNodes.values()].find(node => stationKey(node.name) === stationKey(name));
   const svg = $('networkMap'), viewport = $('networkViewport'), tooltip = $('tooltip');
   const make = (tag, attrs = {}, parent = viewport) => {
     const el = document.createElementNS(NS, tag);
@@ -742,28 +766,29 @@
       node.records.push(record);
       if (!node.lines.includes(record.line)) node.lines.push(record.line);
     });
-    // Respaldo: si faltara el catálogo, las cinco estaciones modeladas siguen visibles.
-    stations.forEach((station, i) => { if (!mapNodes.has(station.name)) mapNodes.set(station.name, { name: station.name, x: 420, y: 80 + i * 110, lines: ['3'], records: [] }); });
+    // Respaldo: si faltara el catálogo, las estaciones destacadas siguen visibles.
+    (data.featured || []).forEach((f, i) => { if (!nodeByKey(f.name)) mapNodes.set(f.name, { name: f.name, x: 420, y: 80 + i * 110, lines: [f.line], records: [] }); });
+    mapNodes.forEach(node => { node.modelRecords = node.lines.map(line => recordByLineKey.get(`${line}|${stationKey(node.name)}`)).filter(Boolean); });
 
     mapNodes.forEach(node => {
-      const modeled = byName.has(node.name);
-      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}` });
-      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 14, class: 'station-halo', fill: levelColor.media, filter: 'url(#glow)' }, group) : null;
-      make('circle', { cx: node.x, cy: node.y, r: modeled ? 6.5 : node.lines.length > 1 ? 4.8 : 3.4, class: 'station-core' }, group);
-      const hit = make('circle', { cx: node.x, cy: node.y, r: modeled ? 16 : 8, class: 'station-hit' }, group);
-      if (modeled || node.lines.length > 1) {
-        const right = node.x < 820;
-        make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
-      }
+      const modeled = node.modelRecords.length > 0;
+      const featured = node.lines.some(line => featuredKeys.has(`${line}|${stationKey(node.name)}`));
+      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}${featured ? ' featured' : ''}` });
+      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 8, class: 'station-halo', fill: levelColor.media, filter: featured ? 'url(#glow)' : null }, group) : null;
+      if (halo && !featured) halo.removeAttribute('filter');
+      make('circle', { cx: node.x, cy: node.y, r: featured ? 6.5 : node.lines.length > 1 ? 4.8 : 3.6, class: 'station-core' }, group);
+      const hit = make('circle', { cx: node.x, cy: node.y, r: featured ? 16 : 8, class: 'station-hit' }, group);
+      const right = node.x < 820;
+      make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
       group.addEventListener('pointerenter', event => showTooltip(event, node));
       group.addEventListener('pointermove', moveTooltip);
       group.addEventListener('pointerleave', hideTooltip);
-      // Todas las estaciones se pueden seleccionar con el ratón; las 5 modeladas además con Tab.
-      // El resto es accesible por teclado desde la búsqueda y la lista de resultados.
+      // Todas las estaciones se seleccionan con el ratón; las destacadas además con Tab.
+      // El resto es accesible por teclado desde el selector, la búsqueda y la lista de resultados.
       const choose = event => { event.stopPropagation(); selectStation(node.name); };
       hit.addEventListener('pointerdown', event => event.stopPropagation());
       hit.addEventListener('click', choose);
-      if (modeled) {
+      if (featured) {
         hit.setAttribute('tabindex', '0');
         hit.setAttribute('role', 'button');
         hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
@@ -798,12 +823,11 @@
 
   function showTooltip(event, node) {
     if (state.drag) return;
-    const station = byName.get(node.name);
-    if (station) {
-      const prediction = station.predictions[dates[state.index]];
-      tooltip.innerHTML = `<strong>${node.name}</strong><span>${format(prediction.value)} accesos estimados · ${levelName[prediction.level].toLowerCase()}</span>`;
+    if (node.modelRecords.length) {
+      const rows = node.modelRecords.map(record => { const p = predictionOf(record, state.index); return `Línea ${record.line}: ${format(p.value)} · ${p.level}`; });
+      tooltip.innerHTML = `<strong>${node.name}</strong>${rows.map(row => `<span>${row}</span>`).join('')}`;
     } else {
-      tooltip.innerHTML = `<strong>${node.name}</strong><span>Línea ${node.lines.join(', ')} · contexto de red, sin modelo</span>`;
+      tooltip.innerHTML = `<strong>${node.name}</strong><span>Línea ${node.lines.join(', ')} · sin modelo</span>`;
     }
     tooltip.classList.add('show');
     moveTooltip(event);
@@ -851,35 +875,43 @@
 
   // ---------- Render principal ----------
   const linePill = line => `<span class="line-pill" style="background:${lineColors[line] || '#a7afb7'}" title="Línea ${line}">${line}</span>`;
+  const currentNode = () => mapNodes.get(state.station) || nodeByKey(state.station);
+  const currentRecord = () => { const node = currentNode(); return node ? recordByLineKey.get(`${state.line}|${stationKey(node.name)}`) || node.modelRecords[0] || null : null; };
 
   function render() {
     const date = dates[state.index];
-    const node = mapNodes.get(state.station);
-    const station = byName.get(state.station) || null;
-    const prediction = station ? station.predictions[date] : null;
+    const node = currentNode();
+    const station = currentRecord();
+    if (station) state.line = station.line;
+    const prediction = station ? predictionOf(station, state.index) : null;
     let total = 0, high = 0;
 
-    const rows = stations.map(item => {
-      const p = item.predictions[date];
+    const rows = records.map(record => {
+      const p = predictionOf(record, state.index);
       total += p.value;
       if (p.level === 'alta') high++;
-      const modeledNode = mapNodes.get(item.name);
-      if (modeledNode?.el?.halo) {
-        modeledNode.el.halo.setAttribute('fill', levelColor[p.level]);
-        modeledNode.el.halo.setAttribute('r', (12 + Math.min(20, p.value / 6000)).toFixed(1));
-        modeledNode.el.halo.setAttribute('opacity', p.level === 'alta' ? '.5' : '.32');
-      }
-      return { station: item, prediction: p, rel: relative(item, p.value) };
+      return { station: record, prediction: p, rel: relative(record, p.value) };
     });
-    mapNodes.forEach(item => item.el?.group.classList.toggle('selected', item.name === state.station));
+    mapNodes.forEach(item => {
+      if (item.el?.halo) {
+        const preds = item.modelRecords.map(record => predictionOf(record, state.index));
+        const sum = preds.reduce((a, p) => a + p.value, 0);
+        const level = preds.reduce((a, p) => levelRank[p.level] > levelRank[a] ? p.level : a, 'baja');
+        item.el.halo.setAttribute('fill', levelColor[level]);
+        item.el.halo.setAttribute('r', (5 + Math.min(17, Math.sqrt(sum) / 22)).toFixed(1));
+        item.el.halo.setAttribute('opacity', level === 'alta' ? '.5' : '.32');
+      }
+      item.el?.group.classList.toggle('selected', item === node);
+    });
 
     // Barra superior
     $('totalFlow').textContent = format(total);
     $('highCount').textContent = String(high);
+    $('highCountLabel').textContent = `de ${records.length} estaciones por línea`;
     $('stationMae').textContent = station ? `±${format(station.metrics.modelMae)}` : '—';
 
     // Controles
-    $('stationSelect').value = station ? station.name : '';
+    $('stationSelect').value = station && node ? `${station.line}|${node.name}` : '';
     $('dateLabel').textContent = shortDate(date);
     $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
     $('dateRange').value = state.index;
@@ -887,35 +919,43 @@
     $('legendLow').textContent = station ? `< ${format(station.summary.lowThreshold)}` : '—';
     $('legendMid').textContent = station ? `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}` : '—';
     $('legendHigh').textContent = station ? `> ${format(station.summary.highThreshold)}` : '—';
-    if ($('mapStationList').value !== state.station) $('mapStationList').value = state.station;
+    if (node && $('mapStationList').value !== node.name) $('mapStationList').value = node.name;
+    if (station) $('trainCutoff').textContent = shortDate(station.metrics.testStart);
 
     // Detalle
-    const lines = node ? node.lines : ['3'];
-    $('detailName').textContent = state.station;
-    $('detailLines').innerHTML = lines.map(linePill).join('');
+    const lines = node ? node.lines : [state.line];
+    $('detailName').textContent = node ? node.name : state.station;
+    $('detailLines').innerHTML = lines.map(line => {
+      const has = node && recordByLineKey.has(`${line}|${stationKey(node.name)}`);
+      const active = station && line === station.line;
+      return has && lines.length > 1
+        ? `<button type="button" class="line-pill${active ? ' active' : ''}" data-line="${line}" style="background:${lineColors[line] || '#a7afb7'}" aria-pressed="${active}" aria-label="Ver Línea ${line}">${line}</button>`
+        : linePill(line);
+    }).join('');
     $('modelDetail').hidden = !station;
     $('historySection').hidden = !station;
     $('geoDetail').hidden = !!station;
 
     if (!station) {
-      const records = node?.records.length || 0;
+      const count = node?.records.length || 0;
       $('detailDate').textContent = `Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')} · estación sin modelo`;
       $('riskBox').className = 'risk none';
       $('riskText').textContent = 'Sin predicción';
-      $('levelMessage').textContent = 'Esta estación está disponible para exploración geográfica, pero todavía no cuenta con un modelo predictivo validado.';
+      $('levelMessage').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para un modelo validado.';
       $('geoTitle').textContent = 'Ficha geográfica';
-      $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${records} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC). El catálogo no contiene datos de afluencia.`;
+      $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
       renderHotList(rows);
       return;
     }
 
     const rel = relative(station, prediction.value);
-    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')}`;
+    const others = lines.filter(line => line !== station.line);
+    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea ${station.line}${others.length ? ` · correspondencia con ${others.map(l => 'L' + l).join(', ')}` : ''}`;
     $('riskBox').className = `risk ${prediction.level}`;
     $('riskText').textContent = levelName[prediction.level];
     $('levelMessage').textContent = levelCopy[prediction.level];
     $('detailEstimate').textContent = format(prediction.value);
-    $('detailRange').textContent = `accesos estimados · error típico ±${format(station.metrics.modelMae)}`;
+    $('detailRange').textContent = `accesos estimados en Línea ${station.line} · error típico ±${format(station.metrics.modelMae)}`;
     $('detailRelative').textContent = signed(rel);
     $('detailObs').textContent = format(station.summary.observations);
     $('detailMae').textContent = format(station.metrics.modelMae);
@@ -926,7 +966,10 @@
     comparison.textContent = gain > 0
       ? `El modelo reduce el error absoluto ${gain.toFixed(1)}% frente a la línea base en esta estación.`
       : `En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;
-    $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.`;
+    const errorShare = station.metrics.modelMae / station.summary.median;
+    $('reliabilityNote').hidden = errorShare <= LOW_RELIABILITY;
+    $('reliabilityNote').textContent = `Confiabilidad baja: el error típico equivale al ${Math.round(errorShare * 100)}% de la afluencia habitual de esta estación. Toma la estimación solo como referencia.`;
+    $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.${station.summary.closedDays ? ` Se excluyeron ${format(station.summary.closedDays)} días sin servicio.` : ''}`;
 
     renderBars(station, prediction.value, date);
     renderHotList(rows);
@@ -956,10 +999,10 @@
     list.replaceChildren(...found.map(node => {
       const option = document.createElement('option');
       option.value = node.name;
-      option.textContent = `${node.name} · ${node.lines.join('/')}${byName.has(node.name) ? ' · con modelo' : ''}`;
+      option.textContent = `${node.name} · L${node.lines.join('/L')}${node.modelRecords.length ? '' : ' · sin modelo'}`;
       return option;
     }));
-    list.value = state.station;
+    list.value = currentNode()?.name || '';
     $('mapResultCount').textContent = `${found.length} estaciones encontradas · ${catalog.length} registros estación-línea`;
     mapNodes.forEach(node => node.el?.group.classList.toggle('filtered-out', !visible.has(node.name)));
     document.querySelectorAll('[data-map-line]').forEach(el => { el.style.opacity = !line || el.dataset.mapLine === line ? '' : '.10'; });
@@ -979,11 +1022,24 @@
   }
 
   function renderHotList(rows) {
-    const sorted = [...rows].sort((a, b) => b.rel - a.rel);
-    $('hotList').innerHTML = sorted.map((row, i) => `<button class="hot-item${row.station.name === state.station ? ' active' : ''}" data-station="${row.station.name}" aria-label="${row.station.name}: ${signed(row.rel)} frente a su mediana"><span class="rank">${i + 1}</span><span class="hot-name">${row.station.name}</span><span class="hot-value" style="color:${levelColor[row.prediction.level]}">${signed(row.rel)}</span></button>`).join('');
+    const node = currentNode();
+    const top = [...rows].sort((a, b) => b.rel - a.rel).slice(0, 8);
+    $('hotList').innerHTML = top.map((row, i) => {
+      const target = nodeByKey(row.station.name);
+      const name = target ? target.name : row.station.name;
+      const active = target === node && row.station.line === state.line;
+      return `<button class="hot-item${active ? ' active' : ''}" data-station="${name}" data-line="${row.station.line}" aria-label="${name}, Línea ${row.station.line}: ${signed(row.rel)} frente a su mediana"><span class="rank">${i + 1}</span><span class="hot-name">${linePill(row.station.line)}${name}</span><span class="hot-value" style="color:${levelColor[row.prediction.level]}">${signed(row.rel)}</span></button>`;
+    }).join('');
   }
 
-  function selectStation(name) { state.station = name; render(); savePreferences(); }
+  function selectStation(name, line) {
+    const node = mapNodes.get(name) || nodeByKey(name);
+    state.station = node ? node.name : name;
+    if (line) state.line = line;
+    else if (node && !node.modelRecords.some(r => r.line === state.line)) state.line = node.modelRecords[0]?.line || node.lines[0];
+    render();
+    savePreferences();
+  }
   function setIndex(index, save = true) { state.index = Math.max(0, Math.min(dates.length - 1, index)); render(); if (save) savePreferences(); }
 
   function setPlaying(playing) {
@@ -996,8 +1052,9 @@
   }
 
   // ---------- Eventos ----------
-  $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station); });
-  $('stationSelect').addEventListener('change', event => selectStation(event.target.value));
+  $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station, item.dataset.line); });
+  $('detailLines').addEventListener('click', event => { const pill = event.target.closest('button.line-pill'); if (pill) selectStation(state.station, pill.dataset.line); });
+  $('stationSelect').addEventListener('change', event => { const [line, ...rest] = event.target.value.split('|'); selectStation(rest.join('|'), line); });
   $('dateRange').addEventListener('input', event => setIndex(+event.target.value));
   $('dateInput').addEventListener('change', event => { const index = dates.indexOf(event.target.value); if (index >= 0) setIndex(index); else render(); });
   $('stepBack').addEventListener('click', () => setIndex(state.index - 1));
@@ -1013,15 +1070,12 @@
   $('zoomReset').addEventListener('click', () => { Object.assign(state, home); applyTransform(); });
 
   // ---------- Inicio ----------
-  $('stationSelect').appendChild(Object.assign(document.createElement('option'), { value: '', textContent: 'Estación sin modelo', disabled: true }));
-  stations.forEach(station => { const option = document.createElement('option'); option.value = station.name; option.textContent = station.name; $('stationSelect').appendChild(option); });
   $('dateInput').min = dataset.forecastStart;
   $('dateInput').max = dataset.forecastEnd;
   $('dateRange').max = dates.length - 1;
   $('rangeStart').textContent = shortDate(dates[0]);
   $('rangeEnd').textContent = shortDate(dates.at(-1));
   $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
-  $('trainCutoff').textContent = shortDate(stations[0].metrics.testStart);
   $('sourceLink').href = data.source.url;
   $('officialSource').href = data.source.url;
 
@@ -1033,12 +1087,15 @@
   $('lineCount').textContent = format(dataset.lines);
   $('duplicateCount').textContent = format(dataset.duplicateKeys);
   $('nullCount').textContent = format(Object.values(dataset.nulls).reduce((a, b) => a + b, 0));
-  $('selectedRows').textContent = format(dataset.selectedRows);
+  $('selectedRows').textContent = `${format(dataset.modeledRecords ?? records.length)} de ${format(dataset.records ?? records.length)}`;
   $('sourceName').textContent = data.source.name;
   $('sourceDescription').textContent = `${data.source.publisher} · ${data.source.license} · Descarga utilizada hasta ${shortDate(dataset.endDate)}.`;
-  $('stationTable').innerHTML = stations.map(station => {
+  const sortedRecords = [...records].sort((a, b) => a.line.localeCompare(b.line, 'es', { numeric: true }) || a.name.localeCompare(b.name, 'es'));
+  const beats = records.filter(r => gainOf(r) > 0).length, lowRel = records.filter(r => r.metrics.modelMae / r.summary.median > LOW_RELIABILITY).length;
+  $('tableSummary').textContent = `El modelo supera a la línea base en ${beats} de ${records.length} estaciones por línea. ${lowRel} tienen confiabilidad baja (error típico mayor al 30% de su afluencia habitual).${dataset.skippedRecords ? ` ${dataset.skippedRecords} registros sin modelo por falta de datos.` : ''}`;
+  $('stationTable').innerHTML = sortedRecords.map(station => {
     const gain = gainOf(station);
-    return `<tr><td><strong>${station.name}</strong></td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain > 0 ? '#62d394' : '#ffbd59'}">${gain > 0 ? `−${gain.toFixed(1)}% error` : 'Base competitiva'}</td></tr>`;
+    return `<tr><td><strong>${station.name}</strong></td><td>${linePill(station.line)}</td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain > 0 ? '#62d394' : '#ffbd59'}">${gain > 0 ? `−${gain.toFixed(1)}% error` : 'Base competitiva'}</td></tr>`;
   }).join('');
 
   // Perfil y preferencias guardadas
@@ -1047,13 +1104,23 @@
     renderProfile();
     profileOverlay.classList.add('hidden');
     const saved = readPreferences();
-    if (saved?.station && (byName.has(saved.station) || catalog.some(record => record.name === saved.station))) state.station = saved.station;
+    if (saved?.station) { state.station = saved.station; if (saved.line) state.line = saved.line; }
     if (saved?.date && dates.includes(saved.date)) state.index = dates.indexOf(saved.date);
   } else {
     openProfileEditor();
   }
 
   initNetworkMap();
+  // Selector agrupado por línea con los nombres del mapa.
+  [...new Set(records.map(r => r.line))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).forEach(line => {
+    const group = document.createElement('optgroup');
+    group.label = `Línea ${line}`;
+    records.filter(r => r.line === line).map(r => ({ r, node: nodeByKey(r.name) })).sort((a, b) => (a.node?.name || a.r.name).localeCompare(b.node?.name || b.r.name, 'es')).forEach(({ r, node }) => {
+      group.appendChild(Object.assign(document.createElement('option'), { value: `${line}|${node ? node.name : r.name}`, textContent: node ? node.name : r.name }));
+    });
+    $('stationSelect').appendChild(group);
+  });
+  if (!currentNode()) { state.station = firstFeatured.name; state.line = firstFeatured.line; }
   initStationSearch();
   fitNetwork();
   applyTransform();
