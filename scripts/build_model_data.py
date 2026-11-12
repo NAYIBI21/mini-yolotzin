@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sys
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -79,6 +80,31 @@ def rounded(value: float) -> int:
 def line_code(label: str) -> str:
     """'Línea 3' -> '3', 'Línea A' -> 'A'."""
     return label.replace("Línea", "").strip()
+
+
+def fold(text: str) -> str:
+    """Quita acentos y mayúsculas para comparar nombres."""
+    return "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn").casefold()
+
+
+def unify_station_names(valid: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
+    """El recurso oficial cambió la escritura de algunos nombres el 2023-06-01
+    (p. ej. «Gómez Farías» → «Gómez Farias», «Peñón Viejo» → «Peñón viejo»).
+    Dentro de cada línea, los nombres que solo difieren en acentos o mayúsculas
+    se unifican con la forma que aparece primero en el tiempo."""
+    first_seen = valid.groupby(["linea", "estacion"])["fecha"].min().reset_index()
+    first_seen["key"] = first_seen["estacion"].map(fold)
+    canonical, renamed = {}, []
+    for (line, _), group in first_seen.groupby(["linea", "key"]):
+        group = group.sort_values("fecha")
+        target = group["estacion"].iloc[0]
+        for variant in group["estacion"].iloc[1:]:
+            canonical[(line, variant)] = target
+            renamed.append({"line": line, "from": variant, "to": target})
+    if canonical:
+        keys = list(zip(valid["linea"], valid["estacion"]))
+        valid = valid.assign(estacion=[canonical.get(key, key[1]) for key in keys])
+    return valid, renamed
 
 
 def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Timestamp,
@@ -161,6 +187,9 @@ def main() -> None:
 
     nulls = {key: int(value) for key, value in frame.isna().sum().items()}
     valid = frame.dropna(subset=["fecha", "linea", "estacion", "afluencia"]).copy()
+    valid, renamed = unify_station_names(valid)
+    for item in renamed:
+        print(f"Nombre unificado en {item['line']}: {item['from']} → {item['to']}")
     max_date = valid["fecha"].max()
     forecast_dates = pd.date_range(max_date + pd.DateOffset(days=1), periods=FORECAST_DAYS, freq="D")
 
@@ -196,6 +225,7 @@ def main() -> None:
             "skippedRecords": len(skipped),
             "zeroRows": int((valid["afluencia"] <= 0).sum()),
             "duplicateKeys": int(valid.duplicated(["fecha", "linea", "estacion"]).sum()),
+            "renamedStations": renamed,
             "nulls": nulls,
             "forecastStart": forecast_dates.min().strftime("%Y-%m-%d"),
             "forecastEnd": forecast_dates.max().strftime("%Y-%m-%d"),
