@@ -19,6 +19,8 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - No presentar la predicción como ocupación del tren, saturación de andenes o información en tiempo real.
 - Se modela cada registro estación-línea del recurso oficial (195 en la versión actual). Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) son las estaciones destacadas.
 - Los días con afluencia 0 son cierres, no demanda baja: no se usan para entrenar ni validar.
+- Las variables del modelo solo pueden ser información conocida con anticipación para todo el horizonte (calendario, festivos). El clima o los eventos requieren una decisión aparte y su propia validación.
+- Cualquier cambio de método se mide contra la versión anterior con la misma partición cronológica y se reporta en la Pull Request.
 - Mostrar el aviso de confiabilidad baja cuando el error típico supere el 30% de la afluencia habitual.
 - Mantener visible la fuente oficial, el periodo de datos, el error del modelo y la comparación con la línea base.
 - No inventar nuevas cifras. Si cambia `model-data.js`, explicar cómo se generaron y validar cronológicamente el modelo.

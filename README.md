@@ -14,6 +14,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 - Vista **Explorar** a pantalla completa en tres columnas: controles de estación y fecha, mapa esquemático y detalle de la estación.
 - Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
+- Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
 - Comparación del modelo Random Forest contra una línea base histórica.
 - Mapa geográfico de la red completa (catálogo oficial SEMOVI/STC: 163 estaciones, 195 registros estación-línea) con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
@@ -89,9 +90,12 @@ pip install -r requirements.txt
 python scripts/build_model_data.py
 ```
 
-El script reemplaza `model-data.js` (también acepta rutas: `python scripts/build_model_data.py ruta/al.csv salida.js`). Tarda alrededor de un minuto. Reglas que aplica:
+El script reemplaza `model-data.js` (también acepta rutas: `python scripts/build_model_data.py ruta/al.csv salida.js`). Tarda alrededor de dos minutos. Reglas que aplica:
 
 - Un modelo Random Forest por estación y línea; validación con los últimos 180 días observados.
+- Variables de calendario: mes, día de la semana, día del mes, fin de semana, ciclo anual, **días festivos oficiales** (Ley Federal del Trabajo, art. 74), **fechas especiales** (Jueves y Viernes Santo, Día de Muertos, 12 de diciembre, 24 y 31 de diciembre), **puentes** y **vacaciones** aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).
+- Se entrena desde el 1 de enero de 2023 (si hay al menos un año de datos) para no arrastrar la recuperación tras la pandemia; el último año antes del corte pesa 3 veces más.
+- Tras validar, el modelo se reentrena con los datos más recientes antes de pronosticar.
 - Los días con afluencia 0 (cierres u obras, como en las Líneas 1 y 12) se excluyen del entrenamiento y la validación.
 - Los nombres que el recurso escribe distinto desde el 1 de junio de 2023 («Gómez Farias», «Peñón viejo») se unifican.
 - Las estaciones sin datos recientes o con historial insuficiente no reciben pronóstico y se reportan en `skipped`.
