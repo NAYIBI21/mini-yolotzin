@@ -21,6 +21,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - Los días con afluencia 0 son cierres, no demanda baja: no se usan para entrenar ni validar.
 - Las variables del modelo solo pueden ser información conocida con anticipación para todo el horizonte (calendario, festivos). El clima o los eventos requieren una decisión aparte y su propia validación.
 - Cualquier cambio de método se mide contra la versión anterior con la misma partición cronológica y se reporta en la Pull Request.
+- Cada fila de `eventos.csv` necesita una fuente pública que confirme la fecha (o una regla de fecha fija). No inventar fechas de eventos ni ajustar con menos de 2 ediciones medidas.
 - El clima se midió (`scripts/analizar_clima.py`) y no mejora la estimación diaria: no agregarlo al modelo ni mostrar efectos del clima por estación mientras el análisis no lo respalde. Las cifras del clima en la interfaz salen de `weather-summary.js`, no se escriben a mano.
 - Mostrar el aviso de confiabilidad baja cuando el error típico supere el 30% de la afluencia habitual.
 - Mantener visible la fuente oficial, el periodo de datos, el error del modelo y la comparación con la línea base.

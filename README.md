@@ -102,6 +102,22 @@ El script reemplaza `model-data.js` (también acepta rutas: `python scripts/buil
 
 El CSV está ignorado por Git y no debe subirse al repositorio.
 
+## Eventos (`eventos.csv`)
+
+Conciertos, partidos, marchas y fechas cívicas cambian mucho la afluencia de las estaciones cercanas (p. ej. Gran Premio de México: Ciudad Deportiva +299%; Marcha 8M: estaciones del Centro −62% por cierres). No existe un registro oficial, así que el equipo mantiene `eventos.csv`:
+
+| Columna | Contenido |
+|---|---|
+| `fecha` | AAAA-MM-DD |
+| `grupo` | Nombre que agrupa ediciones del mismo evento (p. ej. `Gran Premio de México (F1)`) |
+| `nombre`, `tipo`, `recinto` | Descripción; `tipo` es `deportivo`, `concierto`, `marcha` o `cívico` |
+| `estaciones` | `línea\|nombre` separados por `;` (p. ej. `9\|Ciudad Deportiva;9\|Velódromo`) |
+| `fuente` | Enlace público que confirma la fecha, o la regla si es fija (8 de marzo, 2 de octubre, 15 de septiembre) |
+
+Cómo se usa: el modelo base no cambia. Si una fecha futura tiene un evento, su estimación se ajusta con la mediana del efecto medido en **al menos 2 ediciones anteriores** en esa estación (día del evento ÷ mismo día de la semana ±3 semanas). Validado dejando una edición fuera: error mediano en días de evento **32.4% → 18.1%** (mejora en 68% de 130 casos). Con menos ediciones, la página avisa que el efecto no se midió.
+
+Pendiente útil: en Ciudad Deportiva, 61 de los 180 días de prueba tuvieron picos >30% y concentran el 80% de su error; probablemente conciertos en el Estadio GNP y béisbol en el Estadio Alfredo Harp Helú. Registrar esas fechas con su fuente permitiría ajustarlas.
+
 ## Análisis del clima
 
 Se midió si la lluvia o la temperatura cambian la afluencia diaria y si mejoran la estimación. Resultado con el corte al 30 de septiembre de 2026:
@@ -130,6 +146,7 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
+- `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
 - `AGENTS.md`: reglas para asistentes de programación.
