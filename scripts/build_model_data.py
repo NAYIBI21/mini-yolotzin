@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import sys
 import unicodedata
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -46,6 +47,9 @@ FORECAST_DAYS = 366        # horizonte de pronóstico
 MIN_TRAIN_DAYS = 365       # días válidos mínimos para entrenar
 MIN_TEST_DAYS = 90         # días válidos mínimos para validar
 MAX_STALE_DAYS = 30        # si el último dato válido es más antiguo, no se pronostica
+TRAIN_START = "2023-01-01"  # se omite 2021-2022 (recuperación tras la pandemia) si hay suficiente historial
+RECENT_DAYS = 365          # el último año antes del corte pesa más al entrenar
+RECENT_WEIGHT = 3.0
 RF_PARAMS = dict(n_estimators=160, max_depth=14, min_samples_leaf=4, random_state=42, n_jobs=-1)
 
 
@@ -58,19 +62,102 @@ def repair_mojibake(value: object) -> object:
         return value
 
 
-def features(dates: pd.Series | pd.DatetimeIndex) -> pd.DataFrame:
+# ---------- Calendario de México ----------
+# Días de descanso obligatorio (Ley Federal del Trabajo, art. 74) y fechas con efecto
+# conocido en la movilidad de la CDMX. Todas se conocen con anticipación, así que
+# también sirven para el pronóstico.
+
+def easter_sunday(year: int) -> date:
+    """Domingo de Pascua (algoritmo gregoriano anónimo)."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = (h + l - 7 * m + 114) % 31 + 1
+    return date(year, month, day)
+
+
+def nth_monday(year: int, month: int, n: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(7 - first.weekday()) % 7 + 7 * (n - 1))
+
+
+def mexican_calendar(years: range) -> tuple[dict, dict, dict]:
+    """Regresa (festivos, fechas especiales, periodos vacacionales) como {fecha: nombre}."""
+    holidays, special, periods = {}, {}, {}
+    for y in years:
+        holidays[date(y, 1, 1)] = "Año Nuevo"
+        holidays[nth_monday(y, 2, 1)] = "Día de la Constitución"
+        holidays[nth_monday(y, 3, 3)] = "Natalicio de Benito Juárez"
+        holidays[date(y, 5, 1)] = "Día del Trabajo"
+        holidays[date(y, 9, 16)] = "Día de la Independencia"
+        holidays[nth_monday(y, 11, 3)] = "Día de la Revolución"
+        holidays[date(y, 12, 25)] = "Navidad"
+        if (y - 2024) % 6 == 0:
+            holidays[date(y, 10, 1)] = "Transmisión del Poder Ejecutivo"
+        easter = easter_sunday(y)
+        special[easter - timedelta(days=3)] = "Jueves Santo"
+        special[easter - timedelta(days=2)] = "Viernes Santo"
+        special[date(y, 11, 2)] = "Día de Muertos"
+        special[date(y, 12, 12)] = "Día de la Virgen de Guadalupe"
+        special[date(y, 12, 24)] = "Nochebuena"
+        special[date(y, 12, 31)] = "Fin de año"
+        for offset in range(-6, 8):   # Semana Santa y Semana de Pascua
+            periods[easter + timedelta(days=offset)] = "Vacaciones de Semana Santa"
+        for offset in range(0, 20):   # 18 de diciembre al 6 de enero
+            periods[date(y, 12, 18) + timedelta(days=offset)] = "Vacaciones de invierno"
+    return holidays, special, periods
+
+
+CALENDAR = mexican_calendar(range(2019, 2032))
+
+
+def features(dates: pd.Series | pd.DatetimeIndex, calendar: bool = True) -> pd.DataFrame:
     dates = pd.DatetimeIndex(dates)
     day_of_year = dates.day_of_year.to_numpy()
-    return pd.DataFrame(
-        {
-            "month": dates.month,
-            "dow": dates.day_of_week,
-            "day": dates.day,
-            "weekend": (dates.day_of_week >= 5).astype(int),
-            "sin_year": np.sin(2 * np.pi * day_of_year / 365.25),
-            "cos_year": np.cos(2 * np.pi * day_of_year / 365.25),
-        }
-    )
+    columns = {
+        "month": dates.month,
+        "dow": dates.day_of_week,
+        "day": dates.day,
+        "weekend": (dates.day_of_week >= 5).astype(int),
+        "sin_year": np.sin(2 * np.pi * day_of_year / 365.25),
+        "cos_year": np.cos(2 * np.pi * day_of_year / 365.25),
+    }
+    if calendar:
+        holidays, special, periods = CALENDAR
+        days = [d.date() for d in dates]
+        columns["holiday"] = [int(d in holidays) for d in days]
+        columns["special"] = [int(d in special) for d in days]
+        # Viernes antes de un lunes festivo (puente).
+        columns["bridge"] = [int(d.weekday() == 4 and (d + timedelta(days=3)) in holidays) for d in days]
+        columns["easter_break"] = [int(periods.get(d) == "Vacaciones de Semana Santa") for d in days]
+        columns["winter_break"] = [int(periods.get(d) == "Vacaciones de invierno") for d in days]
+    return pd.DataFrame(columns)
+
+
+def calendar_labels(dates: pd.DatetimeIndex) -> dict:
+    """Etiquetas para mostrar en la interfaz durante el horizonte de pronóstico."""
+    holidays, special, periods = CALENDAR
+    labels = {}
+    for d in dates:
+        day = d.date()
+        parts = []
+        if day in holidays:
+            parts.append(f"Día festivo: {holidays[day]}")
+        if day in special:
+            parts.append(special[day])
+        if day.weekday() == 4 and (day + timedelta(days=3)) in holidays:
+            parts.append("Puente")
+        if day in periods:
+            parts.append(periods[day])
+        if parts:
+            labels[d.strftime("%Y-%m-%d")] = " · ".join(parts)
+    return labels
 
 
 def rounded(value: float) -> int:
@@ -123,19 +210,34 @@ def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Time
         return None, {**base, "reason": "sin datos recientes (posible cierre)", "lastDate": last_date.strftime("%Y-%m-%d")}
 
     cutoff = last_date - pd.DateOffset(days=TEST_DAYS - 1)
-    train = data[data["fecha"] < cutoff]
+    train_all = data[data["fecha"] < cutoff]
     test = data[data["fecha"] >= cutoff]
-    if len(train) < MIN_TRAIN_DAYS or len(test) < MIN_TEST_DAYS:
+    if len(train_all) < MIN_TRAIN_DAYS or len(test) < MIN_TEST_DAYS:
         return None, {**base, "reason": "historial insuficiente para validar", "lastDate": last_date.strftime("%Y-%m-%d")}
+
+    # Ventana de entrenamiento: desde 2023 si hay al menos un año de datos válidos;
+    # si no (estaciones con cierres largos, p. ej. Líneas 1 y 12), todo el historial.
+    recent_only = train_all[train_all["fecha"] >= TRAIN_START]
+    train = recent_only if len(recent_only) >= MIN_TRAIN_DAYS else train_all
+    full = data[data["fecha"] >= TRAIN_START] if len(recent_only) >= MIN_TRAIN_DAYS else data
+    window_start = train["fecha"].min().strftime("%Y-%m-%d")
+
+    def recency_weights(dates: pd.Series, reference: pd.Timestamp) -> np.ndarray:
+        return np.where(dates >= reference - pd.DateOffset(days=RECENT_DAYS), RECENT_WEIGHT, 1.0)
 
     baseline_table = train.assign(month=train["fecha"].dt.month, dow=train["fecha"].dt.day_of_week).groupby(["month", "dow"])["afluencia"].mean()
     station_mean = float(train["afluencia"].mean())
-    baseline_pred = [baseline_table.get((date.month, date.day_of_week), station_mean) for date in test["fecha"]]
+    baseline_pred = [baseline_table.get((day.month, day.day_of_week), station_mean) for day in test["fecha"]]
 
+    # 1) Validación: se entrena solo con el pasado y se evalúa en los últimos días observados.
     model = RandomForestRegressor(**RF_PARAMS)
-    model.fit(features(train["fecha"]), train["afluencia"])
+    model.fit(features(train["fecha"]), train["afluencia"], sample_weight=recency_weights(train["fecha"], cutoff))
     model_pred = model.predict(features(test["fecha"]))
-    future_pred = np.maximum(0, model.predict(features(forecast_dates)))
+    # 2) Pronóstico: una vez validado, el mismo modelo se reentrena con todos los datos
+    #    válidos, incluidos los más recientes, antes de estimar el horizonte futuro.
+    final_model = RandomForestRegressor(**RF_PARAMS)
+    final_model.fit(features(full["fecha"]), full["afluencia"], sample_weight=recency_weights(full["fecha"], last_date))
+    future_pred = np.maximum(0, final_model.predict(features(forecast_dates)))
 
     q33, q67 = train["afluencia"].quantile([0.33, 0.67]).tolist()
     q25, median, q75 = train["afluencia"].quantile([0.25, 0.5, 0.75]).tolist()
@@ -154,6 +256,7 @@ def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Time
             "lowThreshold": rounded(q33),
             "highThreshold": rounded(q67),
             "observations": int(len(data)),
+            "trainStart": window_start,
             "closedDays": zero_days,
         },
         "metrics": {
@@ -234,7 +337,11 @@ def main() -> None:
         "model": {
             "name": "Random Forest Regressor",
             "trees": RF_PARAMS["n_estimators"],
-            "features": ["mes", "día de la semana", "día del mes", "fin de semana", "ciclo anual"],
+            "features": ["mes", "día de la semana", "día del mes", "fin de semana", "ciclo anual",
+                         "días festivos", "fechas especiales", "puentes", "vacaciones de Semana Santa", "vacaciones de invierno"],
+            "refit": "Tras validar, el modelo se reentrena con todos los datos válidos de su ventana antes de pronosticar.",
+            "trainingWindow": f"Desde {TRAIN_START} si hay al menos {MIN_TRAIN_DAYS} días válidos; si no, todo el historial.",
+            "recentWeight": f"Los últimos {RECENT_DAYS} días antes del corte pesan {RECENT_WEIGHT:g} veces más.",
             "validation": f"Partición cronológica por estación y línea: últimos {TEST_DAYS} días observados",
             "unit": "Un modelo por estación y línea, como publica el recurso oficial",
             "seed": RF_PARAMS["random_state"],
@@ -245,6 +352,7 @@ def main() -> None:
                 "maxStaleDays": MAX_STALE_DAYS,
             },
         },
+        "calendar": calendar_labels(forecast_dates),
         "featured": [{"line": line, "name": name} for line, name in FEATURED],
         "stations": records,
         "skipped": skipped,

@@ -145,6 +145,10 @@
     .time-card { padding: 14px; border: 1px solid rgba(93, 214, 232, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(93, 214, 232, .08), rgba(255, 255, 255, .02)); }
     .clock { font-size: 1.9rem; font-weight: 760; letter-spacing: -.05em; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .period { color: var(--cyan); font-size: .74rem; margin: 3px 0 10px; }
+    .calendar-chip { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 10px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(255, 189, 89, .3); background: rgba(255, 189, 89, .1); color: #ffd48a; font-size: .68rem; font-weight: 650; }
+    .calendar-chip[hidden] { display: none; }
+    .calendar-chip::before { content: "★"; font-size: .7rem; }
+    .calendar-note { margin: 10px 0 0; color: #ffd48a; font-size: .7rem; }
     input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
     .range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: .64rem; }
     .date-field { margin-top: 12px; }
@@ -449,6 +453,7 @@
         <div class="time-card">
           <div class="clock" id="dateLabel">—</div>
           <div class="period" id="dayLabel">Afluencia diaria estimada</div>
+          <div class="calendar-chip" id="calendarChip" hidden></div>
           <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
           <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
           <div class="date-field"><label for="dateInput">Elegir fecha exacta</label><input type="date" id="dateInput"></div>
@@ -505,6 +510,7 @@
         </div>
         <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
         <p class="level-message" id="levelMessage">—</p>
+        <p class="calendar-note" id="calendarNote" hidden></p>
         <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
         <div id="modelDetail">
         <div class="detail-grid">
@@ -536,11 +542,11 @@
     <div class="page-inner">
       <div class="page-intro"><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div>
       <div class="method-grid">
-        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>Un modelo por cada estación y línea de la red (195 registros, como los publica el recurso oficial). Aprende patrones de calendario, se entrena con el pasado y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal. Los días sin servicio (afluencia 0 por cierres u obras) se excluyen para no confundirlos con demanda baja.</p><div class="feature-list" id="featureList"></div></section>
+        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>Un modelo por cada estación y línea de la red (195 registros, como los publica el recurso oficial). Aprende patrones de calendario —incluidos días festivos, fechas especiales, puentes y vacaciones— y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal. Se entrena desde 2023 para no arrastrar la recuperación tras la pandemia, el último año pesa tres veces más y, una vez validado, se reentrena con los datos más recientes antes de pronosticar. Los días sin servicio (afluencia 0 por cierres u obras) se excluyen.</p><div class="feature-list" id="featureList"></div></section>
         <section class="card principle-card"><p class="card-label">Principio rector</p><blockquote>Una demo estable, honesta y reproducible vale más que muchas funciones incompletas.</blockquote><p>La interfaz distingue predicción diaria de ocupación física y evita recomendaciones horarias sin datos que las respalden.</p></section>
         <section class="card pipeline"><p class="card-label">Arquitectura mínima</p><div class="steps"><div class="step"><span>01</span><strong>CSV oficial</strong><p>Afluencia diaria simple del Metro CDMX.</p></div><div class="step"><span>02</span><strong>Limpieza</strong><p>Fechas, nulos, duplicados y etiquetas.</p></div><div class="step"><span>03</span><strong>Calendario</strong><p>Mes, semana, día y ciclo anual.</p></div><div class="step"><span>04</span><strong>Entrenamiento</strong><p>Línea base y Random Forest por estación.</p></div><div class="step"><span>05</span><strong>Validación</strong><p>MAE y RMSE con corte cronológico.</p></div><div class="step"><span>06</span><strong>Interfaz</strong><p>Estimación y nivel relativo interpretable.</p></div></div></section>
-        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li><li>Aviso de confiabilidad baja cuando el error típico supera el 30% del valor habitual.</li></ul></section>
-        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, cámaras, sensores o datos en tiempo real.</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado y del calendario oficial de días festivos.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li><li>Aviso de confiabilidad baja cuando el error típico supera el 30% del valor habitual.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, eventos, cámaras, sensores o datos en tiempo real.</li><li>Las vacaciones escolares son aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
     </div>
@@ -914,6 +920,11 @@
     $('stationSelect').value = station && node ? `${station.line}|${node.name}` : '';
     $('dateLabel').textContent = shortDate(date);
     $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
+    const calendarLabel = data.calendar?.[date] || '';
+    $('calendarChip').hidden = !calendarLabel;
+    $('calendarChip').textContent = calendarLabel;
+    $('calendarNote').hidden = !calendarLabel || !station;
+    $('calendarNote').textContent = calendarLabel ? `${calendarLabel}. El modelo considera esta fecha en la estimación.` : '';
     $('dateRange').value = state.index;
     $('dateInput').value = date;
     $('legendLow').textContent = station ? `< ${format(station.summary.lowThreshold)}` : '—';
