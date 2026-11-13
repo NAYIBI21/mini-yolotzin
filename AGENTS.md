@@ -29,7 +29,8 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 
 ## Archivos y publicación
 
-- `index.html`, `model-data.js`, `metro-catalog.js` y `weather-summary.js` deben permanecer en la raíz para GitHub Pages.
+- `index.html`, `model-data.js`, `metro-catalog.js`, `weather-summary.js`, `manifest.webmanifest`, `sw.js` e `icons/` deben permanecer en la raíz para GitHub Pages.
+- Si cambia la lista de archivos que necesita la app, actualizar `FILES` y el nombre `CACHE` en `sw.js`. Todas las rutas son relativas (`./`) porque el sitio se publica en `/mini-yolotzin/`.
 - `metro-catalog.js` solo contiene ubicación de estaciones; no debe usarse para mostrar afluencia de estaciones sin modelo. Los nombres del catálogo y del CSV se relacionan con una clave normalizada en `index.html` (`stationKey`).
 - `scripts/build_model_data.py` genera `model-data.js` a partir de `afluencia_simple.csv`.
 - El CSV original no se versiona; está incluido en `.gitignore`.
@@ -44,7 +45,8 @@ Antes de entregar un cambio:
 3. Confirmar que la selección de estación y fecha (lista, barra, fecha exacta y ±1 día) actualiza la estimación y el mapa.
 4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom.
 5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones, que en las correspondencias se puede cambiar de línea y que todas las estaciones del catálogo tienen su registro del modelo.
-6. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar.
-7. Revisar la presentación en pantalla pequeña.
-8. Resumir los archivos cambiados y cualquier limitación de la verificación.
+6. Probar la vista de 7 días (cambia la fecha al hacer clic) y, servida por http, que la app abra sin conexión.
+7. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar.
+8. Revisar la presentación en pantalla pequeña.
+9. Resumir los archivos cambiados y cualquier limitación de la verificación.
 
