@@ -38,7 +38,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 
 ## Comprobaciones mínimas
 
-Antes de entregar un cambio:
+Antes de entregar un cambio, corre `pytest` (ver README); las pruebas automatizan la mayoría de estos puntos y deben pasar en la Pull Request. Si agregas una función, agrega su prueba en `tests/`. Además:
 
 1. Verificar que la página abra sin errores de JavaScript.
 2. Probar las pestañas Explorar, Metodología y Datos, con clic y con las flechas del teclado.
