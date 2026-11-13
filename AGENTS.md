@@ -12,6 +12,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - Mantener accesibilidad básica, diseño adaptable a celular y navegación por teclado.
 - Los perfiles y Mis viajes se almacenan únicamente con `localStorage`; no son cuentas reales. El texto que escribe la persona se muestra siempre escapado.
 - Nunca agregar contraseñas, tokens, claves API ni datos personales al repositorio.
+- Datos externos en vivo solo de fuentes abiertas sin clave (hoy: Ecobici GBFS). Se muestran aparte, marcados «en vivo», nunca mezclados con la estimación del modelo, y la página debe seguir funcionando si fallan. En las pruebas se sustituyen por `tests/fixtures/`.
 
 ## Reglas metodológicas
 

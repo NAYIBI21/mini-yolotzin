@@ -6,6 +6,8 @@ para no depender del día en que se corran las pruebas.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from conftest import model_value, set_date
@@ -103,13 +105,40 @@ def test_profile_dialog_escape_returns_focus(page):
 
 
 def test_works_offline_after_first_visit(page):
-    page.evaluate("navigator.serviceWorker.ready.then(() => true)")
+    # Con límite propio: si la página falla, el service worker nunca se registra y esto no debe colgarse.
+    registered = page.evaluate("Promise.race([navigator.serviceWorker.ready.then(() => true), new Promise(r => setTimeout(() => r(false), 5000))])")
+    assert registered, "El service worker no se registró"
     page.reload()
     page.wait_for_timeout(500)
     page.context.set_offline(True)
     page.reload()
     assert page.locator("#networkViewport .station").count() == 163
     page.context.set_offline(False)
+
+
+def test_ecobici_live_near_station(page):
+    page.select_option("#stationSelect", "3|Hidalgo")
+    page.wait_for_selector("#bikeList .bike-item")
+    items = page.locator("#bikeList .bike-item").all_text_contents()
+    assert len(items) == 2                               # la tercera está a más de 500 m
+    text = " | ".join(items)
+    assert "Prueba Uno" in text and "7 bicis · 12 espacios" in text
+    assert "1 bici · 19 espacios" in text                  # singular
+    assert "CE-90" not in text                             # sin el código interno
+    distances = [int(re.search(r"(\d+) m ·", item).group(1)) for item in items]
+    assert distances == sorted(distances)                  # de la más cercana a la más lejana
+    assert "no es una estimación del modelo" in page.text_content("#bikeNote")
+    page.select_option("#stationSelect", "3|Indios Verdes")
+    assert page.locator("#bikeList .bike-item").count() == 0
+    assert "No hay cicloestaciones" in page.text_content("#bikeNote")
+
+
+def test_ecobici_failure_keeps_page_working(page, model_data):
+    page.context.ecobici_mode = "fail"
+    page.reload()
+    page.wait_for_function("!document.getElementById('bikeNote').textContent.includes('Consultando')")
+    assert "Ecobici no respondió" in page.text_content("#bikeNote")
+    assert page.text_content("#detailEstimate") != "—"   # el modelo se sigue mostrando
 
 
 @pytest.mark.parametrize("width", [1024, 390])
