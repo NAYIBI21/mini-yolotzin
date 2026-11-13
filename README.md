@@ -22,6 +22,8 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
 - Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
 - Perfiles locales de clase que se guardan solamente en el navegador.
+- **Próximos 7 días** de la estación elegida y de cada viaje, con el mejor día hábil (excluye festivos) y marcas de fechas especiales (★) y eventos (◆).
+- **App instalable** (PWA): en Android/Chrome aparece «Instalar app»; en iPhone, Safari → Compartir → Agregar a pantalla de inicio. Funciona sin conexión con la última versión descargada.
 - **Mis viajes**: hasta 8 estaciones o viajes origen → destino por perfil, con la estimación y el nivel de la fecha elegida, avisos de festivos y eventos, y acceso directo a cada estación. Se guardan solo en el navegador (`localStorage`).
 - Información de metodología, cobertura, errores y limitaciones.
 
@@ -38,6 +40,21 @@ No requiere instalación para visualizarla:
 1. Descarga o clona el repositorio.
 2. Conserva juntos `index.html`, `model-data.js`, `metro-catalog.js` y `weather-summary.js`.
 3. Abre `index.html` con Chrome, Safari, Firefox o Edge.
+
+## App instalable y sin conexión
+
+- `manifest.webmanifest` y `icons/` permiten instalar la página como app.
+- `sw.js` (service worker) guarda una copia para abrirla sin internet. Usa «red primero»: si hay conexión, siempre descarga la versión más reciente, así que los datos nuevos se ven en cuanto se publican.
+- Solo funciona servida por `http(s)` (GitHub Pages). Al abrir `index.html` como archivo, la app funciona igual pero sin modo sin conexión.
+- Si se agrega o renombra un archivo que la app necesita, actualiza la lista `FILES` y cambia el nombre `CACHE` en `sw.js` (por ejemplo, `mini-yolotzin-v2`).
+
+Para probarla localmente:
+
+```bash
+python3 -m http.server 8000
+```
+
+y abre `http://localhost:8000/`.
 
 ## Editar con ChatGPT, Codex o Claude
 
@@ -156,6 +173,7 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
+- `manifest.webmanifest`, `sw.js`, `icons/`: app instalable y modo sin conexión.
 - `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
