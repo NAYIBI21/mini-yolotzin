@@ -105,7 +105,9 @@ def test_profile_dialog_escape_returns_focus(page):
 
 
 def test_works_offline_after_first_visit(page):
-    page.evaluate("navigator.serviceWorker.ready.then(() => true)")
+    # Con límite propio: si la página falla, el service worker nunca se registra y esto no debe colgarse.
+    registered = page.evaluate("Promise.race([navigator.serviceWorker.ready.then(() => true), new Promise(r => setTimeout(() => r(false), 5000))])")
+    assert registered, "El service worker no se registró"
     page.reload()
     page.wait_for_timeout(500)
     page.context.set_offline(True)

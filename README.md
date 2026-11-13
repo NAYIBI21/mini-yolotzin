@@ -79,7 +79,7 @@ python -m playwright install chromium
 pytest
 ```
 
-Para correr solo las rápidas (sin navegador): `pytest -m "not pagina"`.
+Para correr solo las rápidas (sin navegador): `pytest -m "not pagina"`. Cada prueba tiene un límite de 60 segundos (`pytest-timeout`), así que una falla nunca deja la corrida colgada.
 
 ## Editar con ChatGPT, Codex o Claude
 
