@@ -56,6 +56,30 @@ python3 -m http.server 8000
 
 y abre `http://localhost:8000/`.
 
+## Pruebas automáticas
+
+Las pruebas están en `tests/` (Python con `pytest`) y se corren solas en cada Pull Request con GitHub Actions (`.github/workflows/pruebas.yml`):
+
+- `test_datos.py`: coherencia de `model-data.js`, `eventos.csv` (fuente obligatoria, estaciones válidas, sin duplicados), catálogo, clima y `sw.js`.
+- `test_modelo.py`: festivos, Pascua, puentes, nombres de estaciones y una corrida del modelo con datos sintéticos (cierres, estaciones sin datos recientes, ajuste por eventos).
+- `test_pagina.py`: la página en Chromium, servida por http: pestañas, estimaciones, festivos y eventos, búsqueda, mapa, vista de 7 días, Mis viajes, perfil, modo sin conexión y pantallas pequeñas.
+
+Para correrlas localmente:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+```bash
+python -m playwright install chromium
+```
+
+```bash
+pytest
+```
+
+Para correr solo las rápidas (sin navegador): `pytest -m "not pagina"`.
+
 ## Editar con ChatGPT, Codex o Claude
 
 Abre la carpeta completa del repositorio en la herramienta que utilices y describe el cambio deseado. Antes de aceptar un cambio, pide que:
@@ -177,6 +201,7 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
+- `tests/`, `pytest.ini`, `requirements-dev.txt`, `.github/workflows/pruebas.yml`: pruebas automáticas.
 - `AGENTS.md`: reglas para asistentes de programación.
 - `CONTRIBUTING.md`: flujo recomendado de colaboración.
 
