@@ -249,6 +249,34 @@
     .bar.current { background: linear-gradient(to top, rgba(255, 107, 53, .32), var(--accent)); opacity: 1; margin-left: 6px; }
     .chart-axis { display: flex; justify-content: space-between; color: var(--muted); font-size: .62rem; margin-top: 6px; }
     .hot-list { display: grid; gap: 6px; }
+    .trips-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .trips-head .eyebrow { margin: 0; }
+    .mini-btn { border: 1px solid rgba(93, 214, 232, .35); background: rgba(93, 214, 232, .1); color: var(--text); border-radius: 8px; padding: 5px 9px; font-size: .7rem; font-weight: 700; cursor: pointer; }
+    .mini-btn:hover { background: rgba(93, 214, 232, .18); }
+    .trip-list { display: grid; gap: 8px; }
+    .trip-item { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .025); }
+    .trip-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .trip-top strong { font-size: .76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trip-remove { border: 0; background: transparent; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+    .trip-remove:hover { color: var(--danger); background: rgba(255, 93, 115, .1); }
+    .trip-stop { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; padding: 5px 6px; border: 0; border-radius: 7px; background: transparent; text-align: left; cursor: pointer; font-size: .72rem; }
+    .trip-stop:hover, .trip-stop.active { background: rgba(255, 255, 255, .05); }
+    .trip-stop .line-pill { min-width: 20px; height: 20px; font-size: .6rem; border-radius: 6px; }
+    .trip-stop .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trip-stop .val { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .trip-arrow { color: var(--muted); font-size: .66rem; padding-left: 10px; }
+    .trip-flags { margin-top: 6px; display: grid; gap: 3px; }
+    .trip-flags span { font-size: .64rem; line-height: 1.35; }
+    .trip-flags .cal { color: #ffd48a; }
+    .trip-flags .evt { color: #a8e6ef; }
+    .trip-form { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border: 1px solid rgba(93, 214, 232, .2); border-radius: 10px; background: rgba(93, 214, 232, .05); }
+    .trip-form[hidden] { display: none; }
+    .trip-form label { margin: 4px 0 0; font-size: .7rem; }
+    .trip-form input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--field); color: var(--text); }
+    .trip-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .trip-actions .ghost-btn { margin-top: 0; min-height: 42px; }
+    .save-station { margin-top: 12px; width: 100%; min-height: 38px; border: 1px dashed rgba(255, 189, 89, .45); border-radius: 10px; background: transparent; color: #ffd48a; font-size: .74rem; font-weight: 700; cursor: pointer; }
+    .save-station.saved { border-style: solid; background: rgba(255, 189, 89, .1); }
     .hot-item { width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 7px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
     .hot-item:hover, .hot-item.active { background: rgba(255, 255, 255, .05); }
     .hot-item.active .rank { background: var(--accent); color: #fff; }
@@ -451,6 +479,22 @@
   <!-- Vista principal: controles · mapa · detalle -->
   <main class="workspace view active" id="exploreView" role="tabpanel" aria-labelledby="tab-explore">
     <aside class="side controls" aria-label="Parámetros de la estimación">
+      <section class="section" id="tripsSection" aria-labelledby="tripsTitle">
+        <div class="trips-head"><p class="eyebrow" id="tripsTitle">Mis viajes</p><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Nuevo viaje</button></div>
+        <div class="trip-list" id="tripList" aria-live="polite"></div>
+        <p class="note" id="tripEmpty">Guarda tus estaciones o viajes frecuentes para ver su estimación en cuanto abras la app. Se guardan solo en este navegador.</p>
+        <form class="trip-form" id="tripForm" hidden>
+          <label for="tripLabel">Nombre del viaje</label>
+          <input id="tripLabel" maxlength="30" placeholder="Ej. Casa → Escuela" autocomplete="off">
+          <label for="tripFrom">Origen</label>
+          <select id="tripFrom"></select>
+          <label for="tripTo">Destino (opcional)</label>
+          <select id="tripTo"><option value="">Sin destino</option></select>
+          <div class="trip-actions"><button type="submit" class="play-btn">Guardar</button><button type="button" class="ghost-btn" id="tripCancel">Cancelar</button></div>
+          <p class="profile-error" id="tripError" role="alert"></p>
+        </form>
+      </section>
+
       <section class="section">
         <p class="eyebrow">Estación</p>
         <label for="stationSelect">Estación y línea</label>
@@ -527,6 +571,7 @@
           <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
           <div class="line-pills" id="detailLines"></div>
         </div>
+        <button type="button" class="save-station" id="saveStation" aria-pressed="false">☆ Guardar en Mis viajes</button>
         <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
         <p class="level-message" id="levelMessage">—</p>
         <p class="calendar-note" id="calendarNote" hidden></p>
@@ -701,6 +746,12 @@
     target.focus();
   }
   const preferencesKey = () => activeProfile ? PREFS_PREFIX + activeProfile.id : null;
+  // ---------- Mis viajes (solo en este navegador, por perfil) ----------
+  const TRIPS_PREFIX = 'mini_yolotzin_trips_v1_', MAX_TRIPS = 8;
+  const tripsKey = () => activeProfile ? TRIPS_PREFIX + activeProfile.id : null;
+  const readTrips = () => { const key = tripsKey(); const list = key ? safeRead(key) : null; return Array.isArray(list) ? list : []; };
+  const writeTrips = list => { const key = tripsKey(); return key ? safeWrite(key, list.slice(0, MAX_TRIPS)) : false; };
+  const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const readPreferences = () => { const key = preferencesKey(); return key ? safeRead(key) : null; };
   function savePreferences() {
     const key = preferencesKey();
@@ -730,6 +781,7 @@
     safeWrite(PROFILE_KEY, activeProfile);
     renderProfile();
     closeProfileEditor();
+    if (typeof renderTrips === 'function' && $('tripList').dataset.ready) renderTrips();
     savePreferences();
   });
   $('profileButton').addEventListener('click', openProfileEditor);
@@ -1009,6 +1061,7 @@
       $('geoTitle').textContent = 'Ficha geográfica';
       $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
       renderHotList(rows);
+      renderTrips();
       return;
     }
 
@@ -1037,6 +1090,63 @@
 
     renderBars(station, prediction.value, date);
     renderHotList(rows);
+    renderTrips();
+  }
+
+  // ---------- Mis viajes ----------
+  const sameStop = (a, b) => !!a && !!b && a.line === b.line && stationKey(a.name) === stationKey(b.name);
+  function stopHtml(stop) {
+    const record = recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`);
+    const active = sameStop(stop, { name: currentNode()?.name || state.station, line: state.line });
+    if (!record) return `<button type="button" class="trip-stop" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val">—</span></button>`;
+    const p = predictionOf(record, state.index);
+    return `<button type="button" class="trip-stop${active ? ' active' : ''}" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}" aria-label="${esc(stop.name)}, Línea ${esc(stop.line)}: ${format(p.value)} accesos estimados, ${levelName[p.level].toLowerCase()}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val" style="color:${levelColor[p.level]}">${format(p.value)}</span></button>`;
+  }
+  function renderTrips() {
+    const trips = readTrips(), date = dates[state.index];
+    $('tripEmpty').hidden = trips.length > 0;
+    $('tripAddToggle').disabled = trips.length >= MAX_TRIPS;
+    const calendarLabel = data.calendar?.[date];
+    $('tripList').innerHTML = trips.map(trip => {
+      const stops = [trip.from, trip.to].filter(Boolean);
+      const events = stops.flatMap(stop => {
+        const record = recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`);
+        const adj = record?.eventAdjustments?.find(a => a.date === date);
+        if (!adj) return [];
+        const info = (data.events?.calendar?.[date] || []).find(e => e.grupo === adj.group);
+        return [`◆ ${esc(info ? info.nombre : adj.group)} (${esc(stop.name)}${adj.factor ? `, ${signed((adj.factor - 1) * 100)}` : ''})`];
+      });
+      const flags = [calendarLabel ? `<span class="cal">★ ${esc(calendarLabel)}</span>` : '', ...events.map(e => `<span class="evt">${e}</span>`)].join('');
+      return `<div class="trip-item"><div class="trip-top"><strong>${esc(trip.label)}</strong><button type="button" class="trip-remove" data-trip="${esc(trip.id)}" aria-label="Eliminar ${esc(trip.label)}">×</button></div>${stopHtml(trip.from)}${trip.to ? `<div class="trip-arrow" aria-hidden="true">↓</div>${stopHtml(trip.to)}` : ''}${flags ? `<div class="trip-flags">${flags}</div>` : ''}</div>`;
+    }).join('');
+    const current = { name: currentNode()?.name || state.station, line: state.line };
+    const saved = trips.some(t => !t.to && sameStop(t.from, current));
+    $('saveStation').classList.toggle('saved', saved);
+    $('saveStation').setAttribute('aria-pressed', String(saved));
+    $('saveStation').textContent = saved ? '★ Guardada en Mis viajes · quitar' : '☆ Guardar en Mis viajes';
+    $('saveStation').disabled = !saved && trips.length >= MAX_TRIPS;
+  }
+  const newTripId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const parseStop = value => { if (!value) return null; const [line, ...rest] = value.split('|'); return { line, name: rest.join('|') }; };
+  function toggleSavedStation() {
+    const current = { name: currentNode()?.name || state.station, line: state.line };
+    const trips = readTrips();
+    const index = trips.findIndex(t => !t.to && sameStop(t.from, current));
+    if (index >= 0) trips.splice(index, 1);
+    else if (trips.length < MAX_TRIPS) trips.push({ id: newTripId(), label: current.name, from: current, to: null });
+    writeTrips(trips);
+    renderTrips();
+  }
+  function openTripForm(open) {
+    $('tripForm').hidden = !open;
+    $('tripAddToggle').setAttribute('aria-expanded', String(open));
+    $('tripError').textContent = '';
+    if (open) {
+      $('tripLabel').value = '';
+      $('tripFrom').value = $('stationSelect').value || $('tripFrom').options[0]?.value || '';
+      $('tripTo').value = '';
+      $('tripLabel').focus();
+    }
   }
 
   // ---------- Búsqueda y filtro de la red ----------
@@ -1116,6 +1226,29 @@
   }
 
   // ---------- Eventos ----------
+  $('saveStation').addEventListener('click', toggleSavedStation);
+  $('tripAddToggle').addEventListener('click', () => openTripForm($('tripForm').hidden));
+  $('tripCancel').addEventListener('click', () => { openTripForm(false); $('tripAddToggle').focus(); });
+  $('tripForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const from = parseStop($('tripFrom').value), to = parseStop($('tripTo').value);
+    if (!from) { $('tripError').textContent = 'Elige una estación de origen.'; return; }
+    if (to && sameStop(from, to)) { $('tripError').textContent = 'El origen y el destino deben ser distintos.'; return; }
+    const trips = readTrips();
+    if (trips.length >= MAX_TRIPS) { $('tripError').textContent = `Puedes guardar hasta ${MAX_TRIPS} viajes.`; return; }
+    const label = $('tripLabel').value.trim() || (to ? `${from.name} → ${to.name}` : from.name);
+    trips.push({ id: newTripId(), label, from, to });
+    writeTrips(trips);
+    openTripForm(false);
+    renderTrips();
+    $('tripAddToggle').focus();
+  });
+  $('tripList').addEventListener('click', event => {
+    const remove = event.target.closest('.trip-remove');
+    if (remove) { writeTrips(readTrips().filter(t => t.id !== remove.dataset.trip)); renderTrips(); return; }
+    const stop = event.target.closest('.trip-stop');
+    if (stop) selectStation(stop.dataset.station, stop.dataset.line);
+  });
   $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station, item.dataset.line); });
   $('detailLines').addEventListener('click', event => { const pill = event.target.closest('button.line-pill'); if (pill) selectStation(state.station, pill.dataset.line); });
   $('stationSelect').addEventListener('change', event => { const [line, ...rest] = event.target.value.split('|'); selectStation(rest.join('|'), line); });
@@ -1217,6 +1350,9 @@
   });
   if (!currentNode()) { state.station = firstFeatured.name; state.line = firstFeatured.line; }
   initStationSearch();
+  // Los selectores de Mis viajes reutilizan las opciones agrupadas por línea.
+  [...$('stationSelect').querySelectorAll('optgroup')].forEach(group => { $('tripFrom').appendChild(group.cloneNode(true)); $('tripTo').appendChild(group.cloneNode(true)); });
+  $('tripList').dataset.ready = '1';
   fitNetwork();
   applyTransform();
   let resizeTimer = null;
