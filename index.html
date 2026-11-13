@@ -966,7 +966,7 @@
     $('calendarNote').textContent = calendarLabel ? `${calendarLabel}. El modelo considera esta fecha en la estimación.` : '';
     const dayEvents = data.events?.calendar?.[date] || [];
     $('eventChip').hidden = !dayEvents.length;
-    $('eventChip').textContent = dayEvents.map(e => `${e.nombre} · ${e.recinto}`).join(' | ');
+    $('eventChip').textContent = dayEvents.map(e => e.nombre.includes(e.recinto) ? e.nombre : `${e.nombre} · ${e.recinto}`).join(' | ');
     const adjustment = station?.eventAdjustments?.find(a => a.date === date);
     const eventInfo = adjustment ? dayEvents.find(e => e.grupo === adjustment.group) : null;
     $('eventNote').hidden = !adjustment;

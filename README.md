@@ -116,7 +116,16 @@ Conciertos, partidos, marchas y fechas cívicas cambian mucho la afluencia de la
 
 Cómo se usa: el modelo base no cambia. Si una fecha futura tiene un evento, su estimación se ajusta con la mediana del efecto medido en **al menos 2 ediciones anteriores** en esa estación (día del evento ÷ mismo día de la semana ±3 semanas). Validado dejando una edición fuera: error mediano en días de evento **32.4% → 18.1%** (mejora en 68% de 130 casos). Con menos ediciones, la página avisa que el efecto no se midió.
 
-Pendiente útil: en Ciudad Deportiva, 61 de los 180 días de prueba tuvieron picos >30% y concentran el 80% de su error; probablemente conciertos en el Estadio GNP y béisbol en el Estadio Alfredo Harp Helú. Registrar esas fechas con su fuente permitiría ajustarlas.
+Conciertos registrados (fechas de 2025 a 2027 tomadas de medios y boleteras; se excluyeron las fechas en que las fuentes no coinciden):
+
+| Grupo | Estación | Efecto medido | Error en días de evento (sin → con ajuste) |
+|---|---|---|---|
+| Concierto en Estadio GNP Seguros | 9 · Ciudad Deportiva | +32% (mediana de 41 conciertos; muy variable: de −14% a +151%) | 44.7% → 32.9% |
+| Concierto en Palacio de los Deportes | 9 · Velódromo | +29% (37 conciertos) | 25.1% → 19.4% |
+
+Se probaron también Estadio GNP → Velódromo/Puebla y Palacio → Ciudad Deportiva: el efecto fue nulo o el ajuste empeoraba, así que no se incluyen.
+
+Pendiente: los juegos de béisbol en el Estadio Alfredo Harp Helú (Diablos Rojos), junto a Ciudad Deportiva. La Liga Mexicana de Béisbol aún no publica el calendario 2027; cuando salga, agregar los juegos en casa (y los de 2025–2026 para medir su efecto).
 
 ## Análisis del clima
 
