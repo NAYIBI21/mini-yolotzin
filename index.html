@@ -281,6 +281,18 @@
     .trip-actions .ghost-btn { margin-top: 0; min-height: 42px; }
     .save-station { margin-top: 12px; width: 100%; min-height: 38px; border: 1px dashed rgba(255, 189, 89, .45); border-radius: 10px; background: transparent; color: #ffd48a; font-size: .74rem; font-weight: 700; cursor: pointer; }
     .save-station.saved { border-style: solid; background: rgba(255, 189, 89, .1); }
+    .bike-live { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(98, 211, 148, .12); color: var(--good); font-size: .6rem; letter-spacing: .04em; vertical-align: middle; }
+    .bike-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .bike-list { display: grid; gap: 6px; }
+    .bike-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+    .bike-item .bike-name { font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bike-item .bike-dist { grid-column: 1; font-size: .62rem; color: var(--muted); }
+    .bike-item .bike-counts { grid-row: 1 / span 2; grid-column: 2; text-align: right; font-size: .66rem; color: var(--muted); line-height: 1.35; }
+    .bike-item .bike-counts strong { font-size: .9rem; color: var(--text); font-variant-numeric: tabular-nums; }
+    .bike-item.empty .bike-counts strong.bikes { color: var(--danger); }
+    .bike-note { margin: 8px 0 0; color: var(--muted); font-size: .64rem; line-height: 1.45; }
+    .bike-note a { color: var(--cyan); }
+    .trip-bikes { display: block; padding-left: 34px; margin-top: -2px; font-size: .6rem; color: var(--good); }
     .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
     .week-day { display: grid; justify-items: center; gap: 3px; padding: 7px 2px 6px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); cursor: pointer; font-size: .6rem; color: var(--muted); }
     .week-day:hover { border-color: rgba(93, 214, 232, .45); }
@@ -615,6 +627,11 @@
         <div class="comparison" id="comparisonNote">—</div>
         <div class="reliability" id="reliabilityNote" hidden></div>
         </div>
+      </section>
+      <section class="section" id="bikeSection" aria-labelledby="bikeTitle">
+        <p class="eyebrow" id="bikeTitle">Ecobici cerca <span class="bike-live">EN VIVO</span></p>
+        <div class="bike-list" id="bikeList" aria-live="polite"></div>
+        <p class="bike-note" id="bikeNote">Consultando Ecobici…</p>
       </section>
       <section class="section" id="weekSection" aria-labelledby="weekTitle">
         <p class="eyebrow" id="weekTitle">Próximos 7 días</p>
@@ -1094,6 +1111,7 @@
       $('geoTitle').textContent = 'Ficha geográfica';
       $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
       renderWeek(null);
+      renderBikes();
       renderHotList(rows);
       renderTrips();
       return;
@@ -1124,6 +1142,7 @@
 
     renderBars(station, prediction.value, date);
     renderWeek(station);
+    renderBikes();
     renderHotList(rows);
     renderTrips();
   }
@@ -1135,8 +1154,71 @@
     const active = sameStop(stop, { name: currentNode()?.name || state.station, line: state.line });
     if (!record) return `<button type="button" class="trip-stop" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val">—</span></button>`;
     const p = predictionOf(record, state.index);
-    return `<button type="button" class="trip-stop${active ? ' active' : ''}" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}" aria-label="${esc(stop.name)}, Línea ${esc(stop.line)}: ${format(p.value)} accesos estimados, ${levelName[p.level].toLowerCase()}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val" style="color:${levelColor[p.level]}">${format(p.value)}</span></button>`;
+    const near = bikes.status ? bikesNear(mapNodes.get(stop.name) || nodeByKey(stop.name), 3) : [];
+    const freeBikes = near.reduce((a, s) => a + (s.live && s.live.is_renting ? s.live.num_bikes_available : 0), 0);
+    const bikeLine = near.length ? `<span class="trip-bikes">🚲 ${freeBikes} ${freeBikes === 1 ? 'bici' : 'bicis'} Ecobici cerca (en vivo)</span>` : '';
+    return `<button type="button" class="trip-stop${active ? ' active' : ''}" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}" aria-label="${esc(stop.name)}, Línea ${esc(stop.line)}: ${format(p.value)} accesos estimados, ${levelName[p.level].toLowerCase()}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val" style="color:${levelColor[p.level]}">${format(p.value)}</span></button>${bikeLine}`;
   }
+  // ---------- Ecobici en vivo (GBFS oficial; no forma parte del modelo) ----------
+  const ECOBICI_GBFS = 'https://gbfs.mex.lyftbikes.com/gbfs/en/';
+  const BIKE_RADIUS = 500, BIKE_REFRESH = 60000, WALK_M_PER_MIN = 80;
+  const bikes = { stations: null, status: null, updated: 0, error: '', loading: false, lastFetch: 0 };
+  const metersBetween = (lat1, lon1, lat2, lon2) => {
+    const r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
+    return 2 * 6371000 * Math.asin(Math.sqrt(a));
+  };
+  const nodeCoords = node => node?.records?.[0] ? { lat: node.records[0].lat, lon: node.records[0].lon } : null;
+  function bikesNear(node, limit = 3) {
+    const at = nodeCoords(node);
+    if (!at || !bikes.stations) return [];
+    return bikes.stations
+      .map(s => ({ ...s, distance: metersBetween(at.lat, at.lon, s.lat, s.lon), live: bikes.status?.get(s.station_id) }))
+      .filter(s => s.distance <= BIKE_RADIUS)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit);
+  }
+  async function refreshBikes(force = false) {
+    if (bikes.loading || (!force && Date.now() - bikes.lastFetch < BIKE_REFRESH)) return;
+    bikes.loading = true;
+    try {
+      if (!bikes.stations) {
+        const info = await fetch(ECOBICI_GBFS + 'station_information.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+        bikes.stations = info.data.stations.map(s => ({ station_id: String(s.station_id), name: String(s.name).replace(/^[A-Z]{1,3}-\d+\s+/, ''), lat: +s.lat, lon: +s.lon, capacity: s.capacity }));
+      }
+      const status = await fetch(ECOBICI_GBFS + 'station_status.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      bikes.status = new Map(status.data.stations.map(s => [String(s.station_id), s]));
+      bikes.updated = (status.last_updated || Date.now() / 1000) * 1000;
+      bikes.error = '';
+    } catch (err) {
+      bikes.error = navigator.onLine === false ? 'Sin conexión: no se pudo consultar Ecobici.' : 'Ecobici no respondió; se intentará de nuevo en un minuto.';
+    } finally {
+      bikes.loading = false;
+      bikes.lastFetch = Date.now();
+      renderBikes();
+      renderTrips();
+    }
+  }
+  function renderBikes() {
+    const node = currentNode();
+    const list = bikesNear(node);
+    const source = '<a href="https://ecobici.cdmx.gob.mx/en/open-data/" target="_blank" rel="noopener">datos abiertos de Ecobici (GBFS)</a>';
+    $('bikeList').innerHTML = list.map(s => {
+      const live = s.live, working = live && live.is_installed && live.is_renting;
+      const bikesAvail = working ? live.num_bikes_available : 0, docks = working ? live.num_docks_available : 0;
+      const walk = Math.max(1, Math.round(s.distance / WALK_M_PER_MIN));
+      return `<div class="bike-item${working && bikesAvail === 0 ? ' empty' : ''}"><span class="bike-name">${esc(s.name)}</span><span class="bike-dist">${Math.round(s.distance)} m · ~${walk} min a pie</span><span class="bike-counts">${working ? `<strong class="bikes">${bikesAvail}</strong> ${bikesAvail === 1 ? 'bici' : 'bicis'} · <strong>${docks}</strong> ${docks === 1 ? 'espacio' : 'espacios'}` : 'Fuera de servicio'}</span></div>`;
+    }).join('');
+    if (bikes.error && !bikes.status) { $('bikeNote').innerHTML = esc(bikes.error); return; }
+    if (!bikes.stations) { $('bikeNote').textContent = 'Consultando Ecobici…'; return; }
+    const age = Math.max(0, Math.round((Date.now() - bikes.updated) / 60000));
+    const when = age < 1 ? 'hace menos de un minuto' : `hace ${age} min`;
+    $('bikeNote').innerHTML = (list.length ? `Disponibilidad en este momento (actualizada ${when}), no es una estimación del modelo. ` : `No hay cicloestaciones de Ecobici a menos de ${BIKE_RADIUS} m de esta estación. `) + (bikes.error ? esc(bikes.error) + ' ' : '') + `Fuente: ${source}.`;
+  }
+  // Solo se consulta mientras la página está visible.
+  setInterval(() => { if (document.visibilityState === 'visible' && $('exploreView').classList.contains('active')) refreshBikes(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshBikes(); });
+
   // ---------- Vista semanal ----------
   // Para un conjunto de registros (una estación o las paradas de un viaje), los 7 días desde la fecha elegida.
   function weekFrom(recs, start = state.index) {
@@ -1430,6 +1512,8 @@
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitNetwork, 120); });
   render();
+
+  refreshBikes(true);
 
   // ---------- App instalable (PWA) ----------
   // El service worker solo funciona servido por http(s) (GitHub Pages), no al abrir el archivo directamente.
