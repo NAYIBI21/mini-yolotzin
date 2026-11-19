@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Mini Yolotzin">
   <title>Mini Yolotzin · Demanda diaria del Metro CDMX</title>
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%236a44d6'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' transform='translate(3 3) scale(.75)'%3E%3Cpath d='M12 22s7.5-6.4 7.5-12.2a7.5 7.5 0 1 0-15 0C4.5 15.6 12 22 12 22z'/%3E%3Cpath d='M7.8 10.2h2l1.3-2.6 1.8 4.8 1.3-2.2h2'/%3E%3C/g%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
   <script src="./metro-catalog.js"></script>
   <script src="./weather-summary.js"></script>
@@ -27,9 +27,9 @@
       --text: #f4f8fb;
       --text-2: #ccdae5;
       --muted: #96a9bb;
-      --accent: #ff6b35;
-      --accent-hover: #ff7c4c;
-      --cyan: #5dd6e8;
+      --accent: #6a44d6;
+      --accent-hover: #7b57e6;
+      --cyan: #a78bfa;
       --good: #62d394;
       --warning: #ffbd59;
       --danger: #ff5d73;
@@ -41,8 +41,8 @@
     body {
       margin: 0;
       background:
-        radial-gradient(circle at 78% 15%, rgba(50, 148, 170, .13), transparent 28rem),
-        radial-gradient(circle at 8% 82%, rgba(255, 107, 53, .10), transparent 25rem),
+        radial-gradient(circle at 78% 15%, rgba(106, 68, 214, .10), transparent 28rem),
+        radial-gradient(circle at 8% 82%, rgba(106, 68, 214, .10), transparent 25rem),
         var(--bg);
       background-attachment: fixed;
       color: var(--text);
@@ -81,7 +81,7 @@
       display: grid; place-items: center;
       background: var(--accent); color: #fff;
       font-weight: 900; font-size: .95rem;
-      box-shadow: 0 10px 28px rgba(255, 107, 53, .26);
+      box-shadow: 0 10px 28px rgba(106, 68, 214, .26);
     }
     .brand h1 { margin: 0; font-size: 1rem; letter-spacing: -.01em; }
     .brand p { margin: 3px 0 0; color: var(--muted); font-size: .76rem; }
@@ -93,7 +93,7 @@
       font-size: .78rem; font-weight: 650; white-space: nowrap;
     }
     .nav-btn:hover { color: var(--text); }
-    .nav-btn.active { color: var(--text); background: rgba(93, 214, 232, .12); box-shadow: inset 0 0 0 1px rgba(93, 214, 232, .35); }
+    .nav-btn.active { color: var(--text); background: rgba(167, 139, 250, .12); box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .35); }
 
     .status { display: inline-flex; align-items: center; gap: 7px; color: #bdd0df; font-size: .75rem; white-space: nowrap; }
     .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px rgba(98, 211, 148, .10); }
@@ -109,7 +109,7 @@
       padding: 5px 10px 5px 6px; border: 1px solid var(--line); border-radius: 10px;
       background: var(--soft); cursor: pointer; text-align: left;
     }
-    .profile-button:hover { border-color: rgba(93, 214, 232, .45); }
+    .profile-button:hover { border-color: rgba(167, 139, 250, .45); }
     .profile-avatar { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: .69rem; font-weight: 900; }
     .profile-copy { display: grid; }
     .profile-copy strong { font-size: .7rem; line-height: 1.2; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -127,11 +127,11 @@
       width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 10px;
       padding: 0 12px; background: var(--field); color: var(--text);
     }
-    select:hover, input:hover { border-color: rgba(93, 214, 232, .45); }
+    select:hover, input:hover { border-color: rgba(167, 139, 250, .45); }
     .field + .field { margin-top: 12px; }
     select.result-list { min-height: 0; height: 136px; padding: 4px; }
     select.result-list option { padding: 5px 8px; border-radius: 6px; }
-    select.result-list option:checked { background: rgba(93, 214, 232, .18); color: var(--text); }
+    select.result-list option:checked { background: rgba(167, 139, 250, .18); color: var(--text); }
     .result-count { margin: 8px 0 0; color: var(--muted); font-size: .68rem; }
     .geo-card { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .02); color: var(--text-2); font-size: .72rem; line-height: 1.5; }
     .geo-card strong { display: block; color: var(--text); font-size: .8rem; margin-bottom: 4px; }
@@ -147,17 +147,17 @@
     .risk.none { background: rgba(150, 169, 187, .08); border-color: var(--line); color: var(--muted); }
     .station.filtered-out { display: none; }
 
-    .time-card { padding: 14px; border: 1px solid rgba(93, 214, 232, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(93, 214, 232, .08), rgba(255, 255, 255, .02)); }
+    .time-card { padding: 14px; border: 1px solid rgba(167, 139, 250, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(167, 139, 250, .08), rgba(255, 255, 255, .02)); }
     .clock { font-size: 1.9rem; font-weight: 760; letter-spacing: -.05em; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .period { color: var(--cyan); font-size: .74rem; margin: 3px 0 10px; }
     .calendar-chip { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 10px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(255, 189, 89, .3); background: rgba(255, 189, 89, .1); color: #ffd48a; font-size: .68rem; font-weight: 650; }
     .calendar-chip[hidden] { display: none; }
     .calendar-chip::before { content: "★"; font-size: .7rem; }
     .calendar-note { margin: 10px 0 0; color: #ffd48a; font-size: .7rem; }
-    .event-chip { display: flex; align-items: flex-start; gap: 6px; margin: -4px 0 10px; padding: 6px 9px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .3); background: rgba(93, 214, 232, .1); color: #a8e6ef; font-size: .68rem; font-weight: 650; line-height: 1.35; }
+    .event-chip { display: flex; align-items: flex-start; gap: 6px; margin: -4px 0 10px; padding: 6px 9px; border-radius: 10px; border: 1px solid rgba(167, 139, 250, .3); background: rgba(167, 139, 250, .1); color: #d6c9ff; font-size: .68rem; font-weight: 650; line-height: 1.35; }
     .event-chip[hidden] { display: none; }
     .event-chip::before { content: "◆"; font-size: .62rem; margin-top: 1px; }
-    .event-note { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .22); background: rgba(93, 214, 232, .07); color: #c7eef4; font-size: .68rem; line-height: 1.5; }
+    .event-note { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(167, 139, 250, .22); background: rgba(167, 139, 250, .07); color: #e2dbff; font-size: .68rem; line-height: 1.5; }
     .event-note strong { color: var(--text); }
     .event-table { width: 100%; margin-top: 4px; }
     .event-table td, .event-table th { padding: 8px; }
@@ -171,13 +171,13 @@
       font-size: .76rem; font-weight: 650;
       transition: transform .16s ease, border-color .16s ease, background .16s ease;
     }
-    .icon-btn:hover, .zoom-btn:hover, .ghost-btn:hover { border-color: rgba(93, 214, 232, .45); background: #192e42; }
+    .icon-btn:hover, .zoom-btn:hover, .ghost-btn:hover { border-color: rgba(167, 139, 250, .45); background: #192e42; }
     .icon-btn:active, .zoom-btn:active, .play-btn:active, .ghost-btn:active { transform: scale(.96); }
     .play-btn { border-color: transparent; background: var(--accent); color: #fff; font-weight: 750; }
     .play-btn:hover { background: var(--accent-hover); }
     .speed-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
     .speed-btn { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 7px; cursor: pointer; font-size: .72rem; }
-    .speed-btn.active { color: var(--text); background: rgba(93, 214, 232, .12); border-color: rgba(93, 214, 232, .35); }
+    .speed-btn.active { color: var(--text); background: rgba(167, 139, 250, .12); border-color: rgba(167, 139, 250, .35); }
     .ghost-btn { width: 100%; margin-top: 8px; min-height: 36px; background: transparent; color: var(--text-2); }
 
     .legend { display: grid; gap: 9px; }
@@ -244,19 +244,19 @@
     .detail-card small { display: block; color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; }
     .detail-card strong { display: block; font-size: 1rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
     .detail-card span { font-size: .66rem; color: var(--muted); }
-    .detail-card.main { grid-column: 1 / -1; border-color: rgba(255, 107, 53, .28); background: linear-gradient(135deg, rgba(255, 107, 53, .12), rgba(255, 255, 255, .02)); }
+    .detail-card.main { grid-column: 1 / -1; border-color: rgba(106, 68, 214, .28); background: linear-gradient(135deg, rgba(106, 68, 214, .12), rgba(255, 255, 255, .02)); }
     .detail-card.main strong { font-size: 1.9rem; letter-spacing: -.05em; line-height: 1.1; }
-    .comparison { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .18); background: rgba(93, 214, 232, .07); color: #a8e6ef; font-size: .68rem; line-height: 1.45; }
+    .comparison { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(167, 139, 250, .18); background: rgba(167, 139, 250, .07); color: #d6c9ff; font-size: .68rem; line-height: 1.45; }
     .comparison.warn { border-color: rgba(255, 189, 89, .16); background: rgba(255, 189, 89, .07); color: #e7c989; }
     .bar-chart { height: 118px; display: flex; align-items: flex-end; gap: 4px; padding-top: 12px; }
-    .bar { flex: 1; min-width: 4px; border-radius: 3px 3px 1px 1px; background: linear-gradient(to top, rgba(93, 214, 232, .25), var(--cyan)); opacity: .75; }
-    .bar.current { background: linear-gradient(to top, rgba(255, 107, 53, .32), var(--accent)); opacity: 1; margin-left: 6px; }
+    .bar { flex: 1; min-width: 4px; border-radius: 3px 3px 1px 1px; background: linear-gradient(to top, rgba(167, 139, 250, .25), var(--cyan)); opacity: .75; }
+    .bar.current { background: linear-gradient(to top, rgba(106, 68, 214, .32), var(--accent)); opacity: 1; margin-left: 6px; }
     .chart-axis { display: flex; justify-content: space-between; color: var(--muted); font-size: .62rem; margin-top: 6px; }
     .hot-list { display: grid; gap: 6px; }
     .trips-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .trips-head .eyebrow { margin: 0; }
-    .mini-btn { border: 1px solid rgba(93, 214, 232, .35); background: rgba(93, 214, 232, .1); color: var(--text); border-radius: 8px; padding: 5px 9px; font-size: .7rem; font-weight: 700; cursor: pointer; }
-    .mini-btn:hover { background: rgba(93, 214, 232, .18); }
+    .mini-btn { border: 1px solid rgba(167, 139, 250, .35); background: rgba(167, 139, 250, .1); color: var(--text); border-radius: 8px; padding: 5px 9px; font-size: .7rem; font-weight: 700; cursor: pointer; }
+    .mini-btn:hover { background: rgba(167, 139, 250, .18); }
     .trip-list { display: grid; gap: 8px; }
     .trip-item { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .025); }
     .trip-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
@@ -272,8 +272,8 @@
     .trip-flags { margin-top: 6px; display: grid; gap: 3px; }
     .trip-flags span { font-size: .64rem; line-height: 1.35; }
     .trip-flags .cal { color: #ffd48a; }
-    .trip-flags .evt { color: #a8e6ef; }
-    .trip-form { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border: 1px solid rgba(93, 214, 232, .2); border-radius: 10px; background: rgba(93, 214, 232, .05); }
+    .trip-flags .evt { color: #d6c9ff; }
+    .trip-form { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border: 1px solid rgba(167, 139, 250, .2); border-radius: 10px; background: rgba(167, 139, 250, .05); }
     .trip-form[hidden] { display: none; }
     .trip-form label { margin: 4px 0 0; font-size: .7rem; }
     .trip-form input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--field); color: var(--text); }
@@ -295,13 +295,13 @@
     .trip-bikes { display: block; padding-left: 34px; margin-top: -2px; font-size: .6rem; color: var(--good); }
     .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
     .week-day { display: grid; justify-items: center; gap: 3px; padding: 7px 2px 6px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); cursor: pointer; font-size: .6rem; color: var(--muted); }
-    .week-day:hover { border-color: rgba(93, 214, 232, .45); }
-    .week-day.current { border-color: var(--accent); background: rgba(255, 107, 53, .1); color: var(--text); }
+    .week-day:hover { border-color: rgba(167, 139, 250, .45); }
+    .week-day.current { border-color: var(--accent); background: rgba(106, 68, 214, .1); color: var(--text); }
     .week-day.best { box-shadow: inset 0 0 0 1px var(--good); }
     .week-day strong { color: var(--text); font-size: .7rem; font-variant-numeric: tabular-nums; }
     .week-day i { width: 100%; height: 4px; border-radius: 3px; }
     .week-day .flag { min-height: 11px; font-size: .58rem; line-height: 1; }
-    .week-day .flag .cal { color: #ffd48a; } .week-day .flag .evt { color: #a8e6ef; }
+    .week-day .flag .cal { color: #ffd48a; } .week-day .flag .evt { color: #d6c9ff; }
     .week-best { margin: 10px 0 0; color: var(--text-2); font-size: .7rem; line-height: 1.45; }
     .week-best strong { color: var(--good); }
     .trip-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 7px; }
@@ -310,7 +310,7 @@
     .trip-week button.best { box-shadow: 0 0 0 2px var(--good); opacity: 1; }
     .trip-best { margin-top: 4px; font-size: .62rem; color: var(--muted); }
     .trip-best strong { color: var(--good); }
-    .install-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 12px; border: 1px solid rgba(255, 107, 53, .5); border-radius: 10px; background: rgba(255, 107, 53, .12); color: var(--text); font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .install-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 12px; border: 1px solid rgba(106, 68, 214, .5); border-radius: 10px; background: rgba(106, 68, 214, .12); color: var(--text); font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .install-btn[hidden] { display: none; }
     .install-help { position: fixed; z-index: 900; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-solid); box-shadow: var(--shadow); font-size: .74rem; line-height: 1.5; }
     .install-help[hidden] { display: none; }
@@ -332,7 +332,7 @@
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); backdrop-filter: blur(18px); }
     .card-label { margin: 0 0 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: .67rem; font-weight: 700; }
     .method-grid, .data-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
-    .method-hero { grid-column: span 8; padding: 26px; position: relative; overflow: hidden; border-color: rgba(255, 107, 53, .22); background: linear-gradient(135deg, rgba(255, 107, 53, .13), rgba(14, 27, 41, .9)); }
+    .method-hero { grid-column: span 8; padding: 26px; position: relative; overflow: hidden; border-color: rgba(106, 68, 214, .22); background: linear-gradient(135deg, rgba(106, 68, 214, .13), rgba(14, 27, 41, .9)); }
     .method-hero h3 { margin: 0; font-size: 1.35rem; letter-spacing: -.03em; }
     .method-hero p { color: #c4d3df; max-width: 620px; font-size: .82rem; }
     .feature-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
@@ -385,8 +385,8 @@
     .profile-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(4, 9, 15, .86); backdrop-filter: blur(15px); }
     .profile-overlay.hidden { display: none; }
     .profile-dialog { width: min(760px, 100%); display: grid; grid-template-columns: .85fr 1.15fr; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: var(--panel-solid); box-shadow: 0 35px 100px rgba(0, 0, 0, .5); }
-    .profile-welcome { padding: 32px; background: linear-gradient(155deg, rgba(93, 214, 232, .10), rgba(255, 107, 53, .08)), #0b1824; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; min-height: 450px; }
-    .profile-welcome-mark { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 900; box-shadow: 0 10px 28px rgba(255, 107, 53, .26); }
+    .profile-welcome { padding: 32px; background: linear-gradient(155deg, rgba(167, 139, 250, .10), rgba(106, 68, 214, .08)), #0b1824; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; min-height: 450px; }
+    .profile-welcome-mark { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 900; box-shadow: 0 10px 28px rgba(106, 68, 214, .26); }
     .profile-welcome h2 { margin: 24px 0 10px; font-size: 1.6rem; line-height: 1.1; letter-spacing: -.045em; }
     .profile-welcome p { margin: 0; color: #c4d3df; font-size: .78rem; line-height: 1.6; }
     .profile-privacy { padding: 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); font-size: .66rem; line-height: 1.5; }
@@ -402,11 +402,11 @@
     .color-picker { display: flex; gap: 9px; }
     .color-choice { width: 32px; height: 32px; border: 3px solid var(--panel-solid); border-radius: 10px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
     .color-choice.active { box-shadow: 0 0 0 2px var(--text); transform: scale(1.06); }
-    .profile-submit { width: 100%; height: 48px; margin-top: 22px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 12px 28px rgba(255, 107, 53, .22); }
+    .profile-submit { width: 100%; height: 48px; margin-top: 22px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 12px 28px rgba(106, 68, 214, .22); }
     .profile-submit:hover { background: var(--accent-hover); }
     .profile-secondary { width: 100%; margin-top: 9px; border: 0; background: transparent; color: var(--muted); font-size: .68rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
     .account-alt { width: 100%; height: 44px; margin-top: 9px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
-    .account-alt:hover { border-color: rgba(93, 214, 232, .45); }
+    .account-alt:hover { border-color: rgba(167, 139, 250, .45); }
     #accountForm > p, #accountSession p { margin: 7px 0 22px; color: var(--muted); font-size: .75rem; }
     #accountForm h3, #accountSession h3 { margin: 0; font-size: 1.22rem; letter-spacing: -.03em; }
     .profile-error { min-height: 18px; margin-top: 5px; color: var(--danger); font-size: .66rem; }
@@ -457,15 +457,164 @@
       .metric span { display: none; }
       .steps, .quality-list { grid-template-columns: 1fr; }
     }
+    /* ---------- Rediseño para quien viaja: morado, 4 pestañas (Hoy · Estaciones · Mapa · Agenda) ---------- */
+    .shell { grid-template-rows: auto auto 1fr; }
+    body[data-view="method"] .datebar, body[data-view="data"] .datebar { display: none; }
+    .logo, .profile-welcome-mark { box-shadow: 0 10px 28px rgba(106, 68, 214, .35); }
+    .logo svg, .profile-welcome-mark svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-btn { display: inline-flex; align-items: center; gap: 7px; color: #a78bfa; font-weight: 650; }
+    .nav-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-btn:hover { color: #d6c9ff; }
+    .nav-btn.active { color: #fff; background: var(--accent); box-shadow: none; font-weight: 750; }
+    .datebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--line); background: rgba(8, 16, 25, .6); }
+    .datebar .icon-btn { width: 42px; min-height: 42px; font-size: 1.25rem; line-height: 1; }
+    .date-now { display: grid; min-width: 150px; }
+    .datebar .clock { font-size: 1.05rem; letter-spacing: -.02em; }
+    .datebar .period { margin: 0; color: var(--muted); font-size: .72rem; }
+    .datebar .date-field { margin: 0; display: flex; align-items: center; gap: 8px; }
+    .datebar .date-field label { margin: 0; }
+    .datebar input[type="date"] { min-height: 40px; width: auto; }
+    .chip-btn { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--accent); background: transparent; color: #c4b5fd; font-weight: 700; cursor: pointer; }
+    .chip-btn:hover { background: rgba(106, 68, 214, .15); }
+    .datebar .calendar-chip, .datebar .event-chip { margin: 0; }
+    .tab-page { min-height: 0; overflow: auto; padding: 22px 20px 40px; }
+    .tab-inner { width: min(1200px, 100%); margin: 0 auto; }
+    .today-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .hello { grid-column: 1 / -1; }
+    .hello h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.1rem); letter-spacing: -.035em; }
+    .hello p { margin: 6px 0 0; color: var(--text-2); font-size: .95rem; }
+    .card-block { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+    .card-block h3 { margin: 0 0 12px; font-size: 1rem; letter-spacing: -.01em; }
+    .trips-head h3 { margin: 0; }
+    .mini-btn { border-color: var(--accent); background: var(--accent); color: #fff; border-radius: 999px; padding: 6px 12px; }
+    .mini-btn:hover { background: var(--accent-hover); }
+    .notice-list { display: grid; gap: 10px; }
+    .notice { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+    .notice .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: .9rem; }
+    .notice.cal { background: #241d0e; border-color: #5a4520; } .notice.cal .ico { background: #3d3012; color: #ffd48a; }
+    .notice.evt { background: #1a1533; border-color: #3b2f73; } .notice.evt .ico { background: #2c2260; color: #c4b5fd; }
+    .notice.mine { box-shadow: inset 3px 0 0 #a78bfa; }
+    .notice strong { display: block; font-size: .86rem; }
+    .notice p { margin: 3px 0 0; color: var(--text-2); font-size: .78rem; line-height: 1.45; }
+    .link-btn { margin-top: 12px; border: 0; background: transparent; color: #a78bfa; font-weight: 700; cursor: pointer; padding: 6px 0; font-size: .8rem; }
+    .link-btn:hover { color: #d6c9ff; }
+    .link-btn.inline { margin: 0; padding: 0; font-size: inherit; text-decoration: underline; text-underline-offset: 3px; }
+    .station-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
+    .detail-col .station-head h2 { font-size: 1.7rem; }
+    .detail-col .station-head p { font-size: .82rem; }
+    .detail-col .line-pill { min-width: 40px; height: 40px; font-size: .85rem; border-radius: 10px; }
+    .risk { display: block; margin-top: 14px; padding: 18px; border-radius: 16px; }
+    .risk span { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; }
+    .risk strong { display: block; margin-top: 6px; font-size: 1.6rem; line-height: 1.15; color: var(--text); letter-spacing: -.02em; }
+    .risk p { margin: 8px 0 0; color: var(--text-2); font-size: .86rem; }
+    .risk p strong { display: inline; font-size: inherit; margin: 0; letter-spacing: 0; }
+    .risk.alta { background: #2a1119; border-color: #5c2232; }
+    .risk.media { background: #241d0e; border-color: #5a4520; }
+    .risk.baja { background: #0d2219; border-color: #1d4a33; }
+    .level-message { font-size: .8rem; }
+    .station-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .station-actions:has(#reportButton[hidden]) { grid-template-columns: 1fr; }
+    .station-actions .save-station { margin: 0; min-height: 46px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: .86rem; font-weight: 700; cursor: pointer; }
+    .station-actions .save-station:hover { background: var(--accent-hover); }
+    .station-actions .save-station.saved { background: #3b2a7a; }
+    .outline-btn { min-height: 46px; border: 1px solid var(--accent); border-radius: 12px; background: transparent; color: #c4b5fd; font-weight: 700; cursor: pointer; }
+    .outline-btn:hover, .outline-btn[aria-expanded="true"] { background: rgba(106, 68, 214, .15); }
+    .outline-btn[hidden] { display: none; }
+    .report-panel { margin-top: 14px; padding: 16px; border: 1px solid #3b2f73; border-radius: 16px; background: #120f24; }
+    .report-panel h3 { margin: 0; font-size: 1.05rem; }
+    .report-panel h3:focus { outline: none; }
+    .report-levels { display: grid; gap: 8px; margin-top: 12px; }
+    .report-level { display: grid; text-align: left; gap: 2px; padding: 12px 14px; border-radius: 14px; border: 1px solid; cursor: pointer; color: var(--text); }
+    .report-level strong { font-size: .95rem; }
+    .report-level span { font-size: .74rem; }
+    .report-level.vacio { background: #0d2219; border-color: #1d4a33; } .report-level.vacio span { color: #9fc9b0; }
+    .report-level.normal { background: #241d0e; border-color: #5a4520; } .report-level.normal span { color: #d9c79e; }
+    .report-level.lleno { background: #2a1119; border-color: #5c2232; } .report-level.lleno span { color: #e3c7cd; }
+    .report-level[aria-pressed="true"] { outline: 2px solid #a78bfa; outline-offset: 1px; }
+    .report-send { width: 100%; min-height: 46px; margin-top: 12px; }
+    .report-send:disabled { opacity: .5; cursor: not-allowed; }
+    #reportMessage { color: #c4b5fd; }
+    .report-summary { margin-top: 6px; font-size: .8rem; }
+    .report-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .06); margin: 6px 0; }
+    .report-bar span:nth-child(1) { background: var(--good); } .report-bar span:nth-child(2) { background: var(--warning); } .report-bar span:nth-child(3) { background: var(--danger); }
+    .more { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+    .more summary { cursor: pointer; font-weight: 700; font-size: .8rem; color: #c4b5fd; }
+    #historySection { margin-top: 14px; }
+    #historySection[hidden], #weekSection[hidden] { display: none; }
+    .side-col { display: grid; gap: 18px; }
+    .small-print { margin: 0; font-size: .7rem; }
+    .map-view { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+    .map-view .map-wrap { min-height: 520px; }
+    .map-side { min-height: 0; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; border-left: 1px solid var(--line); background: var(--panel); }
+    .map-legend { position: absolute; z-index: 2; left: 14px; bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .82); font-size: .72rem; }
+    .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .zoom-btn { width: 44px; height: 44px; border-color: var(--accent); color: #c4b5fd; background: rgba(14, 27, 41, .95); }
+    .sheet-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .sheet-head h3 { margin: 0; font-size: 1.15rem; }
+    .sheet-head p { margin: 3px 0 0; color: var(--muted); font-size: .74rem; }
+    .sheet-level { padding: 4px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+    .sheet-level.alta { background: #3a1420; color: #ff8a9b; }
+    .sheet-level.media { background: #3d3012; color: #ffd48a; }
+    .sheet-level.baja { background: #0d2219; color: var(--good); }
+    .sheet-level.none { background: rgba(150, 169, 187, .12); color: var(--muted); }
+    .sheet-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .sheet-stats div { padding: 10px; border-radius: 12px; background: var(--bg); }
+    .sheet-stats small { display: block; color: var(--muted); font-size: .68rem; }
+    .sheet-stats strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .wide { width: 100%; min-height: 44px; }
+    .map-side .range-labels { margin-bottom: 10px; }
+    .map-side .legend { margin-top: 14px; }
+    .tab-title { margin: 0 0 12px; font-size: 1.6rem; letter-spacing: -.03em; }
+    .agenda-inner { width: min(760px, 100%); }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-btn { min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-solid); color: var(--text); cursor: pointer; font-size: .8rem; }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+    .weather-tip { padding: 12px 14px; border-radius: 14px; background: var(--panel-solid); border: 1px solid var(--line); color: var(--text-2); font-size: .8rem; margin: 0 0 14px; }
+    .weather-tip strong { color: var(--text); }
+    .agenda-day { margin-top: 16px; }
+    .agenda-day h3 { margin: 0 0 8px; font-size: .74rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+    .agenda-day .notice + .notice { margin-top: 8px; }
+    .back-btn { margin: 0 0 12px; padding: 0; }
+    @media (max-width: 1180px) {
+      .station-grid { grid-template-columns: 260px minmax(0, 1fr); }
+      .side-col { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+      .map-view { grid-template-columns: 1fr; }
+      .map-view .map-wrap { min-height: 0; height: 560px; }
+      .map-side { border-left: 0; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+      .tab-page { overflow: visible; }
+    }
+    @media (max-width: 760px) {
+      body { padding-bottom: 78px; }
+      .nav { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; order: 0; width: auto; border-radius: 0; border: 0; border-top: 1px solid var(--line); background: #0b1622; padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+      .nav-btn { flex-direction: column; gap: 3px; min-height: 52px; padding: 4px 2px; font-size: .72rem; justify-content: center; border-radius: 12px; }
+      .nav-btn svg { width: 22px; height: 22px; }
+      .install-help { bottom: 92px; }
+      .topbar { backdrop-filter: none; background: #081019; }   /* con blur, la barra fija quedaría dentro del encabezado */
+      .datebar { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 44px; padding: 8px 14px; gap: 8px; }
+      .datebar #stepBack { grid-column: 1; } .date-now { grid-column: 2 / 4; min-width: 0; text-align: center; } .datebar #stepForward { grid-column: 4; }
+      .datebar .date-field { grid-column: 1 / 3; } .datebar .date-field input { width: 100%; }
+      .datebar .chip-btn { grid-column: 3 / 5; }
+      .datebar .calendar-chip, .datebar .event-chip { grid-column: 1 / -1; }
+      .datebar .date-field label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .search-col .field:has(#mapLineFilter), .search-col .field:has(#stationSelect) { display: none; }
+      .search-col select.result-list { height: 112px; }
+      .today-grid, .station-grid, .side-col { grid-template-columns: 1fr; }
+      .tab-page { padding: 16px 14px 28px; }
+      .map-view .map-wrap { height: 460px; }
+      .map-side { padding: 14px; }
+    }
+    @media (max-width: 450px) {
+      .station-actions { grid-template-columns: 1fr; }
+    }
     @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
   </style>
 </head>
-<body>
+<body data-view="today">
 <div class="profile-overlay" id="profileOverlay" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
   <div class="profile-dialog">
     <section class="profile-welcome">
       <div>
-        <div class="profile-welcome-mark">MY</div>
+        <div class="profile-welcome-mark"><svg viewBox="0 0 24 24"><path d="M12 22s7.5-6.4 7.5-12.2a7.5 7.5 0 1 0-15 0C4.5 15.6 12 22 12 22z"/><path d="M7.8 10.2h2l1.3-2.6 1.8 4.8 1.3-2.2h2"/></svg></div>
         <h2>Tu viaje comienza aquí</h2>
         <p>Crea un perfil de clase para personalizar Mini Yolotzin y conservar tus preferencias en este dispositivo.</p>
       </div>
@@ -510,10 +659,10 @@
       </div>
       <p class="color-label">Color del perfil</p>
       <div class="color-picker" id="colorPicker" role="group" aria-label="Color del perfil">
-        <button type="button" class="color-choice active" aria-pressed="true" data-color="#ff6b35" style="background:#ff6b35" aria-label="Naranja"></button>
+        <button type="button" class="color-choice active" aria-pressed="true" data-color="#6a44d6" style="background:#6a44d6" aria-label="Morado"></button>
         <button type="button" class="color-choice" aria-pressed="false" data-color="#e94b8c" style="background:#e94b8c" aria-label="Rosa"></button>
         <button type="button" class="color-choice" aria-pressed="false" data-color="#1fa89a" style="background:#1fa89a" aria-label="Turquesa"></button>
-        <button type="button" class="color-choice" aria-pressed="false" data-color="#6c63c7" style="background:#6c63c7" aria-label="Violeta"></button>
+        <button type="button" class="color-choice" aria-pressed="false" data-color="#ff6b35" style="background:#ff6b35" aria-label="Naranja"></button>
         <button type="button" class="color-choice" aria-pressed="false" data-color="#d99419" style="background:#d99419" aria-label="Dorado"></button>
       </div>
       <div class="profile-error" id="profileError" role="alert"></div>
@@ -527,31 +676,42 @@
 <div class="shell">
   <header class="topbar">
     <div class="brand">
-      <div class="logo" aria-hidden="true">MY</div>
-      <div><h1>Mini Yolotzin</h1><p>Pulso urbano · CDMX</p></div>
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s7.5-6.4 7.5-12.2a7.5 7.5 0 1 0-15 0C4.5 15.6 12 22 12 22z"/><path d="M7.8 10.2h2l1.3-2.6 1.8 4.8 1.3-2.2h2"/></svg></div>
+      <div><h1>Mini Yolotzin</h1><p>Metro CDMX · afluencia diaria</p></div>
     </div>
     <nav class="nav" aria-label="Secciones" role="tablist">
-      <button class="nav-btn active" data-view="explore" role="tab" id="tab-explore" aria-controls="exploreView" aria-selected="true">Explorar</button>
-      <button class="nav-btn" data-view="method" role="tab" id="tab-method" aria-controls="methodView" aria-selected="false" tabindex="-1">Metodología</button>
-      <button class="nav-btn" data-view="data" role="tab" id="tab-data" aria-controls="dataView" aria-selected="false" tabindex="-1">Datos</button>
+      <button class="nav-btn active" data-view="today" role="tab" id="tab-today" aria-controls="todayView" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Hoy</button>
+      <button class="nav-btn" data-view="explore" role="tab" id="tab-explore" aria-controls="exploreView" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Estaciones</button>
+      <button class="nav-btn" data-view="map" role="tab" id="tab-map" aria-controls="mapView" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
+      <button class="nav-btn" data-view="agenda" role="tab" id="tab-agenda" aria-controls="agendaView" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Agenda</button>
     </nav>
     <div class="status" id="statusChip">Datos oficiales · copia fija</div>
-    <div class="metrics" aria-label="Indicadores de la fecha seleccionada">
-      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · red completa</span></div>
-      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span id="highCountLabel">estaciones por línea</span></div>
-      <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
-    </div>
     <button type="button" class="install-btn" id="installApp" hidden>⤓ Instalar app</button>
-    <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
+    <button class="profile-button" id="profileButton" aria-label="Perfil y cuenta"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
   </header>
 
-  <!-- Vista principal: controles · mapa · detalle -->
-  <main class="workspace view active" id="exploreView" role="tabpanel" aria-labelledby="tab-explore">
-    <aside class="side controls" aria-label="Parámetros de la estimación">
-      <section class="section" id="tripsSection" aria-labelledby="tripsTitle">
-        <div class="trips-head"><p class="eyebrow" id="tripsTitle">Mis viajes</p><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Nuevo viaje</button></div>
+  <!-- Fecha elegida: compartida por Hoy, Estaciones, Mapa y Agenda -->
+  <section class="datebar" aria-label="Fecha de la estimación">
+    <button class="icon-btn" id="stepBack" aria-label="Día anterior">‹</button>
+    <div class="date-now"><strong class="clock" id="dateLabel">—</strong><span class="period" id="dayLabel">—</span></div>
+    <button class="icon-btn" id="stepForward" aria-label="Día siguiente">›</button>
+    <div class="date-field"><label for="dateInput">Elegir fecha</label><input type="date" id="dateInput"></div>
+    <button class="chip-btn" id="resetDate">Mañana</button>
+    <div class="calendar-chip" id="calendarChip" hidden></div>
+    <div class="event-chip" id="eventChip" hidden></div>
+  </section>
+
+  <!-- Hoy -->
+  <main class="view tab-page active" id="todayView" role="tabpanel" aria-labelledby="tab-today" tabindex="-1">
+    <div class="tab-inner today-grid">
+      <section class="hello">
+        <h2 id="todayGreeting">Hola.</h2>
+        <p id="todaySummary">—</p>
+      </section>
+      <section class="card-block" id="tripsSection" aria-labelledby="tripsTitle">
+        <div class="trips-head"><h3 id="tripsTitle">Mis viajes</h3><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Agregar</button></div>
         <div class="trip-list" id="tripList" aria-live="polite"></div>
-        <p class="note" id="tripEmpty">Guarda tus estaciones o viajes frecuentes para ver su estimación en cuanto abras la app. Se guardan solo en este navegador.</p>
+        <p class="note" id="tripEmpty">Guarda tus estaciones o viajes frecuentes (en Estaciones, «☆ Guardar») para ver aquí cómo vienen cada día.</p>
         <form class="trip-form" id="tripForm" hidden>
           <label for="tripLabel">Nombre del viaje</label>
           <input id="tripLabel" maxlength="30" placeholder="Ej. Casa → Escuela" autocomplete="off">
@@ -563,127 +723,168 @@
           <p class="profile-error" id="tripError" role="alert"></p>
         </form>
       </section>
-
-      <section class="section">
-        <p class="eyebrow">Estación</p>
-        <label for="stationSelect">Estación y línea</label>
-        <select id="stationSelect"></select>
-      </section>
-
-      <section class="section">
-        <p class="eyebrow">Explorar la red</p>
-        <div class="field"><label for="mapSearch">Buscar estación</label><input id="mapSearch" type="search" placeholder="Nombre de estación" autocomplete="off"></div>
-        <div class="field"><label for="mapLineFilter">Filtrar línea</label><select id="mapLineFilter"><option value="">Todas las líneas</option></select></div>
-        <div class="field"><label for="mapStationList">Resultados</label><select id="mapStationList" class="result-list" size="5"></select></div>
-        <p class="result-count" id="mapResultCount" aria-live="polite"></p>
-      </section>
-
-      <section class="section">
-        <p class="eyebrow">Fecha estimada</p>
-        <div class="time-card">
-          <div class="clock" id="dateLabel">—</div>
-          <div class="period" id="dayLabel">Afluencia diaria estimada</div>
-          <div class="calendar-chip" id="calendarChip" hidden></div>
-          <div class="event-chip" id="eventChip" hidden></div>
-          <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
-          <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
-          <div class="date-field"><label for="dateInput">Elegir fecha exacta</label><input type="date" id="dateInput"></div>
-        </div>
-        <div class="transport">
-          <button class="icon-btn" id="stepBack" aria-label="Retroceder un día">−1 d</button>
-          <button class="play-btn" id="playPause">Reproducir</button>
-          <button class="icon-btn" id="stepForward" aria-label="Avanzar un día">+1 d</button>
-        </div>
-        <div class="speed-row" role="group" aria-label="Velocidad de reproducción">
-          <button class="speed-btn active" data-speed="1" aria-pressed="true">1 día</button>
-          <button class="speed-btn" data-speed="3" aria-pressed="false">3 días</button>
-          <button class="speed-btn" data-speed="7" aria-pressed="false">7 días</button>
-        </div>
-        <button class="ghost-btn" id="resetDate">Ir a mañana</button>
-      </section>
-
-      <section class="section">
-        <p class="eyebrow">Lectura de demanda</p>
-        <div class="legend">
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-low"></i> Baja</span><span id="legendLow">—</span></div>
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Media</span><span id="legendMid">—</span></div>
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Alta</span><span id="legendHigh">—</span></div>
-        </div>
-        <p class="note">Niveles relativos al histórico de cada estación y línea (percentiles 33 y 67 de su entrenamiento). Como se comparan contra todos los días, los días hábiles suelen salir en demanda media o alta y los domingos en baja. El tamaño del pulso en el mapa representa la afluencia estimada y su color, el nivel más alto entre las líneas de la estación.</p>
-      </section>
-
-      <section class="section">
-        <p class="eyebrow">Sobre el modelo</p>
-        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado por estación y línea con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+      <section class="card-block" aria-labelledby="noticesTitle">
+        <h3 id="noticesTitle">Avisos del día</h3>
+        <div class="notice-list" id="todayNotices" aria-live="polite"></div>
         <p class="note" id="weatherNote" hidden></p>
-        <div class="disclaimer">Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</div>
+        <button type="button" class="link-btn" data-goto="agenda">Ver toda la agenda ›</button>
       </section>
-    </aside>
+    </div>
+  </main>
 
+  <!-- Estaciones -->
+  <main class="view tab-page" id="exploreView" role="tabpanel" aria-labelledby="tab-explore" tabindex="-1">
+    <div class="tab-inner station-grid">
+      <aside class="card-block search-col" aria-label="Buscar estación">
+        <div class="field"><label for="mapSearch">Buscar estación</label><input id="mapSearch" type="search" placeholder="Nombre de estación" autocomplete="off"></div>
+        <div class="field"><label for="mapLineFilter">Línea</label><select id="mapLineFilter"><option value="">Todas las líneas</option></select></div>
+        <div class="field"><label for="mapStationList">Resultados</label><select id="mapStationList" class="result-list" size="6"></select></div>
+        <p class="result-count" id="mapResultCount" aria-live="polite"></p>
+        <div class="field"><label for="stationSelect">Estación con estimación</label><select id="stationSelect"></select></div>
+      </aside>
+
+      <section class="detail-col" aria-live="polite" aria-label="Estación elegida">
+        <div class="station-head">
+          <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
+          <div class="line-pills" id="detailLines"></div>
+        </div>
+        <div class="risk media" id="riskBox">
+          <span id="riskKicker">Estimación</span>
+          <strong id="riskText">—</strong>
+          <p id="riskEstimate">—</p>
+        </div>
+        <p class="level-message" id="levelMessage">—</p>
+        <p class="calendar-note" id="calendarNote" hidden></p>
+        <div class="event-note" id="eventNote" hidden></div>
+        <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
+        <div class="station-actions">
+          <button type="button" class="save-station" id="saveStation" aria-pressed="false">☆ Guardar en Mis viajes</button>
+          <button type="button" class="outline-btn" id="reportButton" aria-expanded="false" aria-controls="reportPanel" hidden>Reportar cómo está</button>
+        </div>
+        <section class="report-panel" id="reportPanel" aria-labelledby="reportTitle" hidden>
+          <h3 id="reportTitle" tabindex="-1">¿Cómo va ahora?</h3>
+          <p class="note" id="reportStation">—</p>
+          <div class="report-levels" role="group" aria-label="¿Cuánta gente hay?">
+            <button type="button" class="report-level vacio" data-level="vacio" aria-pressed="false"><strong>Vacío</strong><span>Hay lugar para sentarse</span></button>
+            <button type="button" class="report-level normal" data-level="normal" aria-pressed="false"><strong>Normal</strong><span>De pie, pero se sube al primer tren</span></button>
+            <button type="button" class="report-level lleno" data-level="lleno" aria-pressed="false"><strong>Lleno</strong><span>Hay que dejar pasar uno o más trenes</span></button>
+          </div>
+          <button type="button" class="play-btn report-send" id="reportSend" disabled>Enviar reporte</button>
+          <p class="profile-error" id="reportMessage" role="status"></p>
+          <div class="report-summary" id="reportSummary"></div>
+          <p class="note">Reportes de usuarios, <strong>no verificados</strong> y anónimos. Se muestran aparte y no cambian la estimación del modelo.</p>
+        </section>
+        <div id="modelDetail">
+          <div class="comparison" id="comparisonNote">—</div>
+          <div class="reliability" id="reliabilityNote" hidden></div>
+          <details class="more">
+            <summary>Más datos de esta estación</summary>
+            <div class="detail-grid">
+              <div class="detail-card main"><small>Afluencia diaria estimada</small><strong id="detailEstimate">—</strong><span id="detailRange">accesos estimados</span></div>
+              <div class="detail-card"><small>Vs. mediana</small><strong id="detailRelative">—</strong><span>histórica</span></div>
+              <div class="detail-card"><small>Observaciones</small><strong id="detailObs">—</strong><span>días con dato</span></div>
+              <div class="detail-card"><small>Error del modelo</small><strong id="detailMae">—</strong><span>entradas/día (MAE)</span></div>
+              <div class="detail-card"><small>Error línea base</small><strong id="detailBase">—</strong><span>entradas/día (MAE)</span></div>
+            </div>
+            <div id="historySection">
+              <p class="eyebrow">Historial mensual</p>
+              <div class="bar-chart" id="barChart" role="img" aria-label="Promedio diario observado por mes y estimación seleccionada"></div>
+              <div class="chart-axis"><span id="axisStart">—</span><span id="axisMid">—</span><span id="axisEnd">—</span><span>Est.</span></div>
+              <p class="note" id="testPeriod">—</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="side-col">
+        <section class="card-block" id="weekSection" aria-labelledby="weekTitle">
+          <h3 id="weekTitle">Esta semana</h3>
+          <div class="week-grid" id="weekGrid"></div>
+          <p class="week-best" id="weekBest"></p>
+        </section>
+        <section class="card-block" id="bikeSection" aria-labelledby="bikeTitle">
+          <h3 id="bikeTitle">Ecobici cerca <span class="bike-live">EN VIVO</span></h3>
+          <div class="bike-list" id="bikeList" aria-live="polite"></div>
+          <p class="bike-note" id="bikeNote">Consultando Ecobici…</p>
+        </section>
+        <p class="note small-print">Estimación diaria académica con datos oficiales de SEMOVI; no es ocupación del tren ni información en tiempo real. Random Forest validado con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a> · <button type="button" class="link-btn inline" data-goto="method" id="openMethod">Cómo se calcula</button> · <button type="button" class="link-btn inline" data-goto="data" id="openData">Datos</button></p>
+      </section>
+    </div>
+  </main>
+
+  <!-- Mapa -->
+  <main class="view map-view" id="mapView" role="tabpanel" aria-labelledby="tab-map" tabindex="-1">
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · demanda diaria estimada en toda la red</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada por estación. Usa Tab para recorrer las estaciones destacadas o la búsqueda para elegir cualquier estación.">
+      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Nivel de gente esperado por estación</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada por estación. Usa Tab para recorrer las estaciones destacadas o la pestaña Estaciones para buscar cualquier estación.">
         <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
         <g id="networkViewport"></g>
       </svg>
       <div class="tooltip" id="tooltip" aria-hidden="true"></div>
-      <div class="zoom-controls" aria-label="Controles del mapa">
+      <div class="map-legend" aria-label="Leyenda">
+        <span><i class="heat-dot dot-high"></i>Más gente</span>
+        <span><i class="heat-dot dot-mid"></i>Lo normal</span>
+        <span><i class="heat-dot dot-low"></i>Menos gente</span>
+      </div>
+      <div class="zoom-controls" aria-label="Zoom del mapa">
         <button class="zoom-btn" id="zoomIn" aria-label="Acercar">+</button>
         <button class="zoom-btn" id="zoomOut" aria-label="Alejar">−</button>
         <button class="zoom-btn" id="zoomReset" aria-label="Restablecer vista">⌂</button>
       </div>
     </section>
-
-    <aside class="side details" aria-label="Detalle de la estación">
-      <section class="section" aria-live="polite">
-        <div class="station-head">
-          <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
-          <div class="line-pills" id="detailLines"></div>
+    <aside class="map-side" aria-label="Estación seleccionada y recorrido por fechas">
+      <section class="card-block sheet" aria-live="polite">
+        <div class="sheet-head"><div><h3 id="sheetName">—</h3><p id="sheetMeta">—</p></div><span class="sheet-level media" id="sheetLevel">—</span></div>
+        <div class="sheet-stats">
+          <div><small>Entradas estimadas</small><strong id="sheetEstimate">—</strong></div>
+          <div><small>Ecobici cerca</small><strong id="sheetBikes">—</strong></div>
         </div>
-        <button type="button" class="save-station" id="saveStation" aria-pressed="false">☆ Guardar en Mis viajes</button>
-        <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
-        <p class="level-message" id="levelMessage">—</p>
-        <p class="calendar-note" id="calendarNote" hidden></p>
-        <div class="event-note" id="eventNote" hidden></div>
-        <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
-        <div id="modelDetail">
-        <div class="detail-grid">
-          <div class="detail-card main"><small>Afluencia diaria estimada</small><strong id="detailEstimate">—</strong><span id="detailRange">accesos estimados</span></div>
-          <div class="detail-card"><small>Vs. mediana</small><strong id="detailRelative">—</strong><span>histórica</span></div>
-          <div class="detail-card"><small>Observaciones</small><strong id="detailObs">—</strong><span>días con dato</span></div>
-          <div class="detail-card"><small>MAE modelo</small><strong id="detailMae">—</strong><span>accesos/día</span></div>
-          <div class="detail-card"><small>MAE línea base</small><strong id="detailBase">—</strong><span>accesos/día</span></div>
-        </div>
-        <div class="comparison" id="comparisonNote">—</div>
-        <div class="reliability" id="reliabilityNote" hidden></div>
+        <button type="button" class="play-btn wide" data-goto="explore" id="sheetOpen">Ver ficha completa</button>
+      </section>
+      <section class="card-block">
+        <h3>Recorrer fechas</h3>
+        <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
+        <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
+        <button class="play-btn wide" id="playPause">Reproducir</button>
+        <div class="speed-row" role="group" aria-label="Velocidad de reproducción">
+          <button class="speed-btn active" data-speed="1" aria-pressed="true">1 día</button>
+          <button class="speed-btn" data-speed="3" aria-pressed="false">3 días</button>
+          <button class="speed-btn" data-speed="7" aria-pressed="false">7 días</button>
         </div>
       </section>
-      <section class="section" id="bikeSection" aria-labelledby="bikeTitle">
-        <p class="eyebrow" id="bikeTitle">Ecobici cerca <span class="bike-live">EN VIVO</span></p>
-        <div class="bike-list" id="bikeList" aria-live="polite"></div>
-        <p class="bike-note" id="bikeNote">Consultando Ecobici…</p>
-      </section>
-      <section class="section" id="weekSection" aria-labelledby="weekTitle">
-        <p class="eyebrow" id="weekTitle">Próximos 7 días</p>
-        <div class="week-grid" id="weekGrid"></div>
-        <p class="week-best" id="weekBest"></p>
-      </section>
-      <section class="section" id="historySection">
-        <p class="eyebrow">Historial mensual</p>
-        <div class="bar-chart" id="barChart" role="img" aria-label="Promedio diario observado por mes y estimación seleccionada"></div>
-        <div class="chart-axis"><span id="axisStart">—</span><span id="axisMid">—</span><span id="axisEnd">—</span><span>Est.</span></div>
-        <p class="note" id="testPeriod">—</p>
-      </section>
-      <section class="section">
-        <p class="eyebrow">Mayor demanda relativa</p>
+      <section class="card-block">
+        <h3>Más gente que de costumbre</h3>
         <div class="hot-list" id="hotList"></div>
+        <div class="legend">
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-low"></i> Menos gente</span><span id="legendLow">—</span></div>
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Lo normal</span><span id="legendMid">—</span></div>
+          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Más gente</span><span id="legendHigh">—</span></div>
+        </div>
+        <p class="note">Niveles comparados con el histórico de cada estación y línea. Los días hábiles suelen salir en «lo normal» o «más gente» y los domingos en «menos gente».</p>
       </section>
     </aside>
   </main>
 
+  <!-- Agenda -->
+  <main class="view tab-page" id="agendaView" role="tabpanel" aria-labelledby="tab-agenda" tabindex="-1">
+    <div class="tab-inner agenda-inner">
+      <h2 class="tab-title">Agenda</h2>
+      <div class="filter-row" role="group" aria-label="Filtrar avisos" id="agendaFilters">
+        <button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Todo</button>
+        <button type="button" class="filter-btn" data-filter="cal" aria-pressed="false">Festivos</button>
+        <button type="button" class="filter-btn" data-filter="evt" aria-pressed="false">Eventos</button>
+        <button type="button" class="filter-btn" data-filter="mine" aria-pressed="false">Mis estaciones</button>
+      </div>
+      <p class="weather-tip" id="agendaWeather" hidden></p>
+      <div class="agenda-list" id="agendaList" aria-live="polite"></div>
+      <p class="note">Las marchas se anuncian con uno o dos días de anticipación: revisa también los avisos oficiales del Metro. Fechas de eventos verificadas en fuentes públicas (eventos.csv).</p>
+    </div>
+  </main>
+
   <!-- Metodología -->
-  <main class="page view" id="methodView" role="tabpanel" aria-labelledby="tab-method" tabindex="-1">
+  <main class="page view" id="methodView" aria-label="Cómo se calcula" tabindex="-1">
     <div class="page-inner">
+      <button type="button" class="link-btn back-btn" data-goto="explore">‹ Volver a Estaciones</button>
       <div class="page-intro"><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div>
       <div class="method-grid">
         <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>Un modelo por cada estación y línea de la red (195 registros, como los publica el recurso oficial). Aprende patrones de calendario —incluidos días festivos, fechas especiales, puentes y vacaciones— y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal. Se entrena desde 2023 para no arrastrar la recuperación tras la pandemia, el último año pesa tres veces más y, una vez validado, se reentrena con los datos más recientes antes de pronosticar. Los días sin servicio (afluencia 0 por cierres u obras) se excluyen.</p><div class="feature-list" id="featureList"></div></section>
@@ -716,8 +917,9 @@
   </main>
 
   <!-- Datos -->
-  <main class="page view" id="dataView" role="tabpanel" aria-labelledby="tab-data" tabindex="-1">
+  <main class="page view" id="dataView" aria-label="Datos" tabindex="-1">
     <div class="page-inner">
+      <button type="button" class="link-btn back-btn" data-goto="explore">‹ Volver a Estaciones</button>
       <div class="page-intro"><p class="kicker">Trazabilidad</p><h2>Qué contiene realmente el recurso</h2><p>Resumen calculado directamente sobre la descarga oficial utilizada para esta demostración.</p></div>
       <div class="data-grid">
         <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Estaciones por línea modeladas</span><strong id="selectedRows">—</strong></div></div></section>
@@ -779,7 +981,7 @@
   const state = { station: firstFeatured.name, line: firstFeatured.line, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
 
   // ---------- Perfil local ----------
-  const PROFILE_KEY = 'mini_yolotzin_profile_v1', PREFS_PREFIX = 'mini_yolotzin_prefs_v1_', DEFAULT_COLOR = '#ff6b35';
+  const PROFILE_KEY = 'mini_yolotzin_profile_v1', PREFS_PREFIX = 'mini_yolotzin_prefs_v1_', DEFAULT_COLOR = '#6a44d6';
   const profileOverlay = $('profileOverlay'), profileForm = $('profileForm'), appShell = document.querySelector('.shell');
   let activeProfile = null, selectedProfileColor = DEFAULT_COLOR, profileReturnFocus = null;
   const safeRead = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } };
@@ -792,6 +994,7 @@
     $('profileAvatar').style.background = activeProfile.color;
     $('profileDisplayName').textContent = activeProfile.name;
     $('profileDisplayGroup').textContent = activeProfile.group || 'Perfil local';
+    if ($('tripList').dataset.ready) renderToday();
   }
   function chooseProfileColor(color) {
     selectedProfileColor = color;
@@ -908,6 +1111,7 @@
   async function enterAccount(usuario) {
     activeProfile = accountProfile(usuario);
     renderProfile();
+    if (!$('reportPanel').hidden) updateReportControls();
     const res = await api('viajes').catch(() => null);
     if (res?.ok && Array.isArray(res.data.viajes)) safeWrite(tripsKey(), res.data.viajes);
     if ($('tripList').dataset.ready) renderTrips();
@@ -942,6 +1146,7 @@
     const res = await api('estado').catch(() => null);
     if (!res?.ok || res.data.cuentas !== true) return;
     accountsAvailable = true;
+    $('reportButton').hidden = false;
     if (res.data.usuario) {
       await enterAccount(res.data.usuario);
       if (!profileOverlay.classList.contains('hidden')) closeProfileEditor();
@@ -961,8 +1166,23 @@
     });
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     $(button.dataset.view + 'View').classList.add('active');
-    if (button.dataset.view === 'explore' && typeof fitNetwork === 'function') requestAnimationFrame(fitNetwork);
+    document.body.dataset.view = button.dataset.view;
+    if (button.dataset.view === 'map' && typeof fitNetwork === 'function') requestAnimationFrame(fitNetwork);
+    if (button.dataset.view === 'agenda' && typeof renderAgenda === 'function') renderAgenda();
+    if (['today', 'explore', 'map'].includes(button.dataset.view) && typeof refreshBikes === 'function') refreshBikes();
   }
+  // «Cómo se calcula» y «Datos» no son pestañas: se abren desde Estaciones.
+  function goTo(view) {
+    const tab = navTabs.find(item => item.dataset.view === view);
+    if (tab) { activateTab(tab); window.scrollTo(0, 0); return; }
+    navTabs.forEach(item => { item.classList.remove('active'); item.setAttribute('aria-selected', 'false'); });
+    document.querySelectorAll('.view').forEach(item => item.classList.remove('active'));
+    document.body.dataset.view = view;
+    $(view + 'View').classList.add('active');
+    $(view + 'View').focus();
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', event => { const link = event.target.closest('[data-goto]'); if (link) goTo(link.dataset.goto); });
   navTabs.forEach((button, index) => {
     button.addEventListener('click', () => activateTab(button));
     button.addEventListener('keydown', event => {
@@ -1156,16 +1376,11 @@
       item.el?.group.classList.toggle('selected', item === node);
     });
 
-    // Barra superior
-    $('totalFlow').textContent = format(total);
-    $('highCount').textContent = String(high);
-    $('highCountLabel').textContent = `de ${records.length} estaciones por línea`;
-    $('stationMae').textContent = station ? `±${format(station.metrics.modelMae)}` : '—';
 
     // Controles
     $('stationSelect').value = station && node ? `${station.line}|${node.name}` : '';
-    $('dateLabel').textContent = shortDate(date);
-    $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
+    $('dateLabel').textContent = `${dayName(date)}${dayName(date) === weekday(date) ? '' : ` · ${weekday(date).toLowerCase()}`}`;
+    $('dayLabel').textContent = `${shortDate(date)} · estimación del día`;
     const calendarLabel = data.calendar?.[date] || '';
     $('calendarChip').hidden = !calendarLabel;
     $('calendarChip').textContent = calendarLabel;
@@ -1211,7 +1426,9 @@
       const count = node?.records.length || 0;
       $('detailDate').textContent = `Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')} · estación sin modelo`;
       $('riskBox').className = 'risk none';
-      $('riskText').textContent = 'Sin predicción';
+      $('riskText').textContent = 'Sin estimación';
+      $('riskKicker').textContent = 'ESTACIÓN SIN MODELO';
+      $('riskEstimate').textContent = '';
       $('levelMessage').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para un modelo validado.';
       $('geoTitle').textContent = 'Ficha geográfica';
       $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
@@ -1219,6 +1436,7 @@
       renderBikes();
       renderHotList(rows);
       renderTrips();
+      afterRender();
       return;
     }
 
@@ -1226,7 +1444,9 @@
     const others = lines.filter(line => line !== station.line);
     $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea ${station.line}${others.length ? ` · correspondencia con ${others.map(l => 'L' + l).join(', ')}` : ''}`;
     $('riskBox').className = `risk ${prediction.level}`;
-    $('riskText').textContent = levelName[prediction.level];
+    $('riskText').textContent = plainLevel[prediction.level];
+    $('riskKicker').textContent = `${dayName(date).toUpperCase()} EN LA LÍNEA ${station.line}`;
+    $('riskEstimate').innerHTML = `Unas <strong>${format(prediction.value)} entradas</strong> en el día. Lo normal es entre ${format(station.summary.lowThreshold)} y ${format(station.summary.highThreshold)}; puede variar ±${format(station.metrics.modelMae)}.`;
     $('levelMessage').textContent = levelCopy[prediction.level];
     $('detailEstimate').textContent = format(prediction.value);
     $('detailRange').textContent = `accesos estimados en Línea ${station.line} · error típico ±${format(station.metrics.modelMae)}`;
@@ -1250,6 +1470,12 @@
     renderBikes();
     renderHotList(rows);
     renderTrips();
+    afterRender();
+  }
+  function afterRender() {
+    renderToday();
+    renderMapSheet();
+    if (!$('reportPanel').hidden && reportKey !== `${state.line}|${currentNode()?.name || state.station}`) loadReports();
   }
 
   // ---------- Mis viajes ----------
@@ -1315,13 +1541,14 @@
       return `<div class="bike-item${working && bikesAvail === 0 ? ' empty' : ''}"><span class="bike-name">${esc(s.name)}</span><span class="bike-dist">${Math.round(s.distance)} m · ~${walk} min a pie</span><span class="bike-counts">${working ? `<strong class="bikes">${bikesAvail}</strong> ${bikesAvail === 1 ? 'bici' : 'bicis'} · <strong>${docks}</strong> ${docks === 1 ? 'espacio' : 'espacios'}` : 'Fuera de servicio'}</span></div>`;
     }).join('');
     if (bikes.error && !bikes.status) { $('bikeNote').innerHTML = esc(bikes.error); return; }
-    if (!bikes.stations) { $('bikeNote').textContent = 'Consultando Ecobici…'; return; }
+    if (!bikes.stations) { $('bikeNote').textContent = 'Consultando Ecobici…'; renderMapSheet(); return; }
     const age = Math.max(0, Math.round((Date.now() - bikes.updated) / 60000));
     const when = age < 1 ? 'hace menos de un minuto' : `hace ${age} min`;
+    renderMapSheet();
     $('bikeNote').innerHTML = (list.length ? `Disponibilidad en este momento (actualizada ${when}), no es una estimación del modelo. ` : `No hay cicloestaciones de Ecobici a menos de ${BIKE_RADIUS} m de esta estación. `) + (bikes.error ? esc(bikes.error) + ' ' : '') + `Fuente: ${source}.`;
   }
   // Solo se consulta mientras la página está visible.
-  setInterval(() => { if (document.visibilityState === 'visible' && $('exploreView').classList.contains('active')) refreshBikes(); }, 15000);
+  setInterval(() => { if (document.visibilityState === 'visible' && ['today', 'explore', 'map'].includes(document.body.dataset.view || 'today')) refreshBikes(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshBikes(); });
 
   // ---------- Vista semanal ----------
@@ -1379,7 +1606,7 @@
     const saved = trips.some(t => !t.to && sameStop(t.from, current));
     $('saveStation').classList.toggle('saved', saved);
     $('saveStation').setAttribute('aria-pressed', String(saved));
-    $('saveStation').textContent = saved ? '★ Guardada en Mis viajes · quitar' : '☆ Guardar en Mis viajes';
+    $('saveStation').textContent = saved ? '★ Guardada · quitar' : '☆ Guardar en Mis viajes';
     $('saveStation').disabled = !saved && trips.length >= MAX_TRIPS;
   }
   const newTripId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -1404,6 +1631,126 @@
       $('tripLabel').focus();
     }
   }
+
+  // ---------- Hoy, mapa y agenda (vistas para quien viaja) ----------
+  const plainLevel = { baja: 'Menos gente de lo normal', media: 'Lo normal', alta: 'Más gente de lo normal' };
+  const shortLevel = { baja: 'Menos gente', media: 'Lo normal', alta: 'Más gente' };
+  const localIso = d => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+  const todayIso = localIso(new Date());
+  const dayName = iso => iso === todayIso ? 'Hoy' : iso === tomorrowIso ? 'Mañana' : weekday(iso);
+  const eventTitle = e => e.nombre.includes(e.recinto) ? e.nombre : `${e.nombre} · ${e.recinto}`;
+  const eventStations = (date, group) => records.flatMap(r => {
+    const adj = r.eventAdjustments?.find(a => a.date === date && a.group === group && a.factor);
+    return adj ? [{ record: r, factor: adj.factor }] : [];
+  }).sort((a, b) => b.factor - a.factor);
+  const savedKeys = () => new Set(readTrips().flatMap(t => [t.from, t.to]).filter(Boolean).map(s => `${s.line}|${stationKey(s.name)}`));
+  const noticeHtml = item => `<div class="notice ${item.kind}${item.mine ? ' mine' : ''}"><span class="ico" aria-hidden="true">${item.kind === 'cal' ? '★' : '◆'}</span><div><strong>${esc(item.title)}</strong><p>${item.text}</p></div></div>`;
+  function noticesFor(date, mine = savedKeys()) {
+    const items = [];
+    const cal = data.calendar?.[date];
+    if (cal) items.push({ kind: 'cal', title: cal, text: 'Fecha especial: la estimación ya la toma en cuenta.' });
+    (data.events?.calendar?.[date] || []).forEach(e => {
+      const hit = eventStations(date, e.grupo);
+      const isMine = hit.some(h => mine.has(`${h.record.line}|${stationKey(h.record.name)}`));
+      const where = hit.slice(0, 3).map(h => `${esc(h.record.name)} (L${esc(h.record.line)}) ${signed((h.factor - 1) * 100)}`).join(', ');
+      items.push({ kind: 'evt', mine: isMine, title: eventTitle(e), text: hit.length ? `Más gente en ${where}.` : e.tipo === 'marcha' ? 'Puede haber cierres de estaciones; su efecto cambia mucho entre años.' : 'Sin efecto medido en las estaciones cercanas.' });
+    });
+    return items;
+  }
+  function renderToday() {
+    const date = dates[state.index], trips = readTrips();
+    $('todayGreeting').textContent = activeProfile?.name ? `Hola, ${activeProfile.name}.` : 'Hola.';
+    const levels = trips.flatMap(t => [t.from, t.to]).filter(Boolean)
+      .map(s => recordByLineKey.get(`${s.line}|${stationKey(s.name)}`)).filter(Boolean)
+      .map(r => predictionOf(r, state.index).level);
+    const busy = levels.filter(l => l === 'alta').length;
+    const when = `${dayName(date)}${dayName(date) === weekday(date) ? ` ${Number(date.slice(8, 10))}` : ''}`;
+    $('todaySummary').textContent = !levels.length
+      ? `${when}: guarda tus estaciones para ver aquí cómo vienen.`
+      : busy ? `${when}, ${busy === 1 ? 'una de tus estaciones va' : `${busy} de tus estaciones van`} con más gente de lo normal.`
+        : `${when}, tus estaciones van normal o con menos gente.`;
+    const items = noticesFor(date);
+    $('todayNotices').innerHTML = items.length ? items.map(noticeHtml).join('') : '<p class="note">Sin festivos ni eventos registrados para esta fecha.</p>';
+  }
+  let agendaFilter = 'all';
+  function renderAgenda() {
+    const start = Math.max(0, dates.indexOf(todayIso)), mine = savedKeys(), days = [];
+    let lastCal = '';
+    for (let i = start; i < Math.min(dates.length, start + 120); i++) {
+      const date = dates[i], cal = data.calendar?.[date] || '';
+      let items = noticesFor(date, mine);
+      // Las vacaciones (días seguidos con la misma etiqueta) se muestran una sola vez.
+      if (cal && cal === lastCal) items = items.filter(item => item.kind !== 'cal');
+      lastCal = cal;
+      if (agendaFilter === 'cal') items = items.filter(item => item.kind === 'cal');
+      if (agendaFilter === 'evt') items = items.filter(item => item.kind === 'evt');
+      if (agendaFilter === 'mine') items = items.filter(item => item.mine);
+      if (items.length) days.push(`<section class="agenda-day"><h3>${i === start && date === todayIso ? 'Hoy · ' : ''}${weekday(date)} ${shortDate(date)}</h3>${items.map(noticeHtml).join('')}</section>`);
+    }
+    $('agendaList').innerHTML = days.join('') || `<p class="note">${agendaFilter === 'mine' ? 'Ningún evento registrado afecta tus estaciones guardadas en los próximos meses.' : 'Sin avisos registrados en los próximos meses.'}</p>`;
+  }
+  function renderMapSheet() {
+    const node = currentNode(), station = currentRecord();
+    $('sheetName').textContent = node ? node.name : state.station;
+    const lines = node ? node.lines : [state.line];
+    $('sheetMeta').textContent = `Línea${lines.length > 1 ? 's' : ''} ${lines.join(' y ')} · ${dayName(dates[state.index]).toLowerCase()} ${shortDate(dates[state.index])}`;
+    const p = station ? predictionOf(station, state.index) : null;
+    $('sheetLevel').className = `sheet-level ${p ? p.level : 'none'}`;
+    $('sheetLevel').textContent = p ? `${shortLevel[p.level]}${lines.length > 1 ? ` (L${station.line})` : ''}` : 'Sin estimación';
+    $('sheetEstimate').textContent = p ? `~${format(p.value)}` : '—';
+    const near = bikes.status ? bikesNear(node, 3) : [];
+    const free = near.reduce((a, s) => a + (s.live && s.live.is_renting ? s.live.num_bikes_available : 0), 0);
+    $('sheetBikes').textContent = !bikes.status ? '—' : near.length ? `${free} ${free === 1 ? 'bici' : 'bicis'}` : 'Ninguna';
+  }
+
+  // ---------- Reportes «¿Cómo va ahora?» (solo con el servidor de cuentas) ----------
+  let reportChoice = null, reportKey = '';
+  const REPORT_NAMES = { vacio: 'vacío', normal: 'normal', lleno: 'lleno' };
+  const reportTarget = () => ({ estacion: currentNode()?.name || state.station, linea: state.line });
+  function updateReportControls() {
+    document.querySelectorAll('.report-level').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === reportChoice)));
+    const logged = Boolean(activeProfile?.account);
+    $('reportSend').disabled = logged && !reportChoice;
+    $('reportSend').textContent = logged ? 'Enviar reporte' : 'Inicia sesión para reportar';
+  }
+  async function loadReports() {
+    const t = reportTarget();
+    reportKey = `${t.linea}|${t.estacion}`;
+    $('reportStation').textContent = `${t.estacion} · Línea ${t.linea} · ahora`;
+    const res = await api(`reportes?estacion=${encodeURIComponent(t.estacion)}&linea=${encodeURIComponent(t.linea)}`).catch(() => null);
+    if (reportKey !== `${t.linea}|${t.estacion}`) return;
+    showReportSummary(res?.ok ? res.data : null);
+  }
+  function showReportSummary(s) {
+    if (!s) { $('reportSummary').textContent = 'No se pudieron consultar los reportes.'; return; }
+    if (!s.total) { $('reportSummary').textContent = `Aún no hay reportes en los últimos ${s.ventana} minutos.`; return; }
+    const top = ['lleno', 'normal', 'vacio'].reduce((a, k) => s[k] > s[a] ? k : a, 'lleno');
+    const pct = k => (s[k] / s.total * 100).toFixed(0);
+    $('reportSummary').innerHTML = `<div class="report-bar" role="img" aria-label="${s.vacio} vacío, ${s.normal} normal, ${s.lleno} lleno"><span style="width:${pct('vacio')}%"></span><span style="width:${pct('normal')}%"></span><span style="width:${pct('lleno')}%"></span></div><strong>Mayoría: ${REPORT_NAMES[top]}</strong> · ${s.total} ${s.total === 1 ? 'reporte' : 'reportes'} en ${s.ventana} min, el último hace ${s.minutos <= 0 ? 'menos de un minuto' : `${s.minutos} min`}.`;
+  }
+  function openReport(open) {
+    $('reportPanel').hidden = !open;
+    $('reportButton').setAttribute('aria-expanded', String(open));
+    $('reportMessage').textContent = '';
+    if (!open) return;
+    reportChoice = null;
+    updateReportControls();
+    loadReports();
+    $('reportTitle').focus();
+  }
+  $('reportButton').addEventListener('click', () => openReport($('reportPanel').hidden));
+  document.querySelectorAll('.report-level').forEach(b => b.addEventListener('click', () => { reportChoice = b.dataset.level; updateReportControls(); }));
+  $('reportSend').addEventListener('click', async () => {
+    if (!activeProfile?.account) { openProfileEditor(); return; }
+    if (!reportChoice) return;
+    const res = await api('reportes', { method: 'POST', body: JSON.stringify({ ...reportTarget(), nivel: reportChoice }) }).catch(() => null);
+    if (!res) { $('reportMessage').textContent = 'No se pudo conectar con el servidor.'; return; }
+    if (!res.ok) { $('reportMessage').textContent = res.data.error || 'No se pudo enviar.'; return; }
+    $('reportMessage').textContent = '¡Gracias! Tu reporte se sumó.';
+    reportChoice = null;
+    updateReportControls();
+    showReportSummary(res.data);
+  });
 
   // ---------- Búsqueda y filtro de la red ----------
   function initStationSearch() {
@@ -1506,7 +1853,14 @@
     const remove = event.target.closest('.trip-remove');
     if (remove) { writeTrips(readTrips().filter(t => t.id !== remove.dataset.trip)); renderTrips(); return; }
     const stop = event.target.closest('.trip-stop');
-    if (stop) selectStation(stop.dataset.station, stop.dataset.line);
+    if (stop) { selectStation(stop.dataset.station, stop.dataset.line); goTo('explore'); }
+  });
+  $('agendaFilters').addEventListener('click', event => {
+    const button = event.target.closest('.filter-btn');
+    if (!button) return;
+    agendaFilter = button.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(item => { item.classList.toggle('active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
+    renderAgenda();
   });
   $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station, item.dataset.line); });
   $('detailLines').addEventListener('click', event => { const pill = event.target.closest('button.line-pill'); if (pill) selectStation(state.station, pill.dataset.line); });
@@ -1552,6 +1906,8 @@
     const range = s => `de ${pct(s.p10)} a ${pct(s.p90)}`;
     const e = weather.effects, v = weather.validation;
     $('weatherNote').hidden = false;
+    $('agendaWeather').hidden = false;
+    $('agendaWeather').innerHTML = `<strong>¿Y si llueve?</strong> En días hábiles con lluvia la red tiene en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas: casi no cambia tu viaje.`;
     $('weatherNote').innerHTML = `<strong>Clima:</strong> en días hábiles con lluvia (≥${e.rain.thresholdMm} mm) la red registra en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas. El efecto en cada estación no es concluyente, por eso el modelo no usa el clima.`;
     $('weatherCard').hidden = false;
     $('weatherIntro').textContent = `Se comparó la afluencia de ${weather.records} estaciones por línea con el clima diario de 5 zonas de la ciudad, en el periodo de prueba del ${shortDate(weather.period.testStart)} al ${shortDate(weather.period.testEnd)} (temporada de lluvias). Conclusión: la mayoría de los viajes en Metro son obligados (trabajo, escuela) y se hacen llueva o no; a nivel diario el clima cambia poco la afluencia y no mejora la estimación.`;

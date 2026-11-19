@@ -76,6 +76,28 @@ def test_register_login_and_trips(account_server):
     assert b"clave-segura" not in db.read_bytes()
 
 
+def test_reports_are_anonymous_and_limited(account_server):
+    base, db = account_server
+    call = client()
+    url = base + "api/reportes?estacion=Hidalgo&linea=3"
+    assert call(url) == (200, {"vacio": 0, "normal": 0, "lleno": 0, "total": 0, "minutos": None, "ventana": 30})
+    report = {"estacion": "Hidalgo", "linea": "3", "nivel": "lleno"}
+    assert call(base + "api/reportes", "POST", report)[0] == 401          # sin sesión no se reporta
+    call(base + "api/registro", "POST", {"usuario": "beto", "contrasena": "clave-segura"})
+    assert call(base + "api/reportes", "POST", {**report, "nivel": "a reventar"})[0] == 400
+    status, summary = call(base + "api/reportes", "POST", report)
+    assert status == 200 and summary["lleno"] == 1 and summary["total"] == 1
+    assert call(base + "api/reportes", "POST", report)[0] == 429          # una vez cada 10 minutos
+    other = client()
+    other(base + "api/registro", "POST", {"usuario": "carla", "contrasena": "clave-segura"})
+    other(base + "api/reportes", "POST", {**report, "nivel": "normal"})
+    assert call(url)[1]["total"] == 2
+    assert call(base + "api/reportes?estacion=Hidalgo&linea=2")[1]["total"] == 0
+    with sqlite3.connect(db) as con:                                       # sin usuario en la tabla
+        columns = [row[1] for row in con.execute("PRAGMA table_info(reportes)")]
+    assert columns == ["estacion", "linea", "nivel", "creado"]
+
+
 def test_rejects_bad_input_and_locks_after_failures(account_server):
     base, _ = account_server
     call = client()
@@ -140,8 +162,17 @@ def test_login_in_page_keeps_trips(browser, account_server):
     page.click("#registerButton")
     page.wait_for_selector("#profileOverlay.hidden", state="attached")
     assert page.text_content("#profileDisplayName") == "nayibi"
+    page.click("#tab-explore")
     page.click("#saveStation")
     assert page.locator(".trip-item").count() == 1
+
+    # Reportar cómo está (solo con el servidor y con sesión).
+    page.click("#reportButton")
+    page.wait_for_function("document.querySelector('#reportSummary').textContent.includes('Aún no hay reportes')")
+    page.click('.report-level[data-level="lleno"]')
+    page.click("#reportSend")
+    page.wait_for_function("document.querySelector('#reportSummary').textContent.includes('Mayoría: lleno')")
+    assert "Gracias" in page.text_content("#reportMessage")
 
     # Otro dispositivo (contexto nuevo, sin localStorage): al entrar recupera el viaje del servidor.
     page2 = browser.new_context().new_page()
