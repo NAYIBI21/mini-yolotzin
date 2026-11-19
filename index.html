@@ -991,6 +991,13 @@
     const result = await client.auth.getUser();
     return result.error ? null : result.data.user;
   };
+  const saveProfile = async user => {
+    if (!user || !user.id) return;
+    const profile = await client.from('perfiles').upsert({
+      id: user.id, nombre: String(user.email || '').split('@')[0]
+    }, { onConflict: 'id' });
+    if (profile.error) console.warn('No se pudo actualizar el perfil:', profile.error.message);
+  };
   const summary = rows => {
     const result = { vacio: 0, normal: 0, lleno: 0, incidencias: {}, total: rows.length, ventana: 30, minutos: null };
     rows.forEach(row => {
@@ -1030,6 +1037,7 @@
     const saved = await client.from('incidencias').insert({
       usuario_id: user.id, estacion, linea, afluencia: nivel, tipos
     });
+    if (saved.error && saved.error.code === '23505') return errorResult('Esta estación ya recibió tu reporte en este bloque de 10 minutos.');
     if (saved.error) return errorResult(saved.error);
     return listReports(new URLSearchParams({ estacion, linea }).toString());
   }
@@ -1079,11 +1087,13 @@
         });
         if (result.error) return errorResult(result.error);
         if (!result.data.session) return success({ necesitaConfirmacion: true });
+        await saveProfile(result.data.user);
         return success({ usuario: result.data.user.email });
       }
       if (route === 'entrar') {
         const result = await client.auth.signInWithPassword({ email: body.usuario, password: body.contrasena });
         if (result.error) return errorResult(result.error);
+        await saveProfile(result.data.user);
         return success({ usuario: result.data.user.email });
       }
       if (route === 'salir') {
