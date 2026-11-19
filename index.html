@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
   <script src="./metro-catalog.js"></script>
+  <script src="./weather-summary.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -273,6 +274,15 @@
     .step strong { display: block; font-size: .76rem; margin-top: 11px; }
     .step p { margin: 4px 0 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
     .limit-card { grid-column: span 6; padding: 22px; }
+    .weather-card { grid-column: 1 / -1; padding: 24px; }
+    .weather-card h3 { margin: 0 0 6px; font-size: .95rem; }
+    .weather-card > p { margin: 0 0 16px; color: var(--muted); font-size: .76rem; max-width: 820px; }
+    .weather-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .weather-stats .quality-item strong { font-size: 1.05rem; }
+    .weather-stats .quality-item p { margin: 6px 0 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
+    .weather-card .note { margin-top: 14px; }
+    @media (max-width: 900px) { .weather-stats { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 450px) { .weather-stats { grid-template-columns: 1fr; } }
     .limit-card h3 { margin: 0 0 12px; font-size: .92rem; }
     .clean-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
     .clean-list li { position: relative; padding-left: 18px; color: var(--text-2); font-size: .75rem; }
@@ -484,6 +494,7 @@
       <section class="section">
         <p class="eyebrow">Sobre el modelo</p>
         <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado por estación y línea con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+        <p class="note" id="weatherNote" hidden></p>
         <div class="disclaimer">Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</div>
       </section>
     </aside>
@@ -546,7 +557,19 @@
         <section class="card principle-card"><p class="card-label">Principio rector</p><blockquote>Una demo estable, honesta y reproducible vale más que muchas funciones incompletas.</blockquote><p>La interfaz distingue predicción diaria de ocupación física y evita recomendaciones horarias sin datos que las respalden.</p></section>
         <section class="card pipeline"><p class="card-label">Arquitectura mínima</p><div class="steps"><div class="step"><span>01</span><strong>CSV oficial</strong><p>Afluencia diaria simple del Metro CDMX.</p></div><div class="step"><span>02</span><strong>Limpieza</strong><p>Fechas, nulos, duplicados y etiquetas.</p></div><div class="step"><span>03</span><strong>Calendario</strong><p>Mes, semana, día y ciclo anual.</p></div><div class="step"><span>04</span><strong>Entrenamiento</strong><p>Línea base y Random Forest por estación.</p></div><div class="step"><span>05</span><strong>Validación</strong><p>MAE y RMSE con corte cronológico.</p></div><div class="step"><span>06</span><strong>Interfaz</strong><p>Estimación y nivel relativo interpretable.</p></div></div></section>
         <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado y del calendario oficial de días festivos.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li><li>Aviso de confiabilidad baja cuando el error típico supera el 30% del valor habitual.</li></ul></section>
-        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, eventos, cámaras, sensores o datos en tiempo real.</li><li>Las vacaciones escolares son aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima (se midió y no mejora la estimación diaria), eventos, cámaras, sensores o datos en tiempo real.</li><li>Las vacaciones escolares son aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
+        <section class="card weather-card" id="weatherCard" hidden>
+          <p class="card-label">Clima</p>
+          <h3>¿Cambia la afluencia diaria cuando llueve o hace calor?</h3>
+          <p id="weatherIntro">—</p>
+          <div class="weather-stats">
+            <div class="quality-item"><span>Modelo con clima real</span><strong id="wValidation">—</strong><p id="wValidationNote">—</p></div>
+            <div class="quality-item"><span>Lluvia (días hábiles)</span><strong id="wRain">—</strong><p id="wRainNote">—</p></div>
+            <div class="quality-item"><span>Lluvia fuerte</span><strong id="wHeavy">—</strong><p id="wHeavyNote">—</p></div>
+            <div class="quality-item"><span>Calor</span><strong id="wHeat">—</strong><p id="wHeatNote">—</p></div>
+          </div>
+          <p class="note" id="weatherSource">—</p>
+        </section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
     </div>
@@ -1089,6 +1112,27 @@
   $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
   $('sourceLink').href = data.source.url;
   $('officialSource').href = data.source.url;
+
+  // Clima: resumen medido por scripts/analizar_clima.py (no entra al modelo).
+  const weather = window.MINI_YOLOTZIN_WEATHER;
+  if (weather) {
+    const pct = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`;
+    const range = s => `de ${pct(s.p10)} a ${pct(s.p90)}`;
+    const e = weather.effects, v = weather.validation;
+    $('weatherNote').hidden = false;
+    $('weatherNote').innerHTML = `<strong>Clima:</strong> en días hábiles con lluvia (≥${e.rain.thresholdMm} mm) la red registra en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas. El efecto en cada estación no es concluyente, por eso el modelo no usa el clima.`;
+    $('weatherCard').hidden = false;
+    $('weatherIntro').textContent = `Se comparó la afluencia de ${weather.records} estaciones por línea con el clima diario de 5 zonas de la ciudad, en el periodo de prueba del ${shortDate(weather.period.testStart)} al ${shortDate(weather.period.testEnd)} (temporada de lluvias). Conclusión: la mayoría de los viajes en Metro son obligados (trabajo, escuela) y se hacen llueva o no; a nivel diario el clima cambia poco la afluencia y no mejora la estimación.`;
+    $('wValidation').textContent = `${pct(v.changePct)} de error`;
+    $('wValidationNote').textContent = `Al agregar lluvia y temperatura reales, la estimación empeora (mejora solo en ${v.improvedRecords} de ${weather.records}). En días lluviosos: ${pct(v.rainyDaysChangePct)}.`;
+    $('wRain').textContent = `${pct(e.rain.networkPct)} en la red`;
+    $('wRainNote').textContent = `≥${e.rain.thresholdMm} mm, ~${e.rain.weekdaysPerRecord} días por estación. Por estación, mediana ${pct(e.rain.byStation.median)} (${range(e.rain.byStation)}): demasiado variable para usarlo.`;
+    $('wHeavy').textContent = 'Sin datos suficientes';
+    $('wHeavyNote').textContent = `≥${e.heavyRain.thresholdMm} mm (umbral del SMN): ~${e.heavyRain.weekdaysPerRecord} día hábil por estación en el periodo de prueba; no alcanza para medirlo.`;
+    $('wHeat').textContent = `${pct(e.heat.byStation.median)} (mediana)`;
+    $('wHeatNote').textContent = `Máxima ≥${e.heat.thresholdC} °C contra días templados, ${range(e.heat.byStation)}. Probablemente mezclado con la temporada (abril y mayo).`;
+    $('weatherSource').innerHTML = `Fuente: ${weather.source.name} (${weather.source.license}). ${weather.source.note} Con datos por hora se podría medir si la lluvia cambia la hora de viaje, algo que el dato diario no muestra.`;
+  }
 
   // Metodología y Datos
   $('featureList').innerHTML = data.model.features.map(feature => `<span>${feature}</span>`).join('');
