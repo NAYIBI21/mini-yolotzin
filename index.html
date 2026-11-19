@@ -981,7 +981,7 @@
    En la nube, en la IP Wi-Fi o añadiendo ?cloud=1, usar Supabase. */
 if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     new URLSearchParams(location.search).get('cloud') === '1') {
-  document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"><' + '/script>');
+  document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"><' + '/script>');
 }
 </script>
 <script>
