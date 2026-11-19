@@ -1093,13 +1093,19 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
           options: { emailRedirectTo: 'https://nayibi21.github.io/mini-yolotzin/' }
         });
         if (result.error) return errorResult(result.error);
+        // Supabase oculta deliberadamente si un correo ya existe y puede devolver identities: [].
+        if (Array.isArray(result.data.user?.identities) && result.data.user.identities.length === 0) {
+          return errorResult('Este correo ya tiene una cuenta. Pulsa Iniciar sesión y usa la contraseña que asignaste al crearla; Crear cuenta no cambia contraseñas.');
+        }
         if (!result.data.session) return success({ necesitaConfirmacion: true });
         await saveProfile(result.data.user);
         return success({ usuario: result.data.user.email });
       }
       if (route === 'entrar') {
         const result = await client.auth.signInWithPassword({ email: body.usuario, password: body.contrasena });
-        if (result.error) return errorResult(result.error);
+        if (result.error) return result.error.code === 'invalid_credentials'
+          ? errorResult('El correo o la contraseña no coinciden. Si la cuenta se creó en Supabase, usa aquella contraseña. Crear cuenta nuevamente no la reemplaza.')
+          : errorResult(result.error);
         await saveProfile(result.data.user);
         return success({ usuario: result.data.user.email });
       }
