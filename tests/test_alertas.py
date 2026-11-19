@@ -15,8 +15,9 @@ def test_alertas_html_redirects_to_app():
 @pytest.mark.pagina
 def test_report_without_server_stays_on_this_device(page):
     page.click("#alertButton")                                         # botón «🚨 ¿Cómo va?» del encabezado
-    assert page.is_visible("#exploreView") and page.is_visible("#reportPanel")
-    assert "solo en este dispositivo" in page.text_content("#reportMode")
+    assert page.is_visible("#reportPanel")                             # se abre como ventana, sobre la pestaña actual
+    assert "solo en este celular" in page.text_content("#reportMode")
+    assert "no verificados" not in page.text_content("#reportPanel")
     requests: list[str] = []
     page.on("request", lambda r: requests.append(r.url) if "/api/" in r.url else None)
     page.click('.report-level[data-level="lleno"]')
@@ -29,5 +30,31 @@ def test_report_without_server_stays_on_this_device(page):
     page.reload()
     page.goto(page.url.split("#")[0] + "#como-va")
     page.reload()
-    page.wait_for_selector("#reportPanel:not([hidden])")
+    page.wait_for_selector("#reportOverlay:not([hidden])")
     assert "1 reporte" in page.text_content("#reportSummary")        # sigue en este navegador
+
+
+@pytest.mark.pagina
+def test_como_va_only_opens_on_demand(page):
+    page.click("#tab-explore")
+    assert page.locator("#exploreView #reportPanel").count() == 0     # no está dentro de la ficha
+    assert not page.is_visible("#reportPanel")
+    page.click("#reportButton")
+    assert page.is_visible("#reportPanel")
+    page.select_option("#reportStationSelect", "3|Hidalgo")           # se puede elegir otra estación ahí mismo
+    assert "Hidalgo · Línea 3" in page.text_content("#reportStation")
+    page.keyboard.press("Escape")
+    assert not page.is_visible("#reportPanel")
+    page.click("#alertButton")
+    page.click("#reportClose")
+    assert not page.is_visible("#reportPanel")
+
+
+@pytest.mark.pagina
+def test_header_fits_on_phone(page):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.evaluate("document.getElementById('installApp').hidden = false")   # como en iPhone/Android
+    boxes = [page.locator(sel).bounding_box() for sel in (".brand .logo", "#alertButton", "#installApp", "#profileButton")]
+    for left, right in zip(boxes, boxes[1:]):
+        assert left["x"] + left["width"] <= right["x"] + 1, "botones encimados en el encabezado"
+    assert boxes[-1]["x"] + boxes[-1]["width"] <= 390

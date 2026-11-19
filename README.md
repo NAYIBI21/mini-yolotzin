@@ -72,7 +72,7 @@ En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la co
 
 En GitHub Pages, **«🚨 ¿Cómo va?»** y «Reportar cómo está» funcionan como versión de prueba: el reporte se guarda solo en ese navegador y la pantalla lo avisa. La página `alertas.html` (primer prototipo de Yolotzin Alerta) ahora lleva a esa misma sección.
 
-Con el servidor, **«Reportar cómo está»** se comparte entre todos: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
+Con el servidor, **«Reportar cómo está»** se comparte entre todos: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se muestran bajo «Lo que dicen otras personas», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
 
 Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
 
@@ -241,7 +241,7 @@ La versión en GitHub Pages (`https://nayibi21.github.io/mini-yolotzin/`) usa **
 
 1. En el celular A, abre `https://nayibi21.github.io/mini-yolotzin/`, pulsa **Crear cuenta**, elige alias y contraseña, confirma la contraseña y regístrate. Después se inicia sesión.
 2. En el celular B, crea **otro** usuario. En ambos equipos abre **¿Cómo va?**, selecciona **Hidalgo · Línea 2**.
-3. En el celular A, elige **Lleno** + **Trenes lentos** y pulsa **Enviar reporte**. En el B aparecerá en la misma estación cuando llegue el aviso en tiempo real (o la consulta de respaldo). La app lo señala como **no verificado** y no lo mezcla con el pronóstico.
+3. En el celular A, elige **Lleno** + **Trenes lentos** y pulsa **Enviar reporte**. En el B aparecerá en la misma estación cuando llegue el aviso en tiempo real (o la consulta de respaldo). La app lo muestra bajo «Lo que dicen otras personas» y no lo mezcla con el pronóstico.
 4. Comprueba **Mis viajes**: cada cuenta ve solamente sus propios recorridos.
 5. Para revisar actividad, abre [Supabase Table Editor](https://supabase.com/dashboard/project/gcqubevzbqvaaxepbaba/editor), tablas `perfiles`, `viajes`, `incidencias`, `avisos_realtime`. No consultes ni compartas contraseñas.
 
