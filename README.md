@@ -224,25 +224,28 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - Publicador: Gobierno de la Ciudad de México / SEMOVI.
 - Cobertura utilizada por esta versión: 1 de enero de 2021 a 30 de septiembre de 2026.
 
-## Mini Yolotzin en Supabase (integración en pruebas)
+## Cuentas sin correo y reportes compartidos (Supabase)
 
-Esta rama agrega una **base centralizada en Supabase** para que no dependamos de que una computadora siga encendida. Proyecto: [Mini Yolotzin en Supabase](https://supabase.com/dashboard/project/gcqubevzbqvaaxepbaba).
+La versión en GitHub Pages (`https://nayibi21.github.io/mini-yolotzin/`) usa **Supabase Auth** y PostgreSQL. Los estudiantes pueden elegir únicamente un **nombre de usuario** (3–32 caracteres: letras minúsculas, números, punto, guion y guion bajo) y una **contraseña** de 8–72 caracteres. No se pide email, teléfono, SMS ni SMTP.
 
-- **Auth**: crear cuenta / iniciar sesión con **correo electrónico** y contraseña; las contraseñas NO se almacenan en el repositorio ni en tablas de la aplicación.
-- **`perfiles`**: identificador y alias derivado del correo.
-- **`viajes`**: hasta ocho recorridos por usuario; Row Level Security (RLS) solo permite leer/escribir sus propios datos.
-- **`incidencias`**: «¿Cómo va?» guarda estación, línea, nivel (vacío, normal, lleno) e incidencias opcionales; el público puede consultar los últimos 30 minutos sin ver la identidad del autor. Para reportar hay que iniciar sesión. Los reportes no están verificados y NO modifican las predicciones.
-- **Realtime**: `postgres_changes` escucha nuevos reportes; un sondeo cada 20 s sirve de respaldo mientras «¿Cómo va?» está abierto.
-- **Seguridad**: la página solo incorpora una **clave publicable** de Supabase. Nunca usar en el navegador `service_role`, una clave secreta ni contraseñas administrativas.
+### Cómo está implementado
 
-### Pasos requeridos antes de lanzar la nueva versión
+- `supabase/functions/registrar-usuario/index.ts`: función de servidor que registra usuarios usando el API administrativo de Supabase Auth. **La clave secreta queda solo en la función**, nunca en `index.html`; el servidor limita intentos por red. El frontend solo utiliza una clave **publicable**.
+- Supabase Auth utiliza internamente una dirección técnica reservada derivada del alias (`usuario@members.mini-yolotzin.example.com`), **que no es un buzón real**. La función confirma la identidad técnica al crearla, por lo que no se envían correos. La contraseña se maneja exclusivamente por Supabase Auth.
+- Los perfiles y hasta 8 **Mis viajes** se guardan en tablas privadas con Row Level Security (RLS); un usuario no puede ver ni modificar los viajes de otro.
+- En **¿Cómo va?**, los usuarios registrados publican incidencias por estación y línea. Los reportes de los últimos 30 minutos se consultan desde `avisos_realtime` (sin identificadores personales) y se notifican mediante `supabase_realtime`. Hay consulta de respaldo cada 20 segundos mientras está abierta la sección.
+- El servidor local `scripts/servidor_cuentas.py` y sus pruebas con SQLite siguen disponibles en `localhost`. Para probar Supabase desde localhost, agrega `?cloud=1`. En GitHub Pages se usa Supabase.
+- Las cuentas antiguas con **correo real** y las creadas en **SQLite** no se convierten automáticamente en alias; para esta demostración se registra un usuario nuevo desde la pantalla simplificada.
 
-1. En **Supabase → Authentication → URL Configuration**, establecer como Site URL y URL de redirección autorizada: `https://nayibi21.github.io/mini-yolotzin/`.
-2. Para registrar correos de compañeros, configurar un **SMTP externo** en **Authentication → SMTP Settings**, manteniendo habilitado **Confirm Email**. El servicio de correo incorporado por Supabase solo autoriza direcciones de miembros de la organización y tiene un límite bajo (2 mensajes/hora). Alternativa **solo para pruebas cerradas**: desactivar temporalmente Confirm Email, sabiendo que entonces cualquiera puede registrarse con correos que no controla; volver a activarlo antes de abrir la app al público.
-3. Probar en la versión de la rama o en un servidor local con `?cloud=1`: en un dispositivo iniciar sesión y guardar un viaje; en otro iniciar sesión con la misma cuenta y comprobar que aparezca. Después, en «¿Cómo va?», seleccionar **la misma estación y línea** en ambos y enviar un reporte: debería aparecer en la otra pantalla sin recargar (o por el sondeo de respaldo).
-4. Cuando funcionen las pruebas, integrar la rama en `main` para activar Supabase en GitHub Pages. **No se migran automáticamente** las cuentas ni las contraseñas creadas en la SQLite anterior: cada persona debe abrir una cuenta nueva de Supabase.
+### Prueba de clase
 
-En `localhost` y `127.0.0.1` la interfaz conserva deliberadamente la demo local y el servidor SQLite; añade `?cloud=1` a la dirección para probar Supabase en la MacBook. En la IP Wi-Fi o en GitHub Pages se usa la nube de forma predeterminada. Si no se carga la librería de Supabase (requiere internet) se conserva el comportamiento anterior de prueba.
+1. En el celular A, abre `https://nayibi21.github.io/mini-yolotzin/`, pulsa **Crear cuenta**, elige alias y contraseña, confirma la contraseña y regístrate. Después se inicia sesión.
+2. En el celular B, crea **otro** usuario. En ambos equipos abre **¿Cómo va?**, selecciona **Hidalgo · Línea 2**.
+3. En el celular A, elige **Lleno** + **Trenes lentos** y pulsa **Enviar reporte**. En el B aparecerá en la misma estación cuando llegue el aviso en tiempo real (o la consulta de respaldo). La app lo señala como **no verificado** y no lo mezcla con el pronóstico.
+4. Comprueba **Mis viajes**: cada cuenta ve solamente sus propios recorridos.
+5. Para revisar actividad, abre [Supabase Table Editor](https://supabase.com/dashboard/project/gcqubevzbqvaaxepbaba/editor), tablas `perfiles`, `viajes`, `incidencias`, `avisos_realtime`. No consultes ni compartas contraseñas.
+
+**Limitaciones de esta demo:** las cuentas sin correo **no tienen recuperación automática de contraseña**. Guarden su clave; si la pierden, un administrador deberá ayudarles a restablecerla por un canal verificado. Las cuentas se autocrearán en el backend; como no hay verificación externa, no deben usarse para información personal sensible. Existe protección de cuota por red, pero antes de abrir registros a gran escala habría que incorporar CAPTCHA / verificación adicional. La app no recibe alertas oficiales del Metro, y reportes ciudadanos pueden ser erróneos.
 
 ## Archivos principales
 
