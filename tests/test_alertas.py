@@ -39,7 +39,8 @@ def test_como_va_only_opens_on_demand(page):
     page.click("#tab-explore")
     assert page.locator("#exploreView #reportPanel").count() == 0     # no está dentro de la ficha
     assert not page.is_visible("#reportPanel")
-    page.click("#reportButton")
+    assert page.locator("#reportButton").count() == 0                # un solo botón: «🚨 ¿Cómo va?»
+    page.click("#alertButton")
     assert page.is_visible("#reportPanel")
     page.select_option("#reportStationSelect", "3|Hidalgo")           # se puede elegir otra estación ahí mismo
     assert "Hidalgo · Línea 3" in page.text_content("#reportStation")
