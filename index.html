@@ -976,7 +976,14 @@
 
 <div class="install-help" id="installHelp" role="dialog" aria-labelledby="installHelpTitle" hidden><strong id="installHelpTitle">Instalar Mini Yolotzin</strong><br>En iPhone o iPad: abre la página en Safari, toca <b>Compartir</b> y elige <b>Agregar a pantalla de inicio</b>.<br><button type="button" class="ghost-btn" id="installHelpClose">Entendido</button></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"></script>
+<script>
+/* La demo local y las pruebas automatizadas siguen usando SQLite o perfil local.
+   En la nube, en la IP Wi-Fi o añadiendo ?cloud=1, usar Supabase. */
+if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
+    new URLSearchParams(location.search).get('cloud') === '1') {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.min.js"><' + '/script>');
+}
+</script>
 <script>
 /* Mini Yolotzin Cloud: solo usa la clave publicable; las contraseñas las administra Supabase Auth. */
 (function () {
@@ -1272,6 +1279,15 @@
   let accountsAvailable = false;
   const cloudAccounts = Boolean(window.MINI_YOLOTZIN_CLOUD);
   const demoAccounts = !cloudAccounts && location.hostname.endsWith('github.io'); // Si falla la red, conservar demo local.
+  if (!cloudAccounts) {
+    $('accountUser').type = 'text';
+    $('accountUser').maxLength = 32;
+    $('accountUser').setAttribute('autocomplete', 'username');
+    $('accountUser').placeholder = 'Ej. nayibi';
+    document.querySelector('label[for="accountUser"]').textContent = 'Usuario';
+    $('accountUser').nextElementSibling.textContent = 'De 3 a 32 letras, números, punto, guion o guion bajo.';
+    $('accountDescription').textContent = 'Mis viajes se guardan en el servidor local si está activo.';
+  }
   const api = cloudAccounts ? window.MINI_YOLOTZIN_CLOUD.api : (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
     .then(async response => ({ ok: response.ok, data: await response.json().catch(() => ({})) }));
   const accountProfile = usuario => ({ id: 'cuenta-' + usuario, name: usuario, group: 'Cuenta', color: '#6a44d6', account: true });
