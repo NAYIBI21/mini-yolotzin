@@ -12,7 +12,12 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 ## Qué incluye
 
-- Vista **Explorar** a pantalla completa en tres columnas: controles de estación y fecha, mapa esquemático y detalle de la estación.
+- Pensada para quien viaja, con fondo oscuro y botones morados, y **4 pestañas** (abajo en el celular, arriba en computadora):
+  - **Hoy**: saludo, tus viajes con lenguaje simple (más gente / lo normal / menos gente) y los avisos del día (festivos, eventos y clima).
+  - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo, «Guardar» y «Reportar cómo está». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
+  - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el recorrido por fechas y las estaciones con más gente que de costumbre.
+  - **Agenda**: festivos, conciertos, partidos y marchas de los próximos meses, con las estaciones afectadas y filtros (incluido «Mis estaciones»).
+- La fecha se elige arriba (día anterior / siguiente, calendario o «Mañana») y vale para todas las pestañas.
 - Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
 - Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
@@ -20,7 +25,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Mapa geográfico de la red completa (catálogo oficial SEMOVI/STC: 163 estaciones, 195 registros estación-línea) con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
 - Búsqueda de estaciones (sin importar acentos), filtro por línea y ficha geográfica para las estaciones que no tienen modelo.
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
-- Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
+- Páginas **Cómo se calcula** y **Datos** (enlazadas al pie de cada estación) con el proceso, la cobertura y la validación por estación.
 - Perfiles locales de clase que se guardan solamente en el navegador, o cuentas con usuario y contraseña cuando se usa el servidor de la demo (ver «Cuentas para la demo»).
 - **Próximos 7 días** de la estación elegida y de cada viaje, con el mejor día hábil (excluye festivos) y marcas de fechas especiales (★) y eventos (◆).
 - **App instalable** (PWA): en Android/Chrome aparece «Instalar app»; en iPhone, Safari → Compartir → Agregar a pantalla de inicio. Funciona sin conexión con la última versión descargada.
@@ -30,9 +35,13 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 Las estimaciones no representan ocupación dentro de los trenes, saturación de andenes ni datos en tiempo real.
 
-| Mapa y detalle | Perfil local |
-|---|---|
-| ![Mapa con detalle de estación](assets/preview-map.png) | ![Creación del perfil local](assets/preview-profile.png) |
+| Hoy en el celular | Ficha de estación | Mapa |
+|---|---|---|
+| ![Pestaña Hoy en el celular](assets/preview-hoy.png) | ![Ficha de la estación Hidalgo](assets/preview-estacion.png) | ![Mapa de la red con la estación elegida](assets/preview-map.png) |
+
+Al abrir la app por primera vez se crea un perfil (o se inicia sesión con el servidor de la demo):
+
+![Creación del perfil en el celular](assets/preview-profile.png)
 
 ## Abrirla en una computadora
 
@@ -61,6 +70,8 @@ y abre `http://localhost:8000/`.
 
 En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la computadora de Nayibi puede servir la página con cuentas: cada persona crea un usuario y una contraseña, y Mis viajes se guarda en una base de datos en esa computadora, así que aparece en cualquier navegador donde la persona inicie sesión.
 
+Con el servidor también aparece **«Reportar cómo está»** en cada estación: quien tiene sesión dice en un toque si está vacía, normal o llena, y todos ven el resumen de los últimos 30 minutos. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
+
 Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
 
 ```bash
@@ -80,8 +91,8 @@ Las pruebas están en `tests/` (Python con `pytest`) y se corren solas en cada P
 
 - `test_datos.py`: coherencia de `model-data.js`, `eventos.csv` (fuente obligatoria, estaciones válidas, sin duplicados), catálogo, clima y `sw.js`.
 - `test_modelo.py`: festivos, Pascua, puentes, nombres de estaciones y una corrida del modelo con datos sintéticos (cierres, estaciones sin datos recientes, ajuste por eventos).
-- `test_cuentas.py`: el servidor de cuentas (contraseñas cifradas, sesiones, bloqueo por intentos, archivos que no se exponen) y el inicio de sesión en la página.
-- `test_pagina.py`: la página en Chromium, servida por http: pestañas, estimaciones, festivos y eventos, búsqueda, mapa, vista de 7 días, Mis viajes, perfil, modo sin conexión y pantallas pequeñas.
+- `test_cuentas.py`: el servidor de cuentas (contraseñas cifradas, sesiones, bloqueo por intentos, reportes anónimos, archivos que no se exponen) y el inicio de sesión y los reportes en la página.
+- `test_pagina.py`: la página en Chromium, servida por http: pestañas Hoy, Estaciones, Mapa y Agenda, estimaciones, festivos y eventos, búsqueda, mapa, vista de 7 días, Mis viajes, perfil, modo sin conexión y pantallas pequeñas.
 
 Para correrlas localmente:
 

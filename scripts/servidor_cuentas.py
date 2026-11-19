@@ -1,7 +1,8 @@
 """Servidor de cuentas de Mini Yolotzin para la demostración en clase.
 
-Sirve la página y guarda cuentas (usuario + contraseña) y Mis viajes en una base
-SQLite en la computadora donde se ejecuta. La página sigue funcionando sin este
+Sirve la página y guarda cuentas (usuario + contraseña), Mis viajes y los reportes
+«¿Cómo va ahora?» (vacío / normal / lleno) en una base SQLite en la computadora
+donde se ejecuta. La página sigue funcionando sin este
 servidor (por ejemplo en GitHub Pages): ahí solo hay perfiles locales.
 
 Uso, desde la raíz del repositorio:
@@ -12,6 +13,7 @@ Seguridad:
 - La base se guarda FUERA del repositorio (por defecto ~/.mini-yolotzin/cuentas.db).
 - Las contraseñas nunca se guardan en texto: solo un hash scrypt con sal aleatoria.
 - La sesión es una cookie HttpOnly; en la base solo queda el hash del token.
+- Los reportes se guardan sin usuario (anónimos); solo se pueden enviar con sesión.
 - Solo se sirven los archivos públicos de la página (nunca .git, scripts ni la base).
 - Con --wifi la conexión es http sin cifrar: úsalo solo en una red de confianza.
 """
@@ -32,7 +34,7 @@ import threading
 import time
 from http.cookies import SimpleCookie
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DB = Path.home() / ".mini-yolotzin" / "cuentas.db"
@@ -46,6 +48,9 @@ MAX_FAILURES, LOCK_SECONDS = 5, 60
 COOKIE = "my_sesion"
 PUBLIC_EXT = {".html", ".js", ".css", ".json", ".webmanifest", ".png", ".svg", ".ico", ".csv"}
 PUBLIC_DIRS = {"", "icons", "assets"}
+REPORT_LEVELS = ("vacio", "normal", "lleno")
+REPORT_WINDOW = 30 * 60        # se muestran los reportes de los últimos 30 minutos
+REPORT_COOLDOWN = 10 * 60      # una persona puede reportar la misma estación cada 10 minutos
 SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1, "dklen": 32}
 
 
@@ -84,6 +89,13 @@ class Store:
                     viajes TEXT NOT NULL DEFAULT '[]',
                     creado TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS reportes (
+                    estacion TEXT NOT NULL,
+                    linea TEXT NOT NULL,
+                    nivel TEXT NOT NULL,
+                    creado REAL NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS reportes_estacion ON reportes (estacion, linea, creado);
                 CREATE TABLE IF NOT EXISTS sesiones (
                     token_hash TEXT PRIMARY KEY,
                     usuario TEXT NOT NULL REFERENCES usuarios(usuario) ON DELETE CASCADE,
@@ -145,6 +157,27 @@ class Store:
                        (json.dumps(trips, ensure_ascii=False), usuario))
 
 
+    def add_report(self, estacion: str, linea: str, nivel: str) -> None:
+        with self._db() as db:
+            db.execute("DELETE FROM reportes WHERE creado < ?", (time.time() - 7 * 86400,))
+            db.execute("INSERT INTO reportes VALUES (?, ?, ?, ?)", (estacion, linea, nivel, time.time()))
+
+    def report_summary(self, estacion: str, linea: str) -> dict:
+        since = time.time() - REPORT_WINDOW
+        with self._db() as db:
+            rows = db.execute("SELECT nivel, COUNT(*), MAX(creado) FROM reportes "
+                              "WHERE estacion = ? AND linea = ? AND creado >= ? GROUP BY nivel",
+                              (estacion, linea, since)).fetchall()
+        counts = {level: 0 for level in REPORT_LEVELS}
+        last = 0.0
+        for nivel, count, newest in rows:
+            counts[nivel] = count
+            last = max(last, newest)
+        total = sum(counts.values())
+        return {**counts, "total": total, "minutos": round((time.time() - last) / 60) if total else None,
+                "ventana": REPORT_WINDOW // 60}
+
+
 def valid_trips(value) -> bool:
     """Mis viajes: lista corta de objetos simples (lo que guarda la página)."""
     if not isinstance(value, list) or len(value) > MAX_TRIPS:
@@ -191,6 +224,8 @@ class Limiter:
 
 def make_handler(store: Store, root: Path = ROOT, secure_cookie: bool = False):
     limiter = Limiter()
+    recent_reports: dict[tuple[str, str, str], float] = {}   # solo en memoria: quién reportó qué y cuándo
+    reports_lock = threading.Lock()
 
     class Handler(http.server.BaseHTTPRequestHandler):
         server_version = "MiniYolotzin"
@@ -271,6 +306,13 @@ def make_handler(store: Store, root: Path = ROOT, secure_cookie: bool = False):
                 user = store.session_user(self._token())
                 return self._json(200, {"viajes": store.get_trips(user)}) if user else \
                     self._json(401, {"error": "Inicia sesión."})
+            if route == "/api/reportes":
+                query = parse_qs(urlparse(self.path).query)
+                estacion = (query.get("estacion") or [""])[0][:60]
+                linea = (query.get("linea") or [""])[0][:3]
+                if not estacion or not linea:
+                    return self._json(400, {"error": "Indica estación y línea."})
+                return self._json(200, store.report_summary(estacion, linea))
             if route.startswith("/api/"):
                 return self._json(404, {"error": "No encontrado."})
             self._static()
@@ -282,6 +324,8 @@ def make_handler(store: Store, root: Path = ROOT, secure_cookie: bool = False):
             if route == "/api/salir":
                 store.end_session(self._token())
                 return self._json(200, {"ok": True}, self._cookie("", 0))
+            if route == "/api/reportes":
+                return self._report()
             if route not in ("/api/registro", "/api/entrar"):
                 return self._json(404, {"error": "No encontrado."})
             data = self._body()
@@ -305,6 +349,24 @@ def make_handler(store: Store, root: Path = ROOT, secure_cookie: bool = False):
                 limiter.reset(usuario)
             token = store.new_session(usuario)
             self._json(200, {"usuario": usuario}, self._cookie(token, SESSION_DAYS * 86400))
+
+        def _report(self):
+            user = store.session_user(self._token())
+            if not user:
+                return self._json(401, {"error": "Inicia sesión para reportar."})
+            data = self._body()
+            if not isinstance(data, dict):
+                return self._json(400, {"error": "Petición no válida."})
+            estacion, linea, nivel = (str(data.get(k, "")).strip() for k in ("estacion", "linea", "nivel"))
+            if nivel not in REPORT_LEVELS or not 0 < len(estacion) <= 60 or not 0 < len(linea) <= 3:
+                return self._json(400, {"error": "Reporte no válido."})
+            key, now = (user, estacion, linea), time.time()
+            with reports_lock:
+                if now - recent_reports.get(key, 0) < REPORT_COOLDOWN:
+                    return self._json(429, {"error": "Ya reportaste esta estación hace poco. Gracias."})
+                recent_reports[key] = now
+            store.add_report(estacion, linea, nivel)
+            self._json(200, store.report_summary(estacion, linea))
 
         def do_PUT(self):
             if urlparse(self.path).path != "/api/viajes":
