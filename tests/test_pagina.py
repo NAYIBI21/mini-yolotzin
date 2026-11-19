@@ -15,6 +15,11 @@ from conftest import model_value, set_date
 pytestmark = pytest.mark.pagina
 
 
+def go(page, view: str) -> None:
+    """Cambia de pestaña: today (Hoy), explore (Estaciones), map (Mapa) o agenda."""
+    page.click(f"#tab-{view}")
+
+
 def test_loads_with_model_and_map(page, model_data):
     assert page.text_content("#detailName") == model_data["featured"][0]["name"]
     assert page.locator("#networkViewport .station").count() == 163
@@ -22,22 +27,40 @@ def test_loads_with_model_and_map(page, model_data):
 
 
 def test_tabs_with_keyboard(page):
-    page.focus("#tab-explore")
+    assert page.is_visible("#todayView")                  # la app abre en Hoy
+    page.focus("#tab-today")
     page.keyboard.press("ArrowRight")
-    assert page.is_visible("#methodView")
-    assert page.get_attribute("#tab-method", "aria-selected") == "true"
+    assert page.is_visible("#exploreView")
+    assert page.get_attribute("#tab-explore", "aria-selected") == "true"
     page.keyboard.press("End")
+    assert page.is_visible("#agendaView")
+    page.keyboard.press("ArrowLeft")
+    assert page.is_visible("#mapView")
+    page.keyboard.press("Home")
+    assert page.is_visible("#todayView")
+
+
+def test_method_and_data_pages_from_station(page):
+    go(page, "explore")
+    page.click("#openData")
     assert page.is_visible("#dataView")
     assert page.locator("#stationTable tr").count() == 195
-    page.keyboard.press("Home")
+    assert not page.is_visible(".datebar")
+    page.click("#dataView .back-btn")
+    page.click("#openMethod")
+    assert page.is_visible("#methodView")
+    page.click("#methodView .back-btn")
     assert page.is_visible("#exploreView")
 
 
 def test_station_and_date_show_model_value(page, model_data):
+    go(page, "explore")
     page.select_option("#stationSelect", "3|Hidalgo")
     set_date(page, "2026-11-17")
     expected = model_value(model_data, "3", "Hidalgo", "2026-11-17")
     assert page.text_content("#detailEstimate") == f"{expected:,}"
+    assert f"{expected:,} entradas" in page.text_content("#riskEstimate")
+    assert page.text_content("#riskText") in ("Más gente de lo normal", "Lo normal", "Menos gente de lo normal")
     page.click('#detailLines button[data-line="2"]')
     expected_l2 = model_value(model_data, "2", "Hidalgo", "2026-11-17")
     assert page.text_content("#detailEstimate") == f"{expected_l2:,}"
@@ -46,6 +69,8 @@ def test_station_and_date_show_model_value(page, model_data):
 def test_holiday_and_event_notes(page):
     set_date(page, "2026-11-16")
     assert "Revolución" in page.text_content("#calendarChip")
+    assert "Revolución" in page.text_content("#todayNotices")
+    go(page, "explore")
     page.select_option("#stationSelect", "9|Ciudad Deportiva")
     set_date(page, "2026-11-01")
     assert page.is_visible("#eventChip")
@@ -54,6 +79,7 @@ def test_holiday_and_event_notes(page):
 
 
 def test_search_and_line_filter(page):
+    go(page, "explore")
     page.fill("#mapSearch", "zocalo")
     assert page.locator("#mapStationList option").count() == 1
     page.fill("#mapSearch", "")
@@ -62,6 +88,7 @@ def test_search_and_line_filter(page):
 
 
 def test_map_playback_and_zoom(page):
+    go(page, "map")
     before = page.text_content("#dateLabel")
     page.click("#playPause")
     page.wait_for_timeout(1900)
@@ -72,7 +99,20 @@ def test_map_playback_and_zoom(page):
     assert page.get_attribute("#networkViewport", "transform") != transform
 
 
+def test_map_sheet_follows_station(page, model_data):
+    go(page, "explore")
+    page.select_option("#stationSelect", "3|Hidalgo")
+    set_date(page, "2026-11-17")
+    go(page, "map")
+    assert page.text_content("#sheetName") == "Hidalgo"
+    expected = model_value(model_data, "3", "Hidalgo", "2026-11-17")
+    assert page.text_content("#sheetEstimate") == f"~{expected:,}"
+    page.click("#sheetOpen")
+    assert page.is_visible("#exploreView")
+
+
 def test_week_view_skips_holiday(page):
+    go(page, "explore")
     set_date(page, "2026-11-13")
     assert page.locator("#weekGrid .week-day").count() == 7
     best = page.get_attribute("#weekGrid .week-day.best", "aria-label")
@@ -82,7 +122,9 @@ def test_week_view_skips_holiday(page):
 
 
 def test_my_trips_persist_and_escape_text(page):
+    go(page, "explore")
     page.click("#saveStation")
+    go(page, "today")
     page.click("#tripAddToggle")
     page.fill("#tripLabel", "<b>Casa</b> → Escuela")
     page.select_option("#tripFrom", "3|Indios Verdes")
@@ -94,6 +136,23 @@ def test_my_trips_persist_and_escape_text(page):
     assert page.locator(".trip-item").count() == 2
     page.click(".trip-item >> nth=0 >> .trip-remove")
     assert page.locator(".trip-item").count() == 1
+    page.click(".trip-item .trip-stop >> nth=0")         # tocar una parada abre su ficha
+    assert page.is_visible("#exploreView")
+    assert page.text_content("#detailName") == "Indios Verdes"
+
+
+def test_agenda_lists_events_and_filters(page):
+    go(page, "agenda")
+    assert page.locator("#agendaList .agenda-day").count() > 0
+    page.click('#agendaFilters [data-filter="cal"]')
+    assert page.locator("#agendaList .notice.evt").count() == 0
+    page.click('#agendaFilters [data-filter="mine"]')      # sin estaciones guardadas no hay nada propio
+    assert page.locator("#agendaList .notice").count() == 0
+
+
+def test_reports_need_the_class_server(page):
+    go(page, "explore")
+    assert not page.is_visible("#reportButton")             # en GitHub Pages no hay reportes
 
 
 def test_profile_dialog_escape_returns_focus(page):
@@ -117,6 +176,7 @@ def test_works_offline_after_first_visit(page):
 
 
 def test_ecobici_live_near_station(page):
+    go(page, "explore")
     page.select_option("#stationSelect", "3|Hidalgo")
     page.wait_for_selector("#bikeList .bike-item")
     items = page.locator("#bikeList .bike-item").all_text_contents()
