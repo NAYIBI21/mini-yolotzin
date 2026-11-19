@@ -10,7 +10,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - Mantener la aplicación como sitio estático compatible con GitHub Pages.
 - No introducir dependencias de servidor para cambios visuales o de contenido.
 - Mantener accesibilidad básica, diseño adaptable a celular y navegación por teclado.
-- Los perfiles se almacenan únicamente con `localStorage`; no son cuentas reales.
+- Los perfiles y Mis viajes se almacenan únicamente con `localStorage`; no son cuentas reales. El texto que escribe la persona se muestra siempre escapado.
 - Nunca agregar contraseñas, tokens, claves API ni datos personales al repositorio.
 
 ## Reglas metodológicas
@@ -44,7 +44,7 @@ Antes de entregar un cambio:
 3. Confirmar que la selección de estación y fecha (lista, barra, fecha exacta y ±1 día) actualiza la estimación y el mapa.
 4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom.
 5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones, que en las correspondencias se puede cambiar de línea y que todas las estaciones del catálogo tienen su registro del modelo.
-6. Probar la creación y edición del perfil local.
+6. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar.
 7. Revisar la presentación en pantalla pequeña.
 8. Resumir los archivos cambiados y cualquier limitación de la verificación.
 

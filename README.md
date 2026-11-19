@@ -22,6 +22,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
 - Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
 - Perfiles locales de clase que se guardan solamente en el navegador.
+- **Mis viajes**: hasta 8 estaciones o viajes origen → destino por perfil, con la estimación y el nivel de la fecha elegida, avisos de festivos y eventos, y acceso directo a cada estación. Se guardan solo en el navegador (`localStorage`).
 - Información de metodología, cobertura, errores y limitaciones.
 
 Las estimaciones no representan ocupación dentro de los trenes, saturación de andenes ni datos en tiempo real.
