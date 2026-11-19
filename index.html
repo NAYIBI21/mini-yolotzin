@@ -494,6 +494,14 @@
     .notice.cal { background: #241d0e; border-color: #5a4520; } .notice.cal .ico { background: #3d3012; color: #ffd48a; }
     .notice.evt { background: #1a1533; border-color: #3b2f73; } .notice.evt .ico { background: #2c2260; color: #c4b5fd; }
     .notice.mine { box-shadow: inset 3px 0 0 #a78bfa; }
+    .notice .ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .notice.evt.concierto .ico { background: #13405a; color: #5dd6e8; }
+    .notice.evt.concierto { background: #10263a; border-color: #1f4660; }
+    .notice.weather { grid-template-columns: 34px minmax(0, 1fr) auto; background: #0e1b29; border-color: #1c2e41; }
+    .notice.weather .ico { background: #1f2f42; color: #ffd48a; }
+    .notice-source { align-self: center; color: var(--muted); font-size: .66rem; }
+    .today-alerts { grid-column: 1 / -1; display: grid; gap: 10px; }
+    .today-alerts .link-btn { margin-top: 0; justify-self: start; }
     .notice strong { display: block; font-size: .86rem; }
     .notice p { margin: 3px 0 0; color: var(--text-2); font-size: .78rem; line-height: 1.45; }
     .link-btn { margin-top: 12px; border: 0; background: transparent; color: #a78bfa; font-weight: 700; cursor: pointer; padding: 6px 0; font-size: .8rem; }
@@ -763,6 +771,15 @@
         <h2 id="todayGreeting">Hola.</h2>
         <p id="todaySummary">—</p>
       </section>
+      <section class="today-alerts" aria-label="Avisos del día">
+        <div class="notice weather" id="todayWeather">
+          <span class="ico" id="weatherIcon" aria-hidden="true"></span>
+          <div><strong id="weatherTitle">Clima</strong><p id="weatherText">Consultando el pronóstico…</p></div>
+          <span class="notice-source" id="forecastSource" hidden>Open-Meteo</span>
+        </div>
+        <div class="notice-list" id="todayNotices" aria-live="polite"></div>
+        <button type="button" class="link-btn" data-goto="agenda">Ver toda la agenda ›</button>
+      </section>
       <section class="card-block" id="tripsSection" aria-labelledby="tripsTitle">
         <div class="trips-head"><h3 id="tripsTitle">Mis viajes</h3><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Agregar</button></div>
         <div class="trip-list" id="tripList" aria-live="polite"></div>
@@ -777,12 +794,6 @@
           <div class="trip-actions"><button type="submit" class="play-btn">Guardar</button><button type="button" class="ghost-btn" id="tripCancel">Cancelar</button></div>
           <p class="profile-error" id="tripError" role="alert"></p>
         </form>
-      </section>
-      <section class="card-block" aria-labelledby="noticesTitle">
-        <h3 id="noticesTitle">Avisos del día</h3>
-        <div class="notice-list" id="todayNotices" aria-live="polite"></div>
-        <p class="note" id="weatherNote" hidden></p>
-        <button type="button" class="link-btn" data-goto="agenda">Ver toda la agenda ›</button>
       </section>
     </div>
   </main>
@@ -1944,7 +1955,25 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     return adj ? [{ record: r, factor: adj.factor }] : [];
   }).sort((a, b) => b.factor - a.factor);
   const savedKeys = () => new Set(readTrips().flatMap(t => [t.from, t.to]).filter(Boolean).map(s => `${s.line}|${stationKey(s.name)}`));
-  const noticeHtml = item => `<div class="notice ${item.kind}${item.mine ? ' mine' : ''}"><span class="ico" aria-hidden="true">${item.kind === 'cal' ? '★' : '◆'}</span><div><strong>${esc(item.title)}</strong><p>${item.text}</p></div></div>`;
+  const svgIcon = paths => `<svg viewBox="0 0 24 24">${paths}</svg>`;
+  const ICONS = {
+    concierto: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    deportivo: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.7V17c0 .6-.5 1-1 1.2C7.9 18.8 7 20.2 7 22"/><path d="M14 14.7V17c0 .6.5 1 1 1.2 1.1.6 2 2 2 3.8"/><path d="M18 2H6v7a6 6 0 0 0 12 0z"/>',
+    marcha: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+    cívico: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+    festivo: '<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>',
+    vacaciones: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    solNubes: '<path d="M12 2v2M4.9 4.9l1.4 1.4M20 12h2M19.1 4.9l-1.4 1.4"/><path d="M15.9 12.7a4 4 0 0 0-5.9-4.1"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6z"/>',
+    nubes: '<path d="M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 0 1 0 9z"/>',
+    lluvia: '<path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/><path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 21v2M12 15v2"/>',
+    tormenta: '<path d="M6 16.3A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9"/><path d="m13 12-3 5h4l-3 5"/>'
+  };
+  const noticeIcon = item => item.kind === 'cal' ? (item.title.includes('Vacaciones') && !item.title.includes('Día festivo') ? 'vacaciones' : 'festivo') : ICONS[item.tipo] ? item.tipo : null;
+  const noticeHtml = item => {
+    const icon = noticeIcon(item);
+    return `<div class="notice ${item.kind}${item.tipo ? ' ' + item.tipo : ''}${item.mine ? ' mine' : ''}" data-icon="${icon || 'evento'}"><span class="ico" aria-hidden="true">${icon ? svgIcon(ICONS[icon]) : '◆'}</span><div><strong>${esc(item.title)}</strong><p>${item.text}</p></div></div>`;
+  };
   function noticesFor(date, mine = savedKeys()) {
     const items = [];
     const cal = data.calendar?.[date];
@@ -1953,7 +1982,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       const hit = eventStations(date, e.grupo);
       const isMine = hit.some(h => mine.has(`${h.record.line}|${stationKey(h.record.name)}`));
       const where = hit.slice(0, 3).map(h => `${esc(h.record.name)} (L${esc(h.record.line)}) ${signed((h.factor - 1) * 100)}`).join(', ');
-      items.push({ kind: 'evt', mine: isMine, title: eventTitle(e), text: hit.length ? `Más gente en ${where}.` : e.tipo === 'marcha' ? 'Puede haber cierres de estaciones; su efecto cambia mucho entre años.' : 'Sin efecto medido en las estaciones cercanas.' });
+      items.push({ kind: 'evt', tipo: e.tipo, mine: isMine, title: eventTitle(e), text: hit.length ? `Más gente en ${where}.` : e.tipo === 'marcha' ? 'Puede haber cierres de estaciones; su efecto cambia mucho entre años.' : 'Sin efecto medido en las estaciones cercanas.' });
     });
     return items;
   }
@@ -1969,9 +1998,47 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       ? `${when}: guarda tus estaciones para ver aquí cómo vienen.`
       : busy ? `${when}, ${busy === 1 ? 'una de tus estaciones va' : `${busy} de tus estaciones van`} con más gente de lo normal.`
         : `${when}, tus estaciones van normal o con menos gente.`;
+    renderWeather();
     const items = noticesFor(date);
     $('todayNotices').innerHTML = items.length ? items.map(noticeHtml).join('') : '<p class="note">Sin festivos ni eventos registrados para esta fecha.</p>';
   }
+  // ---------- Clima del día (pronóstico de Open-Meteo, datos abiertos sin clave; no forma parte del modelo) ----------
+  const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast?latitude=19.43&longitude=-99.13&daily=weather_code,temperature_2m_max,precipitation_probability_max&timezone=America%2FMexico_City&forecast_days=16';
+  const forecast = { days: null, failed: false, loading: false };
+  const weatherKind = code => code === 0 ? ['sol', 'despejado'] : code <= 2 ? ['solNubes', 'medio nublado'] : code <= 48 ? ['nubes', 'nublado'] : code >= 95 ? ['tormenta', 'tormentas'] : code >= 71 && code <= 86 && !(code >= 80 && code <= 82) ? ['nubes', 'frío y nublado'] : ['lluvia', code <= 57 ? 'llovizna' : 'lluvia'];
+  async function loadForecast() {
+    if (forecast.days || forecast.loading) return;
+    forecast.loading = true;
+    try {
+      const res = await fetch(FORECAST_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      const d = (await res.json()).daily;
+      forecast.days = new Map(d.time.map((day, i) => [day, { code: d.weather_code[i], max: d.temperature_2m_max[i], rain: d.precipitation_probability_max?.[i] ?? null }]));
+    } catch { forecast.failed = true; }
+    forecast.loading = false;
+    renderWeather();
+  }
+  function renderWeather() {
+    const date = dates[state.index], day = forecast.days?.get(date);
+    const rainPct = Math.abs(window.MINI_YOLOTZIN_WEATHER?.effects?.rain?.networkPct ?? 2.5).toFixed(1);
+    let icon = 'solNubes', title = 'Clima', text;
+    if (day) {
+      const [kind, desc] = weatherKind(day.code);
+      const rainy = kind === 'lluvia' || kind === 'tormenta' || (day.rain ?? 0) >= 50;
+      icon = rainy && kind !== 'tormenta' ? 'lluvia' : kind;
+      title = `${Math.round(day.max)} °C · ${desc}${!['lluvia', 'tormenta'].includes(kind) && rainy ? `, puede llover (${day.rain}%)` : day.rain != null && ['lluvia', 'tormenta'].includes(kind) ? ` (${day.rain}%)` : ''}`;
+      text = rainy ? `La lluvia casi no cambia cuánta gente viaja: en días hábiles con lluvia hay ${rainPct}% menos entradas.` : 'El clima casi no cambia cuánta gente viaja en Metro.';
+    } else {
+      text = forecast.loading || (!forecast.days && !forecast.failed) ? 'Consultando el pronóstico…'
+        : forecast.failed ? `Sin pronóstico por ahora. La lluvia casi no cambia cuánta gente viaja (${rainPct}% menos entradas).`
+          : `Aún no hay pronóstico para esta fecha. La lluvia casi no cambia cuánta gente viaja (${rainPct}% menos entradas).`;
+    }
+    $('weatherIcon').innerHTML = svgIcon(ICONS[icon]);
+    $('weatherTitle').textContent = title;
+    $('weatherText').textContent = text;
+    $('forecastSource').hidden = !day;
+  }
+
   let agendaFilter = 'all';
   function renderAgenda() {
     const start = Math.max(0, dates.indexOf(todayIso)), mine = savedKeys(), days = [];
@@ -2264,10 +2331,8 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     const pct = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`;
     const range = s => `de ${pct(s.p10)} a ${pct(s.p90)}`;
     const e = weather.effects, v = weather.validation;
-    $('weatherNote').hidden = false;
     $('agendaWeather').hidden = false;
     $('agendaWeather').innerHTML = `<strong>¿Y si llueve?</strong> En días hábiles con lluvia la red tiene en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas: casi no cambia tu viaje.`;
-    $('weatherNote').innerHTML = `<strong>Clima:</strong> en días hábiles con lluvia (≥${e.rain.thresholdMm} mm) la red registra en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas. El efecto en cada estación no es concluyente, por eso el modelo no usa el clima.`;
     $('weatherCard').hidden = false;
     $('weatherIntro').textContent = `Se comparó la afluencia de ${weather.records} estaciones por línea con el clima diario de 5 zonas de la ciudad, en el periodo de prueba del ${shortDate(weather.period.testStart)} al ${shortDate(weather.period.testEnd)} (temporada de lluvias). Conclusión: la mayoría de los viajes en Metro son obligados (trabajo, escuela) y se hacen llueva o no; a nivel diario el clima cambia poco la afluencia y no mejora la estimación.`;
     $('wValidation').textContent = `${pct(v.changePct)} de error`;
@@ -2334,6 +2399,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   render();
 
   refreshBikes(true);
+  loadForecast();
   detectAccounts();
   if (location.hash === '#como-va') openReport(true);
 

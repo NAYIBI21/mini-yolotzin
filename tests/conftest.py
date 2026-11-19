@@ -93,6 +93,18 @@ def page(browser, site_url):
         route.fulfill(path=str(ROOT / "tests" / "fixtures" / f"ecobici_{name}.json"),
                       headers={"access-control-allow-origin": "*", "content-type": "application/json"})
     context.route("https://gbfs.mex.lyftbikes.com/**", ecobici)
+    # Pronóstico del clima (Open-Meteo): 19 °C con lluvia todos los días, para no depender de internet.
+    context.weather_mode = "ok"
+
+    def forecast(route):
+        if context.weather_mode == "fail":
+            return route.abort()
+        from datetime import date, timedelta
+        days = [(date.today() + timedelta(days=i)).isoformat() for i in range(-1, 16)]
+        body = {"daily": {"time": days, "weather_code": [61] * len(days),
+                          "temperature_2m_max": [19.4] * len(days), "precipitation_probability_max": [80] * len(days)}}
+        route.fulfill(json=body, headers={"access-control-allow-origin": "*"})
+    context.route("https://api.open-meteo.com/**", forecast)
     page = context.new_page()
     page.set_default_timeout(5000)   # si algo falla, que se reporte rápido
     errors: list[str] = []
