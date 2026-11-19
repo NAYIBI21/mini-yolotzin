@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import sys
 import unicodedata
 from datetime import date, timedelta
@@ -194,8 +195,50 @@ def unify_station_names(valid: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
     return valid, renamed
 
 
+# ---------- Eventos (eventos.csv, mantenido por el equipo) ----------
+EVENTS_PATH = ROOT / "eventos.csv"
+MIN_EVENT_EDITIONS = 2     # ediciones previas medidas para ajustar una fecha futura
+
+
+def station_key(name: str) -> str:
+    """Clave para relacionar nombres del CSV oficial, del catálogo y de eventos.csv (igual que index.html)."""
+    k = re.sub(r"[^a-z0-9]", "", fold(name.split("/")[0]))
+    return {"mixhiuca": "mixiuhca"}.get(k, k)
+
+
+def load_events(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    events = []
+    for row in pd.read_csv(path, dtype=str).fillna("").to_dict("records"):
+        stations = []
+        for item in row["estaciones"].split(";"):
+            if "|" in item:
+                line, name = item.split("|", 1)
+                stations.append((line.strip(), station_key(name.strip())))
+        events.append({**row, "fecha": pd.Timestamp(row["fecha"]), "stations": stations})
+    return events
+
+
+def event_occurrences(series: pd.Series, events: list[dict]) -> list[tuple[str, pd.Timestamp, float]]:
+    """Efecto de cada edición pasada: afluencia del día ÷ mediana del mismo día de la semana
+    en las 3 semanas previas y posteriores (sin otros eventos ni festivos)."""
+    holidays, special, _ = CALENDAR
+    event_days = {e["fecha"] for e in events}
+    out = []
+    for e in events:
+        day = e["fecha"]
+        if day not in series.index:
+            continue
+        refs = [day + pd.Timedelta(days=7 * k) for k in (-3, -2, -1, 1, 2, 3)]
+        refs = [r for r in refs if r in series.index and r not in event_days and r.date() not in holidays and r.date() not in special]
+        if len(refs) >= 3:
+            out.append((e["grupo"], day, float(series[day] / np.median(series[refs]))))
+    return out
+
+
 def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Timestamp,
-                 forecast_dates: pd.DatetimeIndex) -> tuple[dict | None, dict | None]:
+                 forecast_dates: pd.DatetimeIndex, events: list[dict] | None = None) -> tuple[dict | None, dict | None]:
     """Train and validate one station-line record. Returns (record, skipped)."""
     data = frame[["fecha", "afluencia"]].sort_values("fecha").drop_duplicates("fecha", keep="last")
     zero_days = int((data["afluencia"] <= 0).sum())
@@ -239,6 +282,29 @@ def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Time
     final_model.fit(features(full["fecha"]), full["afluencia"], sample_weight=recency_weights(full["fecha"], last_date))
     future_pred = np.maximum(0, final_model.predict(features(forecast_dates)))
 
+    # 3) Eventos: si una fecha futura tiene un evento que afecta a esta estación, se ajusta
+    #    con la mediana del efecto medido en ediciones anteriores (mínimo MIN_EVENT_EDITIONS).
+    events = events or []
+    past = event_occurrences(data.set_index("fecha")["afluencia"], [e for e in events if e["fecha"] <= last_date])
+    adjustments, loo = [], []
+    for group in {g for g, _, _ in past}:
+        ratios = [r for g, _, r in past if g == group]
+        for i, ratio in enumerate(ratios):   # validación dejando una edición fuera
+            others = ratios[:i] + ratios[i + 1:]
+            if len(others) >= MIN_EVENT_EDITIONS:
+                loo.append({"group": group, "without": abs(ratio - 1) / ratio, "with": abs(ratio - float(np.median(others))) / ratio})
+    date_index = {d: i for i, d in enumerate(forecast_dates)}
+    for e in events:
+        i = date_index.get(e["fecha"])
+        if i is None:
+            continue
+        ratios = [r for g, _, r in past if g == e["grupo"]]
+        factor = float(np.median(ratios)) if len(ratios) >= MIN_EVENT_EDITIONS else None
+        if factor is not None:
+            future_pred[i] *= factor
+        adjustments.append({"date": e["fecha"].strftime("%Y-%m-%d"), "group": e["grupo"],
+                            "factor": round(factor, 3) if factor is not None else None, "editions": len(ratios)})
+
     q33, q67 = train["afluencia"].quantile([0.33, 0.67]).tolist()
     q25, median, q75 = train["afluencia"].quantile([0.25, 0.5, 0.75]).tolist()
     recent = (
@@ -272,6 +338,9 @@ def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Time
         # se calcula en el navegador con lowThreshold/highThreshold, con la misma regla de antes.
         "predictions": [rounded(v) for v in future_pred],
     }
+    if adjustments:
+        record["eventAdjustments"] = adjustments
+    record["_loo"] = loo
     return record, None
 
 
@@ -296,12 +365,35 @@ def main() -> None:
     max_date = valid["fecha"].max()
     forecast_dates = pd.date_range(max_date + pd.DateOffset(days=1), periods=FORECAST_DAYS, freq="D")
 
+    events = load_events(EVENTS_PATH)
+    print(f"Eventos cargados: {len(events)} desde {EVENTS_PATH.name}")
     records, skipped = [], []
     groups = valid.groupby(["linea", "estacion"], sort=True)
     for index, ((line_label, station), group) in enumerate(groups, start=1):
-        record, skip = build_record(line_code(line_label), station, group, max_date, forecast_dates)
+        line, key = line_code(line_label), station_key(station)
+        record_events = [e for e in events if (line, key) in e["stations"]]
+        record, skip = build_record(line, station, group, max_date, forecast_dates, record_events)
         (records if record else skipped).append(record or skip)
         print(f"[{index}/{groups.ngroups}] Línea {line_code(line_label)} · {station}: {'ok' if record else skip['reason']}", flush=True)
+
+    loo = [row for r in records for row in r.pop("_loo")]
+    event_validation = {}
+    for group in sorted({row["group"] for row in loo}):
+        rows = [row for row in loo if row["group"] == group]
+        event_validation[group] = {
+            "cases": len(rows),
+            "errorWithout": round(float(np.median([r["without"] for r in rows])) * 100, 1),
+            "errorWith": round(float(np.median([r["with"] for r in rows])) * 100, 1),
+            "improvedShare": round(float(np.mean([r["with"] < r["without"] for r in rows])) * 100, 0),
+        }
+    horizon = {d.strftime("%Y-%m-%d") for d in forecast_dates}
+    events_calendar = {}
+    for e in events:
+        day = e["fecha"].strftime("%Y-%m-%d")
+        if day in horizon:
+            events_calendar.setdefault(day, []).append({k: e[k] for k in ["grupo", "nombre", "tipo", "recinto", "fuente"]})
+    if loo:
+        print(f"Eventos (validación dejando una edición fuera): error mediano {np.median([r['without'] for r in loo])*100:.1f}% → {np.median([r['with'] for r in loo])*100:.1f}%")
 
     missing = [f"{line} {name}" for line, name in FEATURED if not any(r["line"] == line and r["name"] == name for r in records)]
     if missing:
@@ -353,6 +445,14 @@ def main() -> None:
             },
         },
         "calendar": calendar_labels(forecast_dates),
+        "events": {
+            "source": "eventos.csv (mantenido por el equipo; fechas verificadas en fuentes públicas)",
+            "method": "Ajuste = mediana del efecto en ediciones anteriores (día del evento ÷ mismo día de la semana ±3 semanas).",
+            "minEditions": MIN_EVENT_EDITIONS,
+            "count": len(events),
+            "validation": event_validation,
+            "calendar": events_calendar,
+        },
         "featured": [{"line": line, "name": name} for line, name in FEATURED],
         "stations": records,
         "skipped": skipped,

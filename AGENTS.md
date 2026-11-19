@@ -10,7 +10,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - Mantener la aplicación como sitio estático compatible con GitHub Pages.
 - No introducir dependencias de servidor para cambios visuales o de contenido.
 - Mantener accesibilidad básica, diseño adaptable a celular y navegación por teclado.
-- Los perfiles se almacenan únicamente con `localStorage`; no son cuentas reales.
+- Los perfiles y Mis viajes se almacenan únicamente con `localStorage`; no son cuentas reales. El texto que escribe la persona se muestra siempre escapado.
 - Nunca agregar contraseñas, tokens, claves API ni datos personales al repositorio.
 
 ## Reglas metodológicas
@@ -21,6 +21,7 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 - Los días con afluencia 0 son cierres, no demanda baja: no se usan para entrenar ni validar.
 - Las variables del modelo solo pueden ser información conocida con anticipación para todo el horizonte (calendario, festivos). El clima o los eventos requieren una decisión aparte y su propia validación.
 - Cualquier cambio de método se mide contra la versión anterior con la misma partición cronológica y se reporta en la Pull Request.
+- Cada fila de `eventos.csv` necesita una fuente pública que confirme la fecha (o una regla de fecha fija). No inventar fechas de eventos ni ajustar con menos de 2 ediciones medidas.
 - El clima se midió (`scripts/analizar_clima.py`) y no mejora la estimación diaria: no agregarlo al modelo ni mostrar efectos del clima por estación mientras el análisis no lo respalde. Las cifras del clima en la interfaz salen de `weather-summary.js`, no se escriben a mano.
 - Mostrar el aviso de confiabilidad baja cuando el error típico supere el 30% de la afluencia habitual.
 - Mantener visible la fuente oficial, el periodo de datos, el error del modelo y la comparación con la línea base.
@@ -43,7 +44,7 @@ Antes de entregar un cambio:
 3. Confirmar que la selección de estación y fecha (lista, barra, fecha exacta y ±1 día) actualiza la estimación y el mapa.
 4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom.
 5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones, que en las correspondencias se puede cambiar de línea y que todas las estaciones del catálogo tienen su registro del modelo.
-6. Probar la creación y edición del perfil local.
+6. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar.
 7. Revisar la presentación en pantalla pequeña.
 8. Resumir los archivos cambiados y cualquier limitación de la verificación.
 

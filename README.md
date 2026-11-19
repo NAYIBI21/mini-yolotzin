@@ -22,6 +22,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
 - Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
 - Perfiles locales de clase que se guardan solamente en el navegador.
+- **Mis viajes**: hasta 8 estaciones o viajes origen → destino por perfil, con la estimación y el nivel de la fecha elegida, avisos de festivos y eventos, y acceso directo a cada estación. Se guardan solo en el navegador (`localStorage`).
 - Información de metodología, cobertura, errores y limitaciones.
 
 Las estimaciones no representan ocupación dentro de los trenes, saturación de andenes ni datos en tiempo real.
@@ -102,6 +103,31 @@ El script reemplaza `model-data.js` (también acepta rutas: `python scripts/buil
 
 El CSV está ignorado por Git y no debe subirse al repositorio.
 
+## Eventos (`eventos.csv`)
+
+Conciertos, partidos, marchas y fechas cívicas cambian mucho la afluencia de las estaciones cercanas (p. ej. Gran Premio de México: Ciudad Deportiva +299%; Marcha 8M: estaciones del Centro −62% por cierres). No existe un registro oficial, así que el equipo mantiene `eventos.csv`:
+
+| Columna | Contenido |
+|---|---|
+| `fecha` | AAAA-MM-DD |
+| `grupo` | Nombre que agrupa ediciones del mismo evento (p. ej. `Gran Premio de México (F1)`) |
+| `nombre`, `tipo`, `recinto` | Descripción; `tipo` es `deportivo`, `concierto`, `marcha` o `cívico` |
+| `estaciones` | `línea\|nombre` separados por `;` (p. ej. `9\|Ciudad Deportiva;9\|Velódromo`) |
+| `fuente` | Enlace público que confirma la fecha, o la regla si es fija (8 de marzo, 2 de octubre, 15 de septiembre) |
+
+Cómo se usa: el modelo base no cambia. Si una fecha futura tiene un evento, su estimación se ajusta con la mediana del efecto medido en **al menos 2 ediciones anteriores** en esa estación (día del evento ÷ mismo día de la semana ±3 semanas). Validado dejando una edición fuera: error mediano en días de evento **32.4% → 18.1%** (mejora en 68% de 130 casos). Con menos ediciones, la página avisa que el efecto no se midió.
+
+Conciertos registrados (fechas de 2025 a 2027 tomadas de medios y boleteras; se excluyeron las fechas en que las fuentes no coinciden):
+
+| Grupo | Estación | Efecto medido | Error en días de evento (sin → con ajuste) |
+|---|---|---|---|
+| Concierto en Estadio GNP Seguros | 9 · Ciudad Deportiva | +32% (mediana de 41 conciertos; muy variable: de −14% a +151%) | 44.7% → 32.9% |
+| Concierto en Palacio de los Deportes | 9 · Velódromo | +29% (37 conciertos) | 25.1% → 19.4% |
+
+Se probaron también Estadio GNP → Velódromo/Puebla y Palacio → Ciudad Deportiva: el efecto fue nulo o el ajuste empeoraba, así que no se incluyen.
+
+Pendiente: los juegos de béisbol en el Estadio Alfredo Harp Helú (Diablos Rojos), junto a Ciudad Deportiva. La Liga Mexicana de Béisbol aún no publica el calendario 2027; cuando salga, agregar los juegos en casa (y los de 2025–2026 para medir su efecto).
+
 ## Análisis del clima
 
 Se midió si la lluvia o la temperatura cambian la afluencia diaria y si mejoran la estimación. Resultado con el corte al 30 de septiembre de 2026:
@@ -130,6 +156,7 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
+- `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
 - `AGENTS.md`: reglas para asistentes de programación.
