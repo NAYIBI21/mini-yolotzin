@@ -474,7 +474,7 @@
     <div class="profile-form" id="accountPanel" hidden>
       <form id="accountForm">
         <h3 id="accountTitle">Iniciar sesión</h3>
-        <p>Con tu cuenta, Mis viajes se guardan en el servidor de la clase.</p>
+        <p id="accountDescription">Con tu cuenta, Mis viajes se guardan en el servidor de la clase.</p>
         <div class="profile-field">
           <label for="accountUser">Usuario</label>
           <input id="accountUser" name="username" maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej. nayibi" required>
@@ -483,7 +483,7 @@
         <div class="profile-field">
           <label for="accountPassword">Contraseña</label>
           <input id="accountPassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required>
-          <small>Al menos 8 caracteres. Se guarda cifrada, nunca en texto.</small>
+          <small id="accountPasswordHelp">Al menos 8 caracteres. Se guarda cifrada, nunca en texto.</small>
         </div>
         <div class="profile-error" id="accountError" role="alert"></div>
         <button class="profile-submit" type="submit">Iniciar sesión</button>
@@ -884,6 +884,7 @@
   // ---------- Cuentas (solo cuando la página la sirve scripts/servidor_cuentas.py) ----------
   // En GitHub Pages no hay servidor: /api/estado no existe y todo sigue con el perfil local.
   let accountsAvailable = false;
+  const demoAccounts = location.hostname.endsWith('github.io'); // Solo interfaz: nunca envía ni almacena contraseñas.
   const api = (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
     .then(async response => ({ ok: response.ok, data: await response.json().catch(() => ({})) }));
   const accountProfile = usuario => ({ id: 'cuenta-' + usuario, name: usuario, group: 'Cuenta', color: '#6a44d6', account: true });
@@ -895,8 +896,13 @@
     $('accountSession').hidden = !logged;
     $('accountUserName').textContent = logged ? activeProfile.name : '';
     $('accountError').textContent = '';
+    if (demoAccounts) {
+      $('accountDescription').textContent = 'Vista demostrativa: el registro y el inicio de sesión todavía no están habilitados.';
+      $('accountPasswordHelp').textContent = 'No introduzcas una contraseña real. Esta demostración no guarda credenciales.';
+      $('profilePrivacy').textContent = 'Demostración visual: no se envían ni almacenan usuarios ni contraseñas. Puedes continuar con un perfil local.';
+    }
     profileOverlay.setAttribute('aria-labelledby', 'accountTitle');
-    $('profilePrivacy').innerHTML = '<strong>Cuentas de la clase:</strong> tu usuario y tus viajes se guardan en la computadora que corre el servidor de Mini Yolotzin. La contraseña se guarda cifrada. Sin cuenta, todo queda solo en este navegador.';
+    if (!demoAccounts) $('profilePrivacy').innerHTML = '<strong>Cuentas de la clase:</strong> tu usuario y tus viajes se guardan en la computadora que corre el servidor de Mini Yolotzin. La contraseña se guarda cifrada. Sin cuenta, todo queda solo en este navegador.';
     (logged ? $('logoutButton') : $('accountUser')).focus();
   }
   function showLocalForm() {
@@ -914,6 +920,11 @@
     if ($('tripList').dataset.ready) renderTrips();
   }
   async function submitAccount(kind) {
+    if (demoAccounts) {
+      $('accountPassword').value = '';
+      $('accountError').textContent = kind === 'registro' ? 'Vista previa: crear cuenta estará disponible próximamente. Continúa sin cuenta para usar la app.' : 'Vista previa: iniciar sesión estará disponible próximamente. Continúa sin cuenta para usar la app.';
+      return;
+    }
     const usuario = $('accountUser').value.trim().toLowerCase(), contrasena = $('accountPassword').value;
     if (usuario.length < 3 || contrasena.length < 8) { $('accountError').textContent = 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
     $('accountError').textContent = '';
@@ -936,6 +947,11 @@
     else { renderTrips(); showAccountPanel(); }
   });
   async function detectAccounts() {
+    if (demoAccounts) {
+      accountsAvailable = true;
+      if (!profileOverlay.classList.contains('hidden') && !activeProfile) showAccountPanel();
+      return;
+    }
     if (!location.protocol.startsWith('http')) return;
     // Solo el servidor de cuentas manda esta cabecera; así en GitHub Pages ni se consulta /api/.
     const head = await fetch('./', { method: 'HEAD', cache: 'no-store' }).catch(() => null);
