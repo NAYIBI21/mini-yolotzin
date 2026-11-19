@@ -1020,7 +1020,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     const linea = params.get('linea') || '';
     if (!estacion || !linea) return errorResult('Falta estación o línea.');
     const since = new Date(Date.now() - 30 * 60000).toISOString();
-    const result = await client.from('incidencias').select('afluencia,tipos,creado_en')
+    const result = await client.from('avisos_realtime').select('afluencia,tipos,creado_en')
       .eq('estacion', estacion).eq('linea', linea).gte('creado_en', since)
       .order('creado_en', { ascending: false }).limit(200);
     return result.error ? errorResult(result.error) : success(summary(result.data || []));
