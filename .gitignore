@@ -5,3 +5,7 @@ __pycache__/
 afluencia_simple.csv
 
 clima_openmeteo.json
+
+# Base de cuentas de la demo (nunca se versiona)
+*.db
+*.db-journal

@@ -100,7 +100,7 @@ def page(browser, site_url):
     page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
     page.goto(site_url)
     page.fill("#profileNameInput", "Prueba")
-    page.click(".profile-submit")
+    page.click("#profileForm .profile-submit")
     yield page
     context.close()
     ignorable = ("ERR_INTERNET_DISCONNECTED", "ERR_FAILED")   # red cortada a propósito en algunas pruebas

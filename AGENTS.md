@@ -7,11 +7,12 @@ Mini Yolotzin es una demostración académica de predicción de afluencia diaria
 ## Reglas del producto
 
 - Conservar el nombre **Mini Yolotzin** y la interfaz en español.
-- Mantener la aplicación como sitio estático compatible con GitHub Pages.
-- No introducir dependencias de servidor para cambios visuales o de contenido.
+- Mantener la aplicación como sitio estático compatible con GitHub Pages: todo debe funcionar sin servidor.
+- No introducir dependencias de servidor para cambios visuales o de contenido. La única excepción son las cuentas de la demo (ver abajo).
 - Mantener accesibilidad básica, diseño adaptable a celular y navegación por teclado.
-- Los perfiles y Mis viajes se almacenan únicamente con `localStorage`; no son cuentas reales. El texto que escribe la persona se muestra siempre escapado.
-- Nunca agregar contraseñas, tokens, claves API ni datos personales al repositorio.
+- Los perfiles locales y Mis viajes se guardan con `localStorage`. El texto que escribe la persona se muestra siempre escapado.
+- Cuentas de la demo: solo existen cuando la página la sirve `scripts/servidor_cuentas.py` (computadora de Nayibi, red local). Usa solo la biblioteca estándar de Python y SQLite. La base vive fuera del repositorio (`~/.mini-yolotzin/cuentas.db`) y nunca se versiona. Las contraseñas se guardan solo como hash scrypt con sal, y las sesiones como hash del token en una cookie HttpOnly. El servidor solo entrega los archivos públicos de la página. Sin el servidor, la página no consulta `/api/` y sigue con perfiles locales.
+- Nunca agregar contraseñas, tokens, claves API, la base de cuentas ni datos personales al repositorio.
 - Datos externos en vivo solo de fuentes abiertas sin clave (hoy: Ecobici GBFS). Se muestran aparte, marcados «en vivo», nunca mezclados con la estimación del modelo, y la página debe seguir funcionando si fallan. En las pruebas se sustituyen por `tests/fixtures/`.
 
 ## Reglas metodológicas
@@ -47,7 +48,7 @@ Antes de entregar un cambio, corre `pytest` (ver README); las pruebas automatiza
 4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom.
 5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones, que en las correspondencias se puede cambiar de línea y que todas las estaciones del catálogo tienen su registro del modelo.
 6. Probar la vista de 7 días (cambia la fecha al hacer clic) y, servida por http, que la app abra sin conexión.
-7. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar.
+7. Probar la creación y edición del perfil local, y Mis viajes: guardar una estación, crear y eliminar un viaje, y que persistan al recargar. Si cambian las cuentas, correr `tests/test_cuentas.py`.
 8. Revisar la presentación en pantalla pequeña.
 9. Resumir los archivos cambiados y cualquier limitación de la verificación.
 
