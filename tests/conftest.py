@@ -83,6 +83,16 @@ def browser():
 def page(browser, site_url):
     """Página nueva con perfil creado; falla la prueba si hay errores de JavaScript."""
     context = browser.new_context(viewport={"width": 1440, "height": 900})
+    # Ecobici en vivo se sustituye por datos de prueba: las pruebas no dependen de internet.
+    context.ecobici_mode = "ok"
+
+    def ecobici(route):
+        if context.ecobici_mode == "fail":
+            return route.abort()
+        name = "station_information" if "station_information" in route.request.url else "station_status"
+        route.fulfill(path=str(ROOT / "tests" / "fixtures" / f"ecobici_{name}.json"),
+                      headers={"access-control-allow-origin": "*", "content-type": "application/json"})
+    context.route("https://gbfs.mex.lyftbikes.com/**", ecobici)
     page = context.new_page()
     page.set_default_timeout(5000)   # si algo falla, que se reporte rápido
     errors: list[str] = []
@@ -93,7 +103,8 @@ def page(browser, site_url):
     page.click(".profile-submit")
     yield page
     context.close()
-    assert not [e for e in errors if "ERR_INTERNET_DISCONNECTED" not in e], f"Errores de JavaScript: {errors}"
+    ignorable = ("ERR_INTERNET_DISCONNECTED", "ERR_FAILED")   # red cortada a propósito en algunas pruebas
+    assert not [e for e in errors if not any(x in e for x in ignorable)], f"Errores de JavaScript: {errors}"
 
 
 def set_date(page, iso: str) -> None:

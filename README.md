@@ -24,6 +24,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Perfiles locales de clase que se guardan solamente en el navegador.
 - **Próximos 7 días** de la estación elegida y de cada viaje, con el mejor día hábil (excluye festivos) y marcas de fechas especiales (★) y eventos (◆).
 - **App instalable** (PWA): en Android/Chrome aparece «Instalar app»; en iPhone, Safari → Compartir → Agregar a pantalla de inicio. Funciona sin conexión con la última versión descargada.
+- **Ecobici cerca, en vivo**: las 3 cicloestaciones más cercanas (≤500 m) con bicis y espacios disponibles, desde el feed oficial GBFS de Ecobici (datos abiertos, sin clave). Se actualiza cada minuto mientras la página está visible y no forma parte del modelo. 61 de las 163 estaciones de Metro tienen una cicloestación a menos de 500 m.
 - **Mis viajes**: hasta 8 estaciones o viajes origen → destino por perfil, con la estimación y el nivel de la fecha elegida, avisos de festivos y eventos, y acceso directo a cada estación. Se guardan solo en el navegador (`localStorage`).
 - Información de metodología, cobertura, errores y limitaciones.
 
@@ -78,7 +79,7 @@ python -m playwright install chromium
 pytest
 ```
 
-Para correr solo las rápidas (sin navegador): `pytest -m "not pagina"`.
+Para correr solo las rápidas (sin navegador): `pytest -m "not pagina"`. Cada prueba tiene un límite de 60 segundos (`pytest-timeout`), así que una falla nunca deja la corrida colgada.
 
 ## Editar con ChatGPT, Codex o Claude
 
