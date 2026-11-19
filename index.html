@@ -460,6 +460,9 @@
     /* ---------- Rediseño para quien viaja: morado, 4 pestañas (Hoy · Estaciones · Mapa · Agenda) ---------- */
     .shell { grid-template-rows: auto auto 1fr; }
     body[data-view="method"] .datebar, body[data-view="data"] .datebar { display: none; }
+    /* En Hoy y Agenda los festivos y eventos ya salen como avisos: no se repiten en la barra de fecha. */
+    body[data-view="today"] .datebar .calendar-chip, body[data-view="today"] .datebar .event-chip,
+    body[data-view="agenda"] .datebar .calendar-chip, body[data-view="agenda"] .datebar .event-chip { display: none; }
     .logo, .profile-welcome-mark { box-shadow: 0 10px 28px rgba(106, 68, 214, .35); }
     .logo svg, .profile-welcome-mark svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .nav-btn { display: inline-flex; align-items: center; gap: 7px; color: #a78bfa; font-weight: 650; }
@@ -1988,7 +1991,9 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   }
   function renderToday() {
     const date = dates[state.index], trips = readTrips();
-    $('todayGreeting').textContent = activeProfile?.name ? `Hola, ${activeProfile.name}.` : 'Hola.';
+    // Si la cuenta usa un correo, el saludo solo muestra la parte antes de «@».
+    const shortName = (activeProfile?.name || '').split('@')[0];
+    $('todayGreeting').textContent = shortName ? `Hola, ${shortName}.` : 'Hola.';
     const levels = trips.flatMap(t => [t.from, t.to]).filter(Boolean)
       .map(s => recordByLineKey.get(`${s.line}|${stationKey(s.name)}`)).filter(Boolean)
       .map(r => predictionOf(r, state.index).level);
