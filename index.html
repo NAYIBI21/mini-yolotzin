@@ -652,20 +652,25 @@
     <div class="profile-form" id="accountPanel" hidden>
       <form id="accountForm">
         <h3 id="accountTitle">Iniciar sesión</h3>
-        <p id="accountDescription">Con tu cuenta, Mis viajes se sincronizan en Supabase entre dispositivos.</p>
+        <p id="accountDescription">Entra con tu usuario y contraseña. No necesitas correo ni teléfono.</p>
         <div class="profile-field">
-          <label for="accountUser">Correo electrónico</label>
-          <input id="accountUser" name="email" type="email" maxlength="254" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="nombre@correo.com" required>
-          <small>Utiliza un correo real para confirmar tu cuenta.</small>
+          <label for="accountUser">Nombre de usuario</label>
+          <input id="accountUser" name="username" type="text" minlength="3" maxlength="32" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej. ana123" required>
+          <small>De 3 a 32 letras, números, punto, guion o guion bajo. Sin correo.</small>
         </div>
         <div class="profile-field">
           <label for="accountPassword">Contraseña</label>
-          <input id="accountPassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required>
+          <input id="accountPassword" name="password" type="password" minlength="8" maxlength="72" autocomplete="current-password" required>
           <small id="accountPasswordHelp">Al menos 8 caracteres. Se guarda cifrada, nunca en texto.</small>
+        </div>
+        <div class="profile-field" id="accountConfirmBox" hidden>
+          <label for="accountPasswordConfirm">Repetir contraseña</label>
+          <input id="accountPasswordConfirm" type="password" minlength="8" maxlength="72" autocomplete="new-password">
         </div>
         <div class="profile-error" id="accountError" role="alert"></div>
         <button class="profile-submit" type="submit">Iniciar sesión</button>
-        <button class="account-alt" id="registerButton" type="button">Crear cuenta</button>
+        <button class="account-alt" id="registerButton" type="button">Soy nuevo · Crear cuenta</button>
+        <button class="account-alt" id="loginModeButton" type="button" hidden>Ya tengo cuenta · Iniciar sesión</button>
         <div class="or-divider" aria-hidden="true">o</div>
         <button class="no-account" id="noAccountButton" type="button">Continuar sin cuenta</button>
       </form>
@@ -989,7 +994,11 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
 (function () {
   'use strict';
   if (!window.supabase || !window.supabase.createClient) return;
-  const client = window.supabase.createClient('https://gcqubevzbqvaaxepbaba.supabase.co', 'sb_publishable_gzWsCYkbnu1DYjVorDxHDg_gS0nKSvn', {
+  const publishableKey = 'sb_publishable_gzWsCYkbnu1DYjVorDxHDg_gS0nKSvn';
+  const aliasDomain = '@members.mini-yolotzin.example.com';
+  const aliasEmail = username => username.trim().toLowerCase() + aliasDomain;
+  const displayUser = user => user?.email?.endsWith(aliasDomain) ? user.email.slice(0, -aliasDomain.length) : (user?.email || null);
+  const client = window.supabase.createClient('https://gcqubevzbqvaaxepbaba.supabase.co', publishableKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
   const errorResult = error => ({ ok: false, data: { error: error && error.message ? error.message : String(error || 'Error de conexión') } });
@@ -1085,29 +1094,30 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       const body = options && options.body ? JSON.parse(options.body) : {};
       if (route === 'estado') {
         const user = await userNow();
-        return success({ cuentas: true, usuario: user ? user.email : null });
+        return success({ cuentas: true, usuario: displayUser(user) });
       }
       if (route === 'registro') {
-        const result = await client.auth.signUp({
-          email: body.usuario, password: body.contrasena,
-          options: { emailRedirectTo: 'https://nayibi21.github.io/mini-yolotzin/' }
+        const response = await fetch('https://gcqubevzbqvaaxepbaba.supabase.co/functions/v1/registrar-usuario', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': publishableKey },
+          body: JSON.stringify({ usuario: body.usuario, contrasena: body.contrasena })
         });
-        if (result.error) return errorResult(result.error);
-        // Supabase oculta deliberadamente si un correo ya existe y puede devolver identities: [].
-        if (Array.isArray(result.data.user?.identities) && result.data.user.identities.length === 0) {
-          return errorResult('Este correo ya tiene una cuenta. Pulsa Iniciar sesión y usa la contraseña que asignaste al crearla; Crear cuenta no cambia contraseñas.');
-        }
-        if (!result.data.session) return success({ necesitaConfirmacion: true });
-        await saveProfile(result.data.user);
-        return success({ usuario: result.data.user.email });
+        const created = await response.json().catch(() => ({}));
+        if (!response.ok) return errorResult(created.error || 'No se pudo crear tu cuenta.');
+        const login = await client.auth.signInWithPassword({
+          email: aliasEmail(body.usuario), password: body.contrasena
+        });
+        if (login.error) return errorResult('La cuenta se creó, pero no se pudo iniciar sesión. Intenta entrar con tu usuario y contraseña.');
+        await saveProfile(login.data.user);
+        return success({ usuario: displayUser(login.data.user) });
       }
       if (route === 'entrar') {
-        const result = await client.auth.signInWithPassword({ email: body.usuario, password: body.contrasena });
-        if (result.error) return result.error.code === 'invalid_credentials'
-          ? errorResult('El correo o la contraseña no coinciden. Si la cuenta se creó en Supabase, usa aquella contraseña. Crear cuenta nuevamente no la reemplaza.')
-          : errorResult(result.error);
+        const result = await client.auth.signInWithPassword({
+          email: aliasEmail(body.usuario), password: body.contrasena
+        });
+        if (result.error) return errorResult('El usuario o la contraseña no coinciden. Comprueba los datos o crea una cuenta nueva.');
         await saveProfile(result.data.user);
-        return success({ usuario: result.data.user.email });
+        return success({ usuario: displayUser(result.data.user) });
       }
       if (route === 'salir') {
         const result = await client.auth.signOut();
@@ -1214,7 +1224,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     chooseProfileColor(activeProfile?.color || DEFAULT_COLOR);
     $('newProfileButton').hidden = !activeProfile;
     $('profileError').textContent = '';
-    if (accountsAvailable && (!activeProfile || activeProfile.account || activeProfile.guest)) showAccountPanel();
+    if (cloudAccounts || (accountsAvailable && (!activeProfile || activeProfile.account || activeProfile.guest))) showAccountPanel();
     else showLocalForm();
   }
   function closeProfileEditor() {
@@ -1285,6 +1295,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   // En GitHub Pages no hay servidor: /api/estado no existe y todo sigue con el perfil local.
   let accountsAvailable = false;
   const cloudAccounts = Boolean(window.MINI_YOLOTZIN_CLOUD);
+  let accountMode = 'entrar';
   const demoAccounts = !cloudAccounts && location.hostname.endsWith('github.io'); // Si falla la red, conservar demo local.
   if (!cloudAccounts) {
     $('accountUser').type = 'text';
@@ -1298,6 +1309,22 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   const api = cloudAccounts ? window.MINI_YOLOTZIN_CLOUD.api : (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
     .then(async response => ({ ok: response.ok, data: await response.json().catch(() => ({})) }));
   const accountProfile = usuario => ({ id: 'cuenta-' + usuario, name: usuario, group: 'Cuenta', color: '#6a44d6', account: true });
+  function setAccountMode(mode) {
+    if (!cloudAccounts) return;
+    accountMode = mode === 'registro' ? 'registro' : 'entrar';
+    const register = accountMode === 'registro';
+    $('accountTitle').textContent = register ? 'Crear cuenta' : 'Iniciar sesión';
+    $('accountDescription').textContent = register
+      ? 'Elige tu usuario y contraseña. No necesitas correo ni teléfono.'
+      : 'Entra con tu usuario y contraseña de Mini Yolotzin.';
+    $('accountForm').querySelector('button[type="submit"]').textContent = register ? 'Crear mi cuenta' : 'Iniciar sesión';
+    $('registerButton').hidden = register;
+    $('loginModeButton').hidden = !register;
+    $('accountConfirmBox').hidden = !register;
+    $('accountPasswordConfirm').required = register;
+    $('accountPassword').autocomplete = register ? 'new-password' : 'current-password';
+    $('accountError').textContent = '';
+  }
   function showAccountPanel() {
     const logged = Boolean(activeProfile?.account);
     $('profileForm').hidden = true;
@@ -1307,13 +1334,14 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     $('accountSession').hidden = !logged;
     $('accountUserName').textContent = logged ? activeProfile.name : '';
     $('accountError').textContent = '';
+    if (cloudAccounts) { setAccountMode('entrar'); $('noAccountButton').hidden = true; }
     if (demoAccounts) {
       $('accountDescription').textContent = 'Vista demostrativa: el registro y el inicio de sesión todavía no están habilitados.';
       $('accountPasswordHelp').textContent = 'No introduzcas una contraseña real. Esta demostración no guarda credenciales.';
       $('profilePrivacy').textContent = 'Demostración visual: no se envían ni almacenan usuarios ni contraseñas. Puedes continuar con un perfil local.';
     }
     profileOverlay.setAttribute('aria-labelledby', 'accountTitle');
-    if (!demoAccounts) $('profilePrivacy').textContent = cloudAccounts ? 'Tu contraseña la gestiona Supabase Auth. Tus viajes se guardan en la nube y son privados. Los reportes compartidos no se verifican. Sin cuenta, tus viajes quedan en este navegador.' : 'Tus datos se guardan en el servidor local de la clase. No reutilices una contraseña personal.';
+    if (!demoAccounts) $('profilePrivacy').textContent = cloudAccounts ? 'Tus viajes son privados. Las incidencias que reportes se comparten con todos, sin mostrar tu identidad. Sin correo no hay recuperación automática de contraseña: guárdala bien.' : 'Tus datos se guardan en el servidor local de la clase. No reutilices una contraseña personal.';
     (logged ? $('logoutButton') : $('accountUser')).focus();
   }
   function showLocalForm() {
@@ -1340,18 +1368,20 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       return;
     }
     const usuario = $('accountUser').value.trim().toLowerCase(), contrasena = $('accountPassword').value;
-    if (contrasena.length < 8 || (cloudAccounts ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario) : usuario.length < 3)) { $('accountError').textContent = cloudAccounts ? 'Escribe un correo válido y una contraseña de al menos 8 caracteres.' : 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
+    if (contrasena.length < 8 || contrasena.length > (cloudAccounts ? 72 : 128) || (cloudAccounts ? !/^[a-z0-9][a-z0-9._-]{2,31}$/.test(usuario) : usuario.length < 3)) { $('accountError').textContent = cloudAccounts ? 'Usuario de 3 a 32 letras, números o . _ - y contraseña de 8 a 72 caracteres.' : 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
+    if (cloudAccounts && kind === 'registro' && $('accountPasswordConfirm').value !== contrasena) { $('accountError').textContent = 'Las contraseñas no coinciden.'; return; }
     $('accountError').textContent = '';
     const res = await api(kind, { method: 'POST', body: JSON.stringify({ usuario, contrasena }) }).catch(() => null);
     if (!res) { $('accountError').textContent = 'No se pudo conectar con el servidor de cuentas.'; return; }
     if (!res.ok) { $('accountError').textContent = res.data.error || 'No se pudo iniciar sesión.'; return; }
-    if (res.data.necesitaConfirmacion) { $('accountPassword').value = ''; $('accountError').textContent = 'Revisa tu correo y confirma tu cuenta; después vuelve e inicia sesión.'; return; }
+    if (res.data.necesitaConfirmacion) { $('accountPassword').value = ''; $('accountError').textContent = 'Revisa el registro antes de iniciar sesión.'; return; }
     $('accountPassword').value = '';
     await enterAccount(res.data.usuario);
     closeProfileEditor();
   }
-  $('accountForm').addEventListener('submit', event => { event.preventDefault(); submitAccount('entrar'); });
-  $('registerButton').addEventListener('click', () => submitAccount('registro'));
+  $('accountForm').addEventListener('submit', event => { event.preventDefault(); submitAccount(cloudAccounts ? accountMode : 'entrar'); });
+  $('registerButton').addEventListener('click', () => cloudAccounts ? setAccountMode('registro') : submitAccount('registro'));
+  $('loginModeButton').addEventListener('click', () => setAccountMode('entrar'));
   // «Continuar sin cuenta» entra directo a la app, sin pedir nombre: los viajes se guardan en este navegador.
   $('noAccountButton').addEventListener('click', () => {
     if (!activeProfile) {
@@ -1367,8 +1397,9 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   $('logoutButton').addEventListener('click', async () => {
     await api('salir', { method: 'POST' }).catch(() => null);
     try { localStorage.removeItem(tripsKey()); } catch {}
-    activeProfile = safeRead(PROFILE_KEY);
-    if (activeProfile) { renderProfile(); renderTrips(); closeProfileEditor(); }
+    activeProfile = cloudAccounts ? null : safeRead(PROFILE_KEY);
+    if (cloudAccounts) { renderTrips(); openProfileEditor(); }
+    else if (activeProfile) { renderProfile(); renderTrips(); closeProfileEditor(); }
     else { renderTrips(); showAccountPanel(); }
   });
   async function detectAccounts() {
@@ -2229,7 +2260,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   }).join('');
 
   // Perfil y preferencias guardadas
-  activeProfile = safeRead(PROFILE_KEY);
+  activeProfile = cloudAccounts ? null : safeRead(PROFILE_KEY);
   if (activeProfile) {
     renderProfile();
     profileOverlay.classList.add('hidden');
