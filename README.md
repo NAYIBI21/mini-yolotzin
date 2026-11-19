@@ -14,6 +14,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 - Vista **Explorar** a pantalla completa en tres columnas: controles de estación y fecha, mapa esquemático y detalle de la estación.
 - Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
+- Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
 - Comparación del modelo Random Forest contra una línea base histórica.
 - Mapa geográfico de la red completa (catálogo oficial SEMOVI/STC: 163 estaciones, 195 registros estación-línea) con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
@@ -34,7 +35,7 @@ Las estimaciones no representan ocupación dentro de los trenes, saturación de 
 No requiere instalación para visualizarla:
 
 1. Descarga o clona el repositorio.
-2. Conserva juntos `index.html`, `model-data.js` y `metro-catalog.js`.
+2. Conserva juntos `index.html`, `model-data.js`, `metro-catalog.js` y `weather-summary.js`.
 3. Abre `index.html` con Chrome, Safari, Firefox o Edge.
 
 ## Editar con ChatGPT, Codex o Claude
@@ -89,14 +90,33 @@ pip install -r requirements.txt
 python scripts/build_model_data.py
 ```
 
-El script reemplaza `model-data.js` (también acepta rutas: `python scripts/build_model_data.py ruta/al.csv salida.js`). Tarda alrededor de un minuto. Reglas que aplica:
+El script reemplaza `model-data.js` (también acepta rutas: `python scripts/build_model_data.py ruta/al.csv salida.js`). Tarda alrededor de dos minutos. Reglas que aplica:
 
 - Un modelo Random Forest por estación y línea; validación con los últimos 180 días observados.
+- Variables de calendario: mes, día de la semana, día del mes, fin de semana, ciclo anual, **días festivos oficiales** (Ley Federal del Trabajo, art. 74), **fechas especiales** (Jueves y Viernes Santo, Día de Muertos, 12 de diciembre, 24 y 31 de diciembre), **puentes** y **vacaciones** aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).
+- Se entrena desde el 1 de enero de 2023 (si hay al menos un año de datos) para no arrastrar la recuperación tras la pandemia; el último año antes del corte pesa 3 veces más.
+- Tras validar, el modelo se reentrena con los datos más recientes antes de pronosticar.
 - Los días con afluencia 0 (cierres u obras, como en las Líneas 1 y 12) se excluyen del entrenamiento y la validación.
 - Los nombres que el recurso escribe distinto desde el 1 de junio de 2023 («Gómez Farias», «Peñón viejo») se unifican.
 - Las estaciones sin datos recientes o con historial insuficiente no reciben pronóstico y se reportan en `skipped`.
 
 El CSV está ignorado por Git y no debe subirse al repositorio.
+
+## Análisis del clima
+
+Se midió si la lluvia o la temperatura cambian la afluencia diaria y si mejoran la estimación. Resultado con el corte al 30 de septiembre de 2026:
+
+- Con el clima real del periodo de prueba, el error **empeora 4.7%**: el clima no se agrega al modelo.
+- En días hábiles con lluvia (≥10 mm) la red registra en promedio **2.5% menos entradas**; por estación el efecto va de −8.9% a +4.6%, demasiado variable para usarlo.
+- La lluvia fuerte (≥25 mm) fue muy rara en el periodo de prueba y no se pudo medir.
+
+Para repetirlo (por ejemplo, tras otra temporada de lluvias o con datos por hora):
+
+```bash
+python scripts/analizar_clima.py
+```
+
+Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo.json` (ignorado por Git) y reescribe `weather-summary.js`. El Servicio Meteorológico Nacional no permite descargas automáticas.
 
 ## Fuente de datos
 
@@ -110,6 +130,7 @@ El CSV está ignorado por Git y no debe subirse al repositorio.
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
+- `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
 - `AGENTS.md`: reglas para asistentes de programación.
 - `CONTRIBUTING.md`: flujo recomendado de colaboración.
