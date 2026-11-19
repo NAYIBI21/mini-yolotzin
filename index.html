@@ -652,11 +652,11 @@
     <div class="profile-form" id="accountPanel" hidden>
       <form id="accountForm">
         <h3 id="accountTitle">Iniciar sesión</h3>
-        <p id="accountDescription">Con tu cuenta, Mis viajes se guardan en el servidor de la clase.</p>
+        <p id="accountDescription">Con tu cuenta, Mis viajes se sincronizan en Supabase entre dispositivos.</p>
         <div class="profile-field">
-          <label for="accountUser">Usuario</label>
-          <input id="accountUser" name="username" maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej. nayibi" required>
-          <small>De 3 a 32 letras, números, punto, guion o guion bajo.</small>
+          <label for="accountUser">Correo electrónico</label>
+          <input id="accountUser" name="email" type="email" maxlength="254" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="nombre@correo.com" required>
+          <small>Utiliza un correo real para confirmar tu cuenta.</small>
         </div>
         <div class="profile-field">
           <label for="accountPassword">Contraseña</label>
@@ -671,7 +671,7 @@
       </form>
       <div id="accountSession" hidden>
         <h3>Tu cuenta</h3>
-        <p>Sesión iniciada como <strong id="accountUserName"></strong>. Tus viajes se guardan en el servidor de la clase.</p>
+        <p>Sesión iniciada como <strong id="accountUserName"></strong>. Tus viajes se guardan en Supabase.</p>
         <button class="profile-submit" id="logoutButton" type="button">Cerrar sesión</button>
       </div>
     </div>
@@ -975,6 +975,153 @@
 </div>
 
 <div class="install-help" id="installHelp" role="dialog" aria-labelledby="installHelpTitle" hidden><strong id="installHelpTitle">Instalar Mini Yolotzin</strong><br>En iPhone o iPad: abre la página en Safari, toca <b>Compartir</b> y elige <b>Agregar a pantalla de inicio</b>.<br><button type="button" class="ghost-btn" id="installHelpClose">Entendido</button></div>
+
+<script>
+/* La demo local y las pruebas automatizadas siguen usando SQLite o perfil local.
+   En la nube, en la IP Wi-Fi o añadiendo ?cloud=1, usar Supabase. */
+if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
+    new URLSearchParams(location.search).get('cloud') === '1') {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"><' + '/script>');
+}
+</script>
+<script>
+/* Mini Yolotzin Cloud: solo usa la clave publicable; las contraseñas las administra Supabase Auth. */
+(function () {
+  'use strict';
+  if (!window.supabase || !window.supabase.createClient) return;
+  const client = window.supabase.createClient('https://gcqubevzbqvaaxepbaba.supabase.co', 'sb_publishable_gzWsCYkbnu1DYjVorDxHDg_gS0nKSvn', {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  const errorResult = error => ({ ok: false, data: { error: error && error.message ? error.message : String(error || 'Error de conexión') } });
+  const success = data => ({ ok: true, data });
+  const userNow = async () => {
+    const result = await client.auth.getUser();
+    return result.error ? null : result.data.user;
+  };
+  const saveProfile = async user => {
+    if (!user || !user.id) return;
+    const profile = await client.from('perfiles').upsert({
+      id: user.id, nombre: String(user.email || '').split('@')[0]
+    }, { onConflict: 'id' });
+    if (profile.error) console.warn('No se pudo actualizar el perfil:', profile.error.message);
+  };
+  const summary = rows => {
+    const result = { vacio: 0, normal: 0, lleno: 0, incidencias: {}, total: rows.length, ventana: 30, minutos: null };
+    rows.forEach(row => {
+      if (Object.prototype.hasOwnProperty.call(result, row.afluencia) && row.afluencia) result[row.afluencia]++;
+      (row.tipos || []).forEach(type => { result.incidencias[type] = (result.incidencias[type] || 0) + 1; });
+    });
+    if (rows.length) result.minutos = Math.max(0, Math.floor((Date.now() - Date.parse(rows[0].creado_en)) / 60000));
+    return result;
+  };
+  async function listReports(query) {
+    const params = new URLSearchParams(query || '');
+    const estacion = params.get('estacion') || '';
+    const linea = params.get('linea') || '';
+    if (!estacion || !linea) return errorResult('Falta estación o línea.');
+    const since = new Date(Date.now() - 30 * 60000).toISOString();
+    const result = await client.from('avisos_realtime').select('afluencia,tipos,creado_en')
+      .eq('estacion', estacion).eq('linea', linea).gte('creado_en', since)
+      .order('creado_en', { ascending: false }).limit(200);
+    return result.error ? errorResult(result.error) : success(summary(result.data || []));
+  }
+  async function sendReport(body) {
+    const user = await userNow();
+    if (!user) return errorResult('Inicia sesión con tu correo para enviar incidencias.');
+    const estacion = String(body.estacion || '').trim();
+    const linea = String(body.linea || '').trim();
+    const nivel = body.nivel || null;
+    const tipos = Array.isArray(body.incidencias) ? body.incidencias : [];
+    if (!estacion || !linea || estacion.length > 120 || linea.length > 12) return errorResult('Estación o línea inválida.');
+    if (nivel !== null && !['vacio', 'normal', 'lleno'].includes(nivel)) return errorResult('Nivel inválido.');
+    const validTypes = ['saturada','tren_detenido','retraso','accidente','falla','acceso_cerrado'];
+    if (tipos.some(x => !validTypes.includes(x)) || (!nivel && !tipos.length)) return errorResult('Selecciona una afluencia o una incidencia.');
+    const recent = await client.from('incidencias').select('id').eq('usuario_id', user.id)
+      .eq('estacion', estacion).eq('linea', linea)
+      .gte('creado_en', new Date(Date.now() - 10 * 60000).toISOString()).limit(1);
+    if (recent.error) return errorResult(recent.error);
+    if (recent.data && recent.data.length) return errorResult('Ya reportaste esta estación. Vuelve a intentarlo en 10 minutos.');
+    const saved = await client.from('incidencias').insert({
+      usuario_id: user.id, estacion, linea, afluencia: nivel, tipos
+    });
+    if (saved.error && saved.error.code === '23505') return errorResult('Esta estación ya recibió tu reporte en este bloque de 10 minutos.');
+    if (saved.error) return errorResult(saved.error);
+    return listReports(new URLSearchParams({ estacion, linea }).toString());
+  }
+  async function tripsRequest(method, body) {
+    const user = await userNow();
+    if (!user) return errorResult('Inicia sesión para consultar o guardar tus viajes.');
+    const table = client.from('viajes');
+    if (method !== 'PUT') {
+      const result = await table.select('datos').eq('usuario_id', user.id).order('creado_en', { ascending: true }).limit(8);
+      return result.error ? errorResult(result.error) : success({ viajes: (result.data || []).map(row => row.datos) });
+    }
+    const trips = Array.isArray(body.viajes) ? body.viajes.slice(0, 8) : [];
+    if (trips.some(t => !t || typeof t.id !== 'string' || !t.from || !t.from.name || !t.from.line)) return errorResult('Un viaje tiene datos incompletos.');
+    const before = await table.select('clave').eq('usuario_id', user.id);
+    if (before.error) return errorResult(before.error);
+    const rows = trips.map(trip => ({
+      usuario_id: user.id, clave: trip.id, nombre: String(trip.label || '').slice(0, 150),
+      estacion: trip.from.name, linea: trip.from.line, datos: trip
+    }));
+    if (rows.length) {
+      const saved = await table.upsert(rows, { onConflict: 'usuario_id,clave' });
+      if (saved.error) return errorResult(saved.error);
+    }
+    const keep = new Set(rows.map(row => row.clave));
+    for (const old of (before.data || [])) {
+      if (!keep.has(old.clave)) {
+        const removed = await table.delete().eq('usuario_id', user.id).eq('clave', old.clave);
+        if (removed.error) return errorResult(removed.error);
+      }
+    }
+    return success({ viajes: trips });
+  }
+  async function api(path, options) {
+    try {
+      const parts = String(path).split('?');
+      const route = parts[0];
+      const method = (options && options.method) || 'GET';
+      const body = options && options.body ? JSON.parse(options.body) : {};
+      if (route === 'estado') {
+        const user = await userNow();
+        return success({ cuentas: true, usuario: user ? user.email : null });
+      }
+      if (route === 'registro') {
+        const result = await client.auth.signUp({
+          email: body.usuario, password: body.contrasena,
+          options: { emailRedirectTo: 'https://nayibi21.github.io/mini-yolotzin/' }
+        });
+        if (result.error) return errorResult(result.error);
+        if (!result.data.session) return success({ necesitaConfirmacion: true });
+        await saveProfile(result.data.user);
+        return success({ usuario: result.data.user.email });
+      }
+      if (route === 'entrar') {
+        const result = await client.auth.signInWithPassword({ email: body.usuario, password: body.contrasena });
+        if (result.error) return errorResult(result.error);
+        await saveProfile(result.data.user);
+        return success({ usuario: result.data.user.email });
+      }
+      if (route === 'salir') {
+        const result = await client.auth.signOut();
+        return result.error ? errorResult(result.error) : success({});
+      }
+      if (route === 'viajes') return tripsRequest(method, body);
+      if (route === 'reportes') return method === 'POST' ? sendReport(body) : listReports(parts[1]);
+      return errorResult('Ruta desconocida.');
+    } catch (error) { return errorResult(error); }
+  }
+  const listen = callback => {
+    const channel = client.channel('mini-yolotzin-reportes')
+      // Aviso público sin datos de la cuenta que hizo el reporte.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_realtime' }, callback)
+      .subscribe();
+    return () => client.removeChannel(channel);
+  };
+  window.MINI_YOLOTZIN_CLOUD = { api, listen };
+})();
+</script>
 <script>
 (() => {
   const data = window.MINI_YOLOTZIN_DATA;
@@ -1081,7 +1228,7 @@
   const readTrips = () => { const key = tripsKey(); const list = key ? safeRead(key) : null; return Array.isArray(list) ? list : []; };
   const writeTrips = list => {
     const key = tripsKey(), trips = list.slice(0, MAX_TRIPS);
-    if (activeProfile?.account) api('viajes', { method: 'PUT', body: JSON.stringify({ viajes: trips }) }).catch(() => null);
+    if (activeProfile?.account) api('viajes', { method: 'PUT', body: JSON.stringify({ viajes: trips }) }).then(res => { if (!res?.ok) window.alert('No se pudieron sincronizar los viajes: ' + (res?.data?.error || 'Error de conexión')); }).catch(() => window.alert('Sin conexión: tus viajes no se sincronizaron.'));
     return key ? safeWrite(key, trips) : false;
   };
   const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1131,8 +1278,18 @@
   // ---------- Cuentas (solo cuando la página la sirve scripts/servidor_cuentas.py) ----------
   // En GitHub Pages no hay servidor: /api/estado no existe y todo sigue con el perfil local.
   let accountsAvailable = false;
-  const demoAccounts = location.hostname.endsWith('github.io'); // Solo interfaz: nunca envía ni almacena contraseñas.
-  const api = (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
+  const cloudAccounts = Boolean(window.MINI_YOLOTZIN_CLOUD);
+  const demoAccounts = !cloudAccounts && location.hostname.endsWith('github.io'); // Si falla la red, conservar demo local.
+  if (!cloudAccounts) {
+    $('accountUser').type = 'text';
+    $('accountUser').maxLength = 32;
+    $('accountUser').setAttribute('autocomplete', 'username');
+    $('accountUser').placeholder = 'Ej. nayibi';
+    document.querySelector('label[for="accountUser"]').textContent = 'Usuario';
+    $('accountUser').nextElementSibling.textContent = 'De 3 a 32 letras, números, punto, guion o guion bajo.';
+    $('accountDescription').textContent = 'Mis viajes se guardan en el servidor local si está activo.';
+  }
+  const api = cloudAccounts ? window.MINI_YOLOTZIN_CLOUD.api : (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
     .then(async response => ({ ok: response.ok, data: await response.json().catch(() => ({})) }));
   const accountProfile = usuario => ({ id: 'cuenta-' + usuario, name: usuario, group: 'Cuenta', color: '#6a44d6', account: true });
   function showAccountPanel() {
@@ -1150,7 +1307,7 @@
       $('profilePrivacy').textContent = 'Demostración visual: no se envían ni almacenan usuarios ni contraseñas. Puedes continuar con un perfil local.';
     }
     profileOverlay.setAttribute('aria-labelledby', 'accountTitle');
-    if (!demoAccounts) $('profilePrivacy').innerHTML = '<strong>Cuentas de la clase:</strong> tu usuario y tus viajes se guardan en la computadora que corre el servidor de Mini Yolotzin. La contraseña se guarda cifrada. Sin cuenta, todo queda solo en este navegador.';
+    if (!demoAccounts) $('profilePrivacy').textContent = cloudAccounts ? 'Tu contraseña la gestiona Supabase Auth. Tus viajes se guardan en la nube y son privados. Los reportes compartidos no se verifican. Sin cuenta, tus viajes quedan en este navegador.' : 'Tus datos se guardan en el servidor local de la clase. No reutilices una contraseña personal.';
     (logged ? $('logoutButton') : $('accountUser')).focus();
   }
   function showLocalForm() {
@@ -1177,11 +1334,12 @@
       return;
     }
     const usuario = $('accountUser').value.trim().toLowerCase(), contrasena = $('accountPassword').value;
-    if (usuario.length < 3 || contrasena.length < 8) { $('accountError').textContent = 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
+    if (contrasena.length < 8 || (cloudAccounts ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario) : usuario.length < 3)) { $('accountError').textContent = cloudAccounts ? 'Escribe un correo válido y una contraseña de al menos 8 caracteres.' : 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
     $('accountError').textContent = '';
     const res = await api(kind, { method: 'POST', body: JSON.stringify({ usuario, contrasena }) }).catch(() => null);
     if (!res) { $('accountError').textContent = 'No se pudo conectar con el servidor de cuentas.'; return; }
     if (!res.ok) { $('accountError').textContent = res.data.error || 'No se pudo iniciar sesión.'; return; }
+    if (res.data.necesitaConfirmacion) { $('accountPassword').value = ''; $('accountError').textContent = 'Revisa tu correo y confirma tu cuenta; después vuelve e inicia sesión.'; return; }
     $('accountPassword').value = '';
     await enterAccount(res.data.usuario);
     closeProfileEditor();
@@ -1208,6 +1366,16 @@
     else { renderTrips(); showAccountPanel(); }
   });
   async function detectAccounts() {
+    if (cloudAccounts) {
+      const res = await api('estado');
+      accountsAvailable = Boolean(res?.ok && res.data.cuentas);
+      if (res?.data?.usuario) { await enterAccount(res.data.usuario); if (!profileOverlay.classList.contains('hidden')) closeProfileEditor(); }
+      else if (!profileOverlay.classList.contains('hidden') && !activeProfile) showAccountPanel();
+      window.MINI_YOLOTZIN_CLOUD.listen(() => { if (!$('reportPanel').hidden) loadReports(); });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('reportPanel').hidden) loadReports(); });
+      setInterval(() => { if (!document.hidden && !$('reportPanel').hidden) loadReports(); }, 20000);
+      return;
+    }
     if (demoAccounts) {
       accountsAvailable = true;
       if (!profileOverlay.classList.contains('hidden') && !activeProfile) showAccountPanel();

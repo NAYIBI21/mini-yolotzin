@@ -224,9 +224,29 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - Publicador: Gobierno de la Ciudad de México / SEMOVI.
 - Cobertura utilizada por esta versión: 1 de enero de 2021 a 30 de septiembre de 2026.
 
+## Mini Yolotzin en Supabase (integración en pruebas)
+
+Esta rama agrega una **base centralizada en Supabase** para que no dependamos de que una computadora siga encendida. Proyecto: [Mini Yolotzin en Supabase](https://supabase.com/dashboard/project/gcqubevzbqvaaxepbaba).
+
+- **Auth**: crear cuenta / iniciar sesión con **correo electrónico** y contraseña; las contraseñas NO se almacenan en el repositorio ni en tablas de la aplicación.
+- **`perfiles`**: identificador y alias derivado del correo.
+- **`viajes`**: hasta ocho recorridos por usuario; Row Level Security (RLS) solo permite leer/escribir sus propios datos.
+- **`incidencias`**: «¿Cómo va?» guarda estación, línea, nivel (vacío, normal, lleno) e incidencias opcionales; el público puede consultar los últimos 30 minutos sin ver la identidad del autor. Para reportar hay que iniciar sesión. Los reportes no están verificados y NO modifican las predicciones.
+- **Realtime**: `postgres_changes` escucha nuevos reportes; un sondeo cada 20 s sirve de respaldo mientras «¿Cómo va?» está abierto.
+- **Seguridad**: la página solo incorpora una **clave publicable** de Supabase. Nunca usar en el navegador `service_role`, una clave secreta ni contraseñas administrativas.
+
+### Pasos requeridos antes de lanzar la nueva versión
+
+1. En **Supabase → Authentication → URL Configuration**, establecer como Site URL y URL de redirección autorizada: `https://nayibi21.github.io/mini-yolotzin/`.
+2. Para registrar correos de compañeros, configurar un **SMTP externo** en **Authentication → SMTP Settings**, manteniendo habilitado **Confirm Email**. El servicio de correo incorporado por Supabase solo autoriza direcciones de miembros de la organización y tiene un límite bajo (2 mensajes/hora). Alternativa **solo para pruebas cerradas**: desactivar temporalmente Confirm Email, sabiendo que entonces cualquiera puede registrarse con correos que no controla; volver a activarlo antes de abrir la app al público.
+3. Probar en la versión de la rama o en un servidor local con `?cloud=1`: en un dispositivo iniciar sesión y guardar un viaje; en otro iniciar sesión con la misma cuenta y comprobar que aparezca. Después, en «¿Cómo va?», seleccionar **la misma estación y línea** en ambos y enviar un reporte: debería aparecer en la otra pantalla sin recargar (o por el sondeo de respaldo).
+4. Cuando funcionen las pruebas, integrar la rama en `main` para activar Supabase en GitHub Pages. **No se migran automáticamente** las cuentas ni las contraseñas creadas en la SQLite anterior: cada persona debe abrir una cuenta nueva de Supabase.
+
+En `localhost` y `127.0.0.1` la interfaz conserva deliberadamente la demo local y el servidor SQLite; añade `?cloud=1` a la dirección para probar Supabase en la MacBook. En la IP Wi-Fi o en GitHub Pages se usa la nube de forma predeterminada. Si no se carga la librería de Supabase (requiere internet) se conserva el comportamiento anterior de prueba.
+
 ## Archivos principales
 
-- `index.html`: interfaz, estilos e interacciones (tema oscuro, sin dependencias externas).
+- `index.html`: interfaz, estilos e interacciones (tema oscuro; en el modo nube carga Supabase JS desde CDN).
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
