@@ -4,11 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#081019">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mini Yolotzin">
   <title>Mini Yolotzin · Demanda diaria del Metro CDMX</title>
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
   <script src="./metro-catalog.js"></script>
+  <script src="./weather-summary.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -131,12 +136,31 @@
     .geo-card { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .02); color: var(--text-2); font-size: .72rem; line-height: 1.5; }
     .geo-card strong { display: block; color: var(--text); font-size: .8rem; margin-bottom: 4px; }
     .line-pills { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .station-head .line-pills { flex-wrap: nowrap; flex-shrink: 0; }
+    button.line-pill { cursor: pointer; padding: 0 6px; opacity: .55; }
+    button.line-pill.active { opacity: 1; box-shadow: 0 0 0 2px var(--panel-solid), 0 0 0 4px var(--text); }
+    .hot-name .line-pill { display: inline-grid; min-width: 18px; height: 18px; font-size: .58rem; border-radius: 5px; margin-right: 6px; vertical-align: middle; }
+    .reliability { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(255, 93, 115, .25); background: rgba(255, 93, 115, .07); color: #ffb3bf; font-size: .68rem; line-height: 1.45; }
+    .table-summary { margin: -4px 0 12px; color: var(--muted); font-size: .72rem; }
+    .table-scroll { max-height: 460px; overflow: auto; }
+    .table-scroll thead th { position: sticky; top: 0; background: var(--panel-solid); }
     .risk.none { background: rgba(150, 169, 187, .08); border-color: var(--line); color: var(--muted); }
     .station.filtered-out { display: none; }
 
     .time-card { padding: 14px; border: 1px solid rgba(93, 214, 232, .18); border-radius: 12px; background: linear-gradient(135deg, rgba(93, 214, 232, .08), rgba(255, 255, 255, .02)); }
     .clock { font-size: 1.9rem; font-weight: 760; letter-spacing: -.05em; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .period { color: var(--cyan); font-size: .74rem; margin: 3px 0 10px; }
+    .calendar-chip { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 10px; padding: 5px 9px; border-radius: 999px; border: 1px solid rgba(255, 189, 89, .3); background: rgba(255, 189, 89, .1); color: #ffd48a; font-size: .68rem; font-weight: 650; }
+    .calendar-chip[hidden] { display: none; }
+    .calendar-chip::before { content: "★"; font-size: .7rem; }
+    .calendar-note { margin: 10px 0 0; color: #ffd48a; font-size: .7rem; }
+    .event-chip { display: flex; align-items: flex-start; gap: 6px; margin: -4px 0 10px; padding: 6px 9px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .3); background: rgba(93, 214, 232, .1); color: #a8e6ef; font-size: .68rem; font-weight: 650; line-height: 1.35; }
+    .event-chip[hidden] { display: none; }
+    .event-chip::before { content: "◆"; font-size: .62rem; margin-top: 1px; }
+    .event-note { margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(93, 214, 232, .22); background: rgba(93, 214, 232, .07); color: #c7eef4; font-size: .68rem; line-height: 1.5; }
+    .event-note strong { color: var(--text); }
+    .event-table { width: 100%; margin-top: 4px; }
+    .event-table td, .event-table th { padding: 8px; }
     input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
     .range-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: .64rem; }
     .date-field { margin-top: 12px; }
@@ -186,8 +210,8 @@
     .station.modeled .station-core { fill: #e9f2f8; stroke: #0a1420; stroke-width: 3; }
     .station.selected .station-core { fill: #fff; stroke: var(--accent); stroke-width: 4; }
     .station-label { fill: #8fa2b3; font-size: calc(10px / var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: calc(4px / var(--z, 1)); stroke-linejoin: round; pointer-events: none; }
-    .station.modeled .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
-    #networkMap:not(.show-labels) .station:not(.modeled):not(.selected) .station-label { display: none; }
+    .station.featured .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
+    #networkMap:not(.show-labels) .station:not(.featured):not(.selected) .station-label { display: none; }
     .map-title { position: absolute; z-index: 2; left: 14px; top: 12px; max-width: calc(100% - 28px); padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .72); backdrop-filter: blur(10px); pointer-events: none; }
     .map-title h2 { margin: 0; font-size: 1rem; }
     .map-title p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
@@ -229,6 +253,68 @@
     .bar.current { background: linear-gradient(to top, rgba(255, 107, 53, .32), var(--accent)); opacity: 1; margin-left: 6px; }
     .chart-axis { display: flex; justify-content: space-between; color: var(--muted); font-size: .62rem; margin-top: 6px; }
     .hot-list { display: grid; gap: 6px; }
+    .trips-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .trips-head .eyebrow { margin: 0; }
+    .mini-btn { border: 1px solid rgba(93, 214, 232, .35); background: rgba(93, 214, 232, .1); color: var(--text); border-radius: 8px; padding: 5px 9px; font-size: .7rem; font-weight: 700; cursor: pointer; }
+    .mini-btn:hover { background: rgba(93, 214, 232, .18); }
+    .trip-list { display: grid; gap: 8px; }
+    .trip-item { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .025); }
+    .trip-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .trip-top strong { font-size: .76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trip-remove { border: 0; background: transparent; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+    .trip-remove:hover { color: var(--danger); background: rgba(255, 93, 115, .1); }
+    .trip-stop { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; padding: 5px 6px; border: 0; border-radius: 7px; background: transparent; text-align: left; cursor: pointer; font-size: .72rem; }
+    .trip-stop:hover, .trip-stop.active { background: rgba(255, 255, 255, .05); }
+    .trip-stop .line-pill { min-width: 20px; height: 20px; font-size: .6rem; border-radius: 6px; }
+    .trip-stop .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trip-stop .val { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .trip-arrow { color: var(--muted); font-size: .66rem; padding-left: 10px; }
+    .trip-flags { margin-top: 6px; display: grid; gap: 3px; }
+    .trip-flags span { font-size: .64rem; line-height: 1.35; }
+    .trip-flags .cal { color: #ffd48a; }
+    .trip-flags .evt { color: #a8e6ef; }
+    .trip-form { display: grid; gap: 6px; margin-top: 10px; padding: 12px; border: 1px solid rgba(93, 214, 232, .2); border-radius: 10px; background: rgba(93, 214, 232, .05); }
+    .trip-form[hidden] { display: none; }
+    .trip-form label { margin: 4px 0 0; font-size: .7rem; }
+    .trip-form input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; background: var(--field); color: var(--text); }
+    .trip-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .trip-actions .ghost-btn { margin-top: 0; min-height: 42px; }
+    .save-station { margin-top: 12px; width: 100%; min-height: 38px; border: 1px dashed rgba(255, 189, 89, .45); border-radius: 10px; background: transparent; color: #ffd48a; font-size: .74rem; font-weight: 700; cursor: pointer; }
+    .save-station.saved { border-style: solid; background: rgba(255, 189, 89, .1); }
+    .bike-live { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(98, 211, 148, .12); color: var(--good); font-size: .6rem; letter-spacing: .04em; vertical-align: middle; }
+    .bike-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .bike-list { display: grid; gap: 6px; }
+    .bike-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); }
+    .bike-item .bike-name { font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bike-item .bike-dist { grid-column: 1; font-size: .62rem; color: var(--muted); }
+    .bike-item .bike-counts { grid-row: 1 / span 2; grid-column: 2; text-align: right; font-size: .66rem; color: var(--muted); line-height: 1.35; }
+    .bike-item .bike-counts strong { font-size: .9rem; color: var(--text); font-variant-numeric: tabular-nums; }
+    .bike-item.empty .bike-counts strong.bikes { color: var(--danger); }
+    .bike-note { margin: 8px 0 0; color: var(--muted); font-size: .64rem; line-height: 1.45; }
+    .bike-note a { color: var(--cyan); }
+    .trip-bikes { display: block; padding-left: 34px; margin-top: -2px; font-size: .6rem; color: var(--good); }
+    .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .week-day { display: grid; justify-items: center; gap: 3px; padding: 7px 2px 6px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); cursor: pointer; font-size: .6rem; color: var(--muted); }
+    .week-day:hover { border-color: rgba(93, 214, 232, .45); }
+    .week-day.current { border-color: var(--accent); background: rgba(255, 107, 53, .1); color: var(--text); }
+    .week-day.best { box-shadow: inset 0 0 0 1px var(--good); }
+    .week-day strong { color: var(--text); font-size: .7rem; font-variant-numeric: tabular-nums; }
+    .week-day i { width: 100%; height: 4px; border-radius: 3px; }
+    .week-day .flag { min-height: 11px; font-size: .58rem; line-height: 1; }
+    .week-day .flag .cal { color: #ffd48a; } .week-day .flag .evt { color: #a8e6ef; }
+    .week-best { margin: 10px 0 0; color: var(--text-2); font-size: .7rem; line-height: 1.45; }
+    .week-best strong { color: var(--good); }
+    .trip-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 7px; }
+    .trip-week button { height: 22px; border: 0; border-radius: 5px; font-size: .56rem; font-weight: 700; color: #081019; cursor: pointer; opacity: .85; }
+    .trip-week button.current { outline: 2px solid var(--text); outline-offset: 1px; opacity: 1; }
+    .trip-week button.best { box-shadow: 0 0 0 2px var(--good); opacity: 1; }
+    .trip-best { margin-top: 4px; font-size: .62rem; color: var(--muted); }
+    .trip-best strong { color: var(--good); }
+    .install-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 12px; border: 1px solid rgba(255, 107, 53, .5); border-radius: 10px; background: rgba(255, 107, 53, .12); color: var(--text); font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .install-btn[hidden] { display: none; }
+    .install-help { position: fixed; z-index: 900; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-solid); box-shadow: var(--shadow); font-size: .74rem; line-height: 1.5; }
+    .install-help[hidden] { display: none; }
+    .install-help button { margin-top: 8px; }
     .hot-item { width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 7px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
     .hot-item:hover, .hot-item.active { background: rgba(255, 255, 255, .05); }
     .hot-item.active .rank { background: var(--accent); color: #fff; }
@@ -261,6 +347,15 @@
     .step strong { display: block; font-size: .76rem; margin-top: 11px; }
     .step p { margin: 4px 0 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
     .limit-card { grid-column: span 6; padding: 22px; }
+    .weather-card { grid-column: 1 / -1; padding: 24px; }
+    .weather-card h3 { margin: 0 0 6px; font-size: .95rem; }
+    .weather-card > p { margin: 0 0 16px; color: var(--muted); font-size: .76rem; max-width: 820px; }
+    .weather-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .weather-stats .quality-item strong { font-size: 1.05rem; }
+    .weather-stats .quality-item p { margin: 6px 0 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
+    .weather-card .note { margin-top: 14px; }
+    @media (max-width: 900px) { .weather-stats { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 450px) { .weather-stats { grid-template-columns: 1fr; } }
     .limit-card h3 { margin: 0 0 12px; font-size: .92rem; }
     .clean-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
     .clean-list li { position: relative; padding-left: 18px; color: var(--text-2); font-size: .75rem; }
@@ -412,19 +507,36 @@
     </nav>
     <div class="status" id="statusChip">Datos oficiales · copia fija</div>
     <div class="metrics" aria-label="Indicadores de la fecha seleccionada">
-      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · 5 estaciones</span></div>
-      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span>de 5 estaciones</span></div>
+      <div class="metric"><small>Afluencia combinada</small><strong id="totalFlow">—</strong><span>accesos/día · red completa</span></div>
+      <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span id="highCountLabel">estaciones por línea</span></div>
       <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
     </div>
+    <button type="button" class="install-btn" id="installApp" hidden>⤓ Instalar app</button>
     <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
   </header>
 
   <!-- Vista principal: controles · mapa · detalle -->
   <main class="workspace view active" id="exploreView" role="tabpanel" aria-labelledby="tab-explore">
     <aside class="side controls" aria-label="Parámetros de la estimación">
+      <section class="section" id="tripsSection" aria-labelledby="tripsTitle">
+        <div class="trips-head"><p class="eyebrow" id="tripsTitle">Mis viajes</p><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Nuevo viaje</button></div>
+        <div class="trip-list" id="tripList" aria-live="polite"></div>
+        <p class="note" id="tripEmpty">Guarda tus estaciones o viajes frecuentes para ver su estimación en cuanto abras la app. Se guardan solo en este navegador.</p>
+        <form class="trip-form" id="tripForm" hidden>
+          <label for="tripLabel">Nombre del viaje</label>
+          <input id="tripLabel" maxlength="30" placeholder="Ej. Casa → Escuela" autocomplete="off">
+          <label for="tripFrom">Origen</label>
+          <select id="tripFrom"></select>
+          <label for="tripTo">Destino (opcional)</label>
+          <select id="tripTo"><option value="">Sin destino</option></select>
+          <div class="trip-actions"><button type="submit" class="play-btn">Guardar</button><button type="button" class="ghost-btn" id="tripCancel">Cancelar</button></div>
+          <p class="profile-error" id="tripError" role="alert"></p>
+        </form>
+      </section>
+
       <section class="section">
         <p class="eyebrow">Estación</p>
-        <label for="stationSelect">Estación modelada de Línea 3</label>
+        <label for="stationSelect">Estación y línea</label>
         <select id="stationSelect"></select>
       </section>
 
@@ -441,6 +553,8 @@
         <div class="time-card">
           <div class="clock" id="dateLabel">—</div>
           <div class="period" id="dayLabel">Afluencia diaria estimada</div>
+          <div class="calendar-chip" id="calendarChip" hidden></div>
+          <div class="event-chip" id="eventChip" hidden></div>
           <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
           <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
           <div class="date-field"><label for="dateInput">Elegir fecha exacta</label><input type="date" id="dateInput"></div>
@@ -465,19 +579,20 @@
           <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Media</span><span id="legendMid">—</span></div>
           <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Alta</span><span id="legendHigh">—</span></div>
         </div>
-        <p class="note">Niveles relativos al histórico de cada estación (percentiles 33 y 67). El tamaño y color del pulso en el mapa representan la estimación diaria.</p>
+        <p class="note">Niveles relativos al histórico de cada estación y línea (percentiles 33 y 67 de su entrenamiento). Como se comparan contra todos los días, los días hábiles suelen salir en demanda media o alta y los domingos en baja. El tamaño del pulso en el mapa representa la afluencia estimada y su color, el nivel más alto entre las líneas de la estación.</p>
       </section>
 
       <section class="section">
         <p class="eyebrow">Sobre el modelo</p>
-        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+        <p class="note"><strong>Random Forest</strong> con variables de calendario, entrenado por estación y línea con datos anteriores al <span id="trainCutoff">periodo de prueba</span>. Las estimaciones están precalculadas y no se actualizan automáticamente. <a id="sourceLink" href="#" target="_blank" rel="noopener">Fuente oficial</a>.</p>
+        <p class="note" id="weatherNote" hidden></p>
         <div class="disclaimer">Estimación diaria académica. No representa ocupación del tren, saturación de andenes ni información en tiempo real.</div>
       </section>
     </aside>
 
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · pulsos solo en las 5 estaciones modeladas de Línea 3</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada en cinco estaciones de Línea 3. Usa Tab para recorrer las estaciones modeladas o la búsqueda para elegir cualquier estación.">
+      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Vista geográfica · demanda diaria estimada en toda la red</p></div>
+      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada por estación. Usa Tab para recorrer las estaciones destacadas o la búsqueda para elegir cualquier estación.">
         <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
         <g id="networkViewport"></g>
       </svg>
@@ -495,8 +610,11 @@
           <div><h2 id="detailName">—</h2><p id="detailDate">—</p></div>
           <div class="line-pills" id="detailLines"></div>
         </div>
+        <button type="button" class="save-station" id="saveStation" aria-pressed="false">☆ Guardar en Mis viajes</button>
         <div class="risk media" id="riskBox"><span>Nivel esperado</span><strong id="riskText">—</strong></div>
         <p class="level-message" id="levelMessage">—</p>
+        <p class="calendar-note" id="calendarNote" hidden></p>
+        <div class="event-note" id="eventNote" hidden></div>
         <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
         <div id="modelDetail">
         <div class="detail-grid">
@@ -507,7 +625,18 @@
           <div class="detail-card"><small>MAE línea base</small><strong id="detailBase">—</strong><span>accesos/día</span></div>
         </div>
         <div class="comparison" id="comparisonNote">—</div>
+        <div class="reliability" id="reliabilityNote" hidden></div>
         </div>
+      </section>
+      <section class="section" id="bikeSection" aria-labelledby="bikeTitle">
+        <p class="eyebrow" id="bikeTitle">Ecobici cerca <span class="bike-live">EN VIVO</span></p>
+        <div class="bike-list" id="bikeList" aria-live="polite"></div>
+        <p class="bike-note" id="bikeNote">Consultando Ecobici…</p>
+      </section>
+      <section class="section" id="weekSection" aria-labelledby="weekTitle">
+        <p class="eyebrow" id="weekTitle">Próximos 7 días</p>
+        <div class="week-grid" id="weekGrid"></div>
+        <p class="week-best" id="weekBest"></p>
       </section>
       <section class="section" id="historySection">
         <p class="eyebrow">Historial mensual</p>
@@ -527,11 +656,30 @@
     <div class="page-inner">
       <div class="page-intro"><p class="kicker">Método reproducible</p><h2>Del dato oficial a una estimación explicable</h2><p>Un flujo pequeño y verificable para una materia de Inteligencia Artificial, sin agregar fuentes ni complejidad innecesaria.</p></div>
       <div class="method-grid">
-        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>El modelo aprende patrones de calendario por estación. Se entrena con el pasado y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal.</p><div class="feature-list" id="featureList"></div></section>
+        <section class="card method-hero"><h3>Random Forest para regresión diaria</h3><p>Un modelo por cada estación y línea de la red (195 registros, como los publica el recurso oficial). Aprende patrones de calendario —incluidos días festivos, fechas especiales, puentes y vacaciones— y se evalúa únicamente contra los últimos 180 días observados, respetando el orden temporal. Se entrena desde 2023 para no arrastrar la recuperación tras la pandemia, el último año pesa tres veces más y, una vez validado, se reentrena con los datos más recientes antes de pronosticar. Los días sin servicio (afluencia 0 por cierres u obras) se excluyen.</p><div class="feature-list" id="featureList"></div></section>
         <section class="card principle-card"><p class="card-label">Principio rector</p><blockquote>Una demo estable, honesta y reproducible vale más que muchas funciones incompletas.</blockquote><p>La interfaz distingue predicción diaria de ocupación física y evita recomendaciones horarias sin datos que las respalden.</p></section>
         <section class="card pipeline"><p class="card-label">Arquitectura mínima</p><div class="steps"><div class="step"><span>01</span><strong>CSV oficial</strong><p>Afluencia diaria simple del Metro CDMX.</p></div><div class="step"><span>02</span><strong>Limpieza</strong><p>Fechas, nulos, duplicados y etiquetas.</p></div><div class="step"><span>03</span><strong>Calendario</strong><p>Mes, semana, día y ciclo anual.</p></div><div class="step"><span>04</span><strong>Entrenamiento</strong><p>Línea base y Random Forest por estación.</p></div><div class="step"><span>05</span><strong>Validación</strong><p>MAE y RMSE con corte cronológico.</p></div><div class="step"><span>06</span><strong>Interfaz</strong><p>Estimación y nivel relativo interpretable.</p></div></div></section>
-        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li></ul></section>
-        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima, cámaras, sensores o datos en tiempo real.</li><li>No sustituye información operativa del STC Metro.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que sí demuestra</h3><ul class="clean-list"><li>Uso exclusivo del dataset oficial seleccionado y del calendario oficial de días festivos.</li><li>Predicción de conteo diario por estación.</li><li>Comparación transparente contra una línea base.</li><li>Categorías derivadas del histórico de entrenamiento.</li><li>Aviso de confiabilidad baja cuando el error típico supera el 30% del valor habitual.</li></ul></section>
+        <section class="card limit-card"><h3>Lo que no afirma</h3><ul class="clean-list no"><li>No mide ocupación dentro de trenes o andenes.</li><li>No predice por hora ni recomienda horarios alternativos.</li><li>No utiliza clima (se midió y no mejora la estimación diaria), cámaras, sensores o datos en tiempo real.</li><li>Solo ajusta los eventos registrados en eventos.csv con al menos 2 ediciones medidas; conciertos y marchas no registrados no se anticipan.</li><li>Las vacaciones escolares son aproximadas (Semana Santa y del 18 de diciembre al 6 de enero).</li><li>No sustituye información operativa del STC Metro.</li><li>No anticipa cierres, obras ni eventos que no estén en el calendario.</li></ul></section>
+        <section class="card weather-card" id="eventsCard" hidden>
+          <p class="card-label">Eventos</p>
+          <h3>Conciertos, partidos, marchas y fechas cívicas</h3>
+          <p id="eventsIntro">—</p>
+          <div class="table-scroll"><table class="event-table"><thead><tr><th>Evento</th><th>Casos</th><th>Error sin ajuste</th><th>Error con ajuste</th><th>Mejora</th></tr></thead><tbody id="eventsTable"></tbody></table></div>
+          <p class="note" id="eventsNote">—</p>
+        </section>
+        <section class="card weather-card" id="weatherCard" hidden>
+          <p class="card-label">Clima</p>
+          <h3>¿Cambia la afluencia diaria cuando llueve o hace calor?</h3>
+          <p id="weatherIntro">—</p>
+          <div class="weather-stats">
+            <div class="quality-item"><span>Modelo con clima real</span><strong id="wValidation">—</strong><p id="wValidationNote">—</p></div>
+            <div class="quality-item"><span>Lluvia (días hábiles)</span><strong id="wRain">—</strong><p id="wRainNote">—</p></div>
+            <div class="quality-item"><span>Lluvia fuerte</span><strong id="wHeavy">—</strong><p id="wHeavyNote">—</p></div>
+            <div class="quality-item"><span>Calor</span><strong id="wHeat">—</strong><p id="wHeatNote">—</p></div>
+          </div>
+          <p class="note" id="weatherSource">—</p>
+        </section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
     </div>
@@ -542,8 +690,8 @@
     <div class="page-inner">
       <div class="page-intro"><p class="kicker">Trazabilidad</p><h2>Qué contiene realmente el recurso</h2><p>Resumen calculado directamente sobre la descarga oficial utilizada para esta demostración.</p></div>
       <div class="data-grid">
-        <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Filas seleccionadas</span><strong id="selectedRows">—</strong></div></div></section>
-        <section class="card station-table-card"><p class="card-label">Resultados de validación por estación</p><table><thead><tr><th>Estación</th><th>Observaciones</th><th>MAE base</th><th>MAE modelo</th><th>Resultado</th></tr></thead><tbody id="stationTable"></tbody></table></section>
+        <section class="card data-overview"><p class="card-label">Cobertura validada</p><div class="big-stat" id="totalRows">—</div><div class="big-stat-label">registros válidos en el CSV</div><div class="quality-list"><div class="quality-item"><span>Periodo</span><strong id="dataPeriod">—</strong></div><div class="quality-item"><span>Estaciones</span><strong id="stationCount">—</strong></div><div class="quality-item"><span>Líneas</span><strong id="lineCount">—</strong></div><div class="quality-item"><span>Duplicados clave</span><strong id="duplicateCount">—</strong></div><div class="quality-item"><span>Valores nulos</span><strong id="nullCount">—</strong></div><div class="quality-item"><span>Estaciones por línea modeladas</span><strong id="selectedRows">—</strong></div></div></section>
+        <section class="card station-table-card"><p class="card-label">Resultados de validación por estación y línea</p><p class="table-summary" id="tableSummary"></p><div class="table-scroll"><table><thead><tr><th>Estación</th><th>Línea</th><th>Observaciones</th><th>MAE base</th><th>MAE modelo</th><th>Resultado</th></tr></thead><tbody id="stationTable"></tbody></table></div></section>
         <section class="card source-card"><div><h3 id="sourceName">Afluencia diaria del Metro CDMX</h3><p id="sourceDescription">Publicada por SEMOVI bajo licencia abierta.</p></div><a class="source-link" id="officialSource" href="#" target="_blank" rel="noopener">Abrir recurso oficial</a></section>
       </div>
       <p class="page-footer"><strong>Mini Yolotzin · MVP académico.</strong> Las cifras son estimaciones del modelo sobre afluencia diaria histórica; no son datos operativos en tiempo real.</p>
@@ -551,6 +699,7 @@
   </main>
 </div>
 
+<div class="install-help" id="installHelp" role="dialog" aria-labelledby="installHelpTitle" hidden><strong id="installHelpTitle">Instalar Mini Yolotzin</strong><br>En iPhone o iPad: abre la página en Safari, toca <b>Compartir</b> y elige <b>Agregar a pantalla de inicio</b>.<br><button type="button" class="ghost-btn" id="installHelpClose">Entendido</button></div>
 <script>
 (() => {
   const data = window.MINI_YOLOTZIN_DATA;
@@ -569,21 +718,35 @@
   const relative = (station, value) => (value - station.summary.median) / station.summary.median * 100;
   const gainOf = station => (station.metrics.baselineMae - station.metrics.modelMae) / station.metrics.baselineMae * 100;
 
-  const stations = data.stations;
-  const byName = new Map(stations.map(station => [station.name, station]));
-  const dates = Object.keys(stations[0].predictions);
+  // Un registro por estación y línea (opción A). Las predicciones vienen como un entero por día
+  // desde dataset.forecastStart; el nivel se calcula aquí con los umbrales del entrenamiento.
+  const records = data.stations;
   const dataset = data.dataset;
+  const dates = Array.from({ length: dataset.forecastDays || records[0].predictions.length }, (_, i) => {
+    const d = new Date(dataset.forecastStart + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + i); return d.toISOString().slice(0, 10);
+  });
+  const levelOf = (record, value) => value < record.summary.lowThreshold ? 'baja' : value < record.summary.highThreshold ? 'media' : 'alta';
+  const predictionOf = (record, index) => { const value = record.predictions[index]; return { value, level: levelOf(record, value) }; };
+  // El CSV oficial y el catálogo geográfico escriben algunos nombres distinto
+  // (acentos, guiones, «Niños Héroes/Poder Judicial CDMX», «Mixhiuca»). Se comparan por una clave.
+  const KEY_ALIASES = { mixhiuca: 'mixiuhca' };
+  const stationKey = name => { const k = name.split('/')[0].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); return KEY_ALIASES[k] || k; };
+  const recordByLineKey = new Map(records.map(r => [`${r.line}|${stationKey(r.name)}`, r]));
+  const featuredKeys = new Set((data.featured || []).map(f => `${f.line}|${stationKey(f.name)}`));
   const levelName = { baja: 'Demanda baja', media: 'Demanda media', alta: 'Demanda alta' };
   const levelColor = { baja: '#62d394', media: '#ffbd59', alta: '#ff5d73' };
+  const levelRank = { baja: 0, media: 1, alta: 2 };
   const levelCopy = {
     baja: 'Se espera una afluencia inferior a la habitual para esta estación en esa fecha.',
     media: 'Se espera una afluencia cercana al comportamiento habitual de esta estación.',
     alta: 'Se espera una afluencia superior a la habitual para esta estación en esa fecha.'
   };
+  const LOW_RELIABILITY = .30; // error típico mayor al 30% de la mediana
   const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
   const defaultIndex = () => Math.max(0, dates.indexOf(tomorrowIso));
+  const firstFeatured = data.featured?.[0] || { line: records[0].line, name: records[0].name };
 
-  const state = { station: stations[0].name, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
+  const state = { station: firstFeatured.name, line: firstFeatured.line, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
 
   // ---------- Perfil local ----------
   const PROFILE_KEY = 'mini_yolotzin_profile_v1', PREFS_PREFIX = 'mini_yolotzin_prefs_v1_', DEFAULT_COLOR = '#ff6b35';
@@ -633,10 +796,16 @@
     target.focus();
   }
   const preferencesKey = () => activeProfile ? PREFS_PREFIX + activeProfile.id : null;
+  // ---------- Mis viajes (solo en este navegador, por perfil) ----------
+  const TRIPS_PREFIX = 'mini_yolotzin_trips_v1_', MAX_TRIPS = 8;
+  const tripsKey = () => activeProfile ? TRIPS_PREFIX + activeProfile.id : null;
+  const readTrips = () => { const key = tripsKey(); const list = key ? safeRead(key) : null; return Array.isArray(list) ? list : []; };
+  const writeTrips = list => { const key = tripsKey(); return key ? safeWrite(key, list.slice(0, MAX_TRIPS)) : false; };
+  const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const readPreferences = () => { const key = preferencesKey(); return key ? safeRead(key) : null; };
   function savePreferences() {
     const key = preferencesKey();
-    if (key) safeWrite(key, { station: state.station, date: dates[state.index], updatedAt: new Date().toISOString() });
+    if (key) safeWrite(key, { station: state.station, line: state.line, date: dates[state.index], updatedAt: new Date().toISOString() });
   }
 
   document.querySelectorAll('.color-choice').forEach(choice => choice.addEventListener('click', () => chooseProfileColor(choice.dataset.color)));
@@ -662,6 +831,7 @@
     safeWrite(PROFILE_KEY, activeProfile);
     renderProfile();
     closeProfileEditor();
+    if (typeof renderTrips === 'function' && $('tripList').dataset.ready) renderTrips();
     savePreferences();
   });
   $('profileButton').addEventListener('click', openProfileEditor);
@@ -712,6 +882,7 @@
   const mapRoutes = Object.fromEntries([...new Set(catalog.map(s => s.line))].map(line => [line, catalog.filter(s => s.line === line).map(s => { const p = project(s.lon, s.lat); return [s.name, p.x, p.y]; })]));
   const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const mapNodes = new Map(), routeLabels = [], view = { w: 1040, h: 640 };
+  const nodeByKey = name => [...mapNodes.values()].find(node => stationKey(node.name) === stationKey(name));
   const svg = $('networkMap'), viewport = $('networkViewport'), tooltip = $('tooltip');
   const make = (tag, attrs = {}, parent = viewport) => {
     const el = document.createElementNS(NS, tag);
@@ -742,28 +913,29 @@
       node.records.push(record);
       if (!node.lines.includes(record.line)) node.lines.push(record.line);
     });
-    // Respaldo: si faltara el catálogo, las cinco estaciones modeladas siguen visibles.
-    stations.forEach((station, i) => { if (!mapNodes.has(station.name)) mapNodes.set(station.name, { name: station.name, x: 420, y: 80 + i * 110, lines: ['3'], records: [] }); });
+    // Respaldo: si faltara el catálogo, las estaciones destacadas siguen visibles.
+    (data.featured || []).forEach((f, i) => { if (!nodeByKey(f.name)) mapNodes.set(f.name, { name: f.name, x: 420, y: 80 + i * 110, lines: [f.line], records: [] }); });
+    mapNodes.forEach(node => { node.modelRecords = node.lines.map(line => recordByLineKey.get(`${line}|${stationKey(node.name)}`)).filter(Boolean); });
 
     mapNodes.forEach(node => {
-      const modeled = byName.has(node.name);
-      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}` });
-      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 14, class: 'station-halo', fill: levelColor.media, filter: 'url(#glow)' }, group) : null;
-      make('circle', { cx: node.x, cy: node.y, r: modeled ? 6.5 : node.lines.length > 1 ? 4.8 : 3.4, class: 'station-core' }, group);
-      const hit = make('circle', { cx: node.x, cy: node.y, r: modeled ? 16 : 8, class: 'station-hit' }, group);
-      if (modeled || node.lines.length > 1) {
-        const right = node.x < 820;
-        make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
-      }
+      const modeled = node.modelRecords.length > 0;
+      const featured = node.lines.some(line => featuredKeys.has(`${line}|${stationKey(node.name)}`));
+      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}${featured ? ' featured' : ''}` });
+      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 8, class: 'station-halo', fill: levelColor.media, filter: featured ? 'url(#glow)' : null }, group) : null;
+      if (halo && !featured) halo.removeAttribute('filter');
+      make('circle', { cx: node.x, cy: node.y, r: featured ? 6.5 : node.lines.length > 1 ? 4.8 : 3.6, class: 'station-core' }, group);
+      const hit = make('circle', { cx: node.x, cy: node.y, r: featured ? 16 : 8, class: 'station-hit' }, group);
+      const right = node.x < 820;
+      make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
       group.addEventListener('pointerenter', event => showTooltip(event, node));
       group.addEventListener('pointermove', moveTooltip);
       group.addEventListener('pointerleave', hideTooltip);
-      // Todas las estaciones se pueden seleccionar con el ratón; las 5 modeladas además con Tab.
-      // El resto es accesible por teclado desde la búsqueda y la lista de resultados.
+      // Todas las estaciones se seleccionan con el ratón; las destacadas además con Tab.
+      // El resto es accesible por teclado desde el selector, la búsqueda y la lista de resultados.
       const choose = event => { event.stopPropagation(); selectStation(node.name); };
       hit.addEventListener('pointerdown', event => event.stopPropagation());
       hit.addEventListener('click', choose);
-      if (modeled) {
+      if (featured) {
         hit.setAttribute('tabindex', '0');
         hit.setAttribute('role', 'button');
         hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
@@ -798,12 +970,11 @@
 
   function showTooltip(event, node) {
     if (state.drag) return;
-    const station = byName.get(node.name);
-    if (station) {
-      const prediction = station.predictions[dates[state.index]];
-      tooltip.innerHTML = `<strong>${node.name}</strong><span>${format(prediction.value)} accesos estimados · ${levelName[prediction.level].toLowerCase()}</span>`;
+    if (node.modelRecords.length) {
+      const rows = node.modelRecords.map(record => { const p = predictionOf(record, state.index); return `Línea ${record.line}: ${format(p.value)} · ${p.level}`; });
+      tooltip.innerHTML = `<strong>${node.name}</strong>${rows.map(row => `<span>${row}</span>`).join('')}`;
     } else {
-      tooltip.innerHTML = `<strong>${node.name}</strong><span>Línea ${node.lines.join(', ')} · contexto de red, sin modelo</span>`;
+      tooltip.innerHTML = `<strong>${node.name}</strong><span>Línea ${node.lines.join(', ')} · sin modelo</span>`;
     }
     tooltip.classList.add('show');
     moveTooltip(event);
@@ -851,71 +1022,109 @@
 
   // ---------- Render principal ----------
   const linePill = line => `<span class="line-pill" style="background:${lineColors[line] || '#a7afb7'}" title="Línea ${line}">${line}</span>`;
+  const currentNode = () => mapNodes.get(state.station) || nodeByKey(state.station);
+  const currentRecord = () => { const node = currentNode(); return node ? recordByLineKey.get(`${state.line}|${stationKey(node.name)}`) || node.modelRecords[0] || null : null; };
 
   function render() {
     const date = dates[state.index];
-    const node = mapNodes.get(state.station);
-    const station = byName.get(state.station) || null;
-    const prediction = station ? station.predictions[date] : null;
+    const node = currentNode();
+    const station = currentRecord();
+    if (station) state.line = station.line;
+    const prediction = station ? predictionOf(station, state.index) : null;
     let total = 0, high = 0;
 
-    const rows = stations.map(item => {
-      const p = item.predictions[date];
+    const rows = records.map(record => {
+      const p = predictionOf(record, state.index);
       total += p.value;
       if (p.level === 'alta') high++;
-      const modeledNode = mapNodes.get(item.name);
-      if (modeledNode?.el?.halo) {
-        modeledNode.el.halo.setAttribute('fill', levelColor[p.level]);
-        modeledNode.el.halo.setAttribute('r', (12 + Math.min(20, p.value / 6000)).toFixed(1));
-        modeledNode.el.halo.setAttribute('opacity', p.level === 'alta' ? '.5' : '.32');
-      }
-      return { station: item, prediction: p, rel: relative(item, p.value) };
+      return { station: record, prediction: p, rel: relative(record, p.value) };
     });
-    mapNodes.forEach(item => item.el?.group.classList.toggle('selected', item.name === state.station));
+    mapNodes.forEach(item => {
+      if (item.el?.halo) {
+        const preds = item.modelRecords.map(record => predictionOf(record, state.index));
+        const sum = preds.reduce((a, p) => a + p.value, 0);
+        const level = preds.reduce((a, p) => levelRank[p.level] > levelRank[a] ? p.level : a, 'baja');
+        item.el.halo.setAttribute('fill', levelColor[level]);
+        item.el.halo.setAttribute('r', (5 + Math.min(17, Math.sqrt(sum) / 22)).toFixed(1));
+        item.el.halo.setAttribute('opacity', level === 'alta' ? '.5' : '.32');
+      }
+      item.el?.group.classList.toggle('selected', item === node);
+    });
 
     // Barra superior
     $('totalFlow').textContent = format(total);
     $('highCount').textContent = String(high);
+    $('highCountLabel').textContent = `de ${records.length} estaciones por línea`;
     $('stationMae').textContent = station ? `±${format(station.metrics.modelMae)}` : '—';
 
     // Controles
-    $('stationSelect').value = station ? station.name : '';
+    $('stationSelect').value = station && node ? `${station.line}|${node.name}` : '';
     $('dateLabel').textContent = shortDate(date);
     $('dayLabel').textContent = `${weekday(date)} · afluencia diaria estimada`;
+    const calendarLabel = data.calendar?.[date] || '';
+    $('calendarChip').hidden = !calendarLabel;
+    $('calendarChip').textContent = calendarLabel;
+    $('calendarNote').hidden = !calendarLabel || !station;
+    $('calendarNote').textContent = calendarLabel ? `${calendarLabel}. El modelo considera esta fecha en la estimación.` : '';
+    const dayEvents = data.events?.calendar?.[date] || [];
+    $('eventChip').hidden = !dayEvents.length;
+    $('eventChip').textContent = dayEvents.map(e => e.nombre.includes(e.recinto) ? e.nombre : `${e.nombre} · ${e.recinto}`).join(' | ');
+    const adjustment = station?.eventAdjustments?.find(a => a.date === date);
+    const eventInfo = adjustment ? dayEvents.find(e => e.grupo === adjustment.group) : null;
+    $('eventNote').hidden = !adjustment;
+    if (adjustment) {
+      const value = station.predictions[state.index];
+      const name = eventInfo ? eventInfo.nombre : adjustment.group;
+      const volatile = eventInfo?.tipo === 'marcha' ? ' Las marchas pueden provocar cierres de estaciones: el efecto varía mucho entre años.' : '';
+      $('eventNote').innerHTML = adjustment.factor
+        ? `<strong>Evento: ${name}.</strong> La estimación incluye un ajuste de ${signed((adjustment.factor - 1) * 100)}, medido en ${adjustment.editions} ediciones anteriores en esta estación. Sin el evento serían unas ${format(value / adjustment.factor)} entradas.${volatile}`
+        : `<strong>Evento: ${name}.</strong> Afecta a esta estación, pero su efecto no se pudo medir (${adjustment.editions === 1 ? 'solo 1 edición' : `${adjustment.editions} ediciones`} con datos; se necesitan ${data.events.minEditions}). La estimación no incluye ajuste.${volatile}`;
+    }
     $('dateRange').value = state.index;
     $('dateInput').value = date;
     $('legendLow').textContent = station ? `< ${format(station.summary.lowThreshold)}` : '—';
     $('legendMid').textContent = station ? `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}` : '—';
     $('legendHigh').textContent = station ? `> ${format(station.summary.highThreshold)}` : '—';
-    if ($('mapStationList').value !== state.station) $('mapStationList').value = state.station;
+    if (node && $('mapStationList').value !== node.name) $('mapStationList').value = node.name;
+    if (station) $('trainCutoff').textContent = shortDate(station.metrics.testStart);
 
     // Detalle
-    const lines = node ? node.lines : ['3'];
-    $('detailName').textContent = state.station;
-    $('detailLines').innerHTML = lines.map(linePill).join('');
+    const lines = node ? node.lines : [state.line];
+    $('detailName').textContent = node ? node.name : state.station;
+    $('detailLines').innerHTML = lines.map(line => {
+      const has = node && recordByLineKey.has(`${line}|${stationKey(node.name)}`);
+      const active = station && line === station.line;
+      return has && lines.length > 1
+        ? `<button type="button" class="line-pill${active ? ' active' : ''}" data-line="${line}" style="background:${lineColors[line] || '#a7afb7'}" aria-pressed="${active}" aria-label="Ver Línea ${line}">${line}</button>`
+        : linePill(line);
+    }).join('');
     $('modelDetail').hidden = !station;
     $('historySection').hidden = !station;
     $('geoDetail').hidden = !!station;
 
     if (!station) {
-      const records = node?.records.length || 0;
+      const count = node?.records.length || 0;
       $('detailDate').textContent = `Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')} · estación sin modelo`;
       $('riskBox').className = 'risk none';
       $('riskText').textContent = 'Sin predicción';
-      $('levelMessage').textContent = 'Esta estación está disponible para exploración geográfica, pero todavía no cuenta con un modelo predictivo validado.';
+      $('levelMessage').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para un modelo validado.';
       $('geoTitle').textContent = 'Ficha geográfica';
-      $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${records} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC). El catálogo no contiene datos de afluencia.`;
+      $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
+      renderWeek(null);
+      renderBikes();
       renderHotList(rows);
+      renderTrips();
       return;
     }
 
     const rel = relative(station, prediction.value);
-    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea${lines.length > 1 ? 's' : ''} ${lines.join(', ')}`;
+    const others = lines.filter(line => line !== station.line);
+    $('detailDate').textContent = `${weekday(date)} ${shortDate(date)} · Línea ${station.line}${others.length ? ` · correspondencia con ${others.map(l => 'L' + l).join(', ')}` : ''}`;
     $('riskBox').className = `risk ${prediction.level}`;
     $('riskText').textContent = levelName[prediction.level];
     $('levelMessage').textContent = levelCopy[prediction.level];
     $('detailEstimate').textContent = format(prediction.value);
-    $('detailRange').textContent = `accesos estimados · error típico ±${format(station.metrics.modelMae)}`;
+    $('detailRange').textContent = `accesos estimados en Línea ${station.line} · error típico ±${format(station.metrics.modelMae)}`;
     $('detailRelative').textContent = signed(rel);
     $('detailObs').textContent = format(station.summary.observations);
     $('detailMae').textContent = format(station.metrics.modelMae);
@@ -926,10 +1135,169 @@
     comparison.textContent = gain > 0
       ? `El modelo reduce el error absoluto ${gain.toFixed(1)}% frente a la línea base en esta estación.`
       : `En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;
-    $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.`;
+    const errorShare = station.metrics.modelMae / station.summary.median;
+    $('reliabilityNote').hidden = errorShare <= LOW_RELIABILITY;
+    $('reliabilityNote').textContent = `Confiabilidad baja: el error típico equivale al ${Math.round(errorShare * 100)}% de la afluencia habitual de esta estación. Toma la estimación solo como referencia.`;
+    $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.${station.summary.closedDays ? ` Se excluyeron ${format(station.summary.closedDays)} días sin servicio.` : ''}`;
 
     renderBars(station, prediction.value, date);
+    renderWeek(station);
+    renderBikes();
     renderHotList(rows);
+    renderTrips();
+  }
+
+  // ---------- Mis viajes ----------
+  const sameStop = (a, b) => !!a && !!b && a.line === b.line && stationKey(a.name) === stationKey(b.name);
+  function stopHtml(stop) {
+    const record = recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`);
+    const active = sameStop(stop, { name: currentNode()?.name || state.station, line: state.line });
+    if (!record) return `<button type="button" class="trip-stop" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val">—</span></button>`;
+    const p = predictionOf(record, state.index);
+    const near = bikes.status ? bikesNear(mapNodes.get(stop.name) || nodeByKey(stop.name), 3) : [];
+    const freeBikes = near.reduce((a, s) => a + (s.live && s.live.is_renting ? s.live.num_bikes_available : 0), 0);
+    const bikeLine = near.length ? `<span class="trip-bikes">🚲 ${freeBikes} ${freeBikes === 1 ? 'bici' : 'bicis'} Ecobici cerca (en vivo)</span>` : '';
+    return `<button type="button" class="trip-stop${active ? ' active' : ''}" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}" aria-label="${esc(stop.name)}, Línea ${esc(stop.line)}: ${format(p.value)} accesos estimados, ${levelName[p.level].toLowerCase()}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val" style="color:${levelColor[p.level]}">${format(p.value)}</span></button>${bikeLine}`;
+  }
+  // ---------- Ecobici en vivo (GBFS oficial; no forma parte del modelo) ----------
+  const ECOBICI_GBFS = 'https://gbfs.mex.lyftbikes.com/gbfs/en/';
+  const BIKE_RADIUS = 500, BIKE_REFRESH = 60000, WALK_M_PER_MIN = 80;
+  const bikes = { stations: null, status: null, updated: 0, error: '', loading: false, lastFetch: 0 };
+  const metersBetween = (lat1, lon1, lat2, lon2) => {
+    const r = Math.PI / 180, dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) ** 2;
+    return 2 * 6371000 * Math.asin(Math.sqrt(a));
+  };
+  const nodeCoords = node => node?.records?.[0] ? { lat: node.records[0].lat, lon: node.records[0].lon } : null;
+  function bikesNear(node, limit = 3) {
+    const at = nodeCoords(node);
+    if (!at || !bikes.stations) return [];
+    return bikes.stations
+      .map(s => ({ ...s, distance: metersBetween(at.lat, at.lon, s.lat, s.lon), live: bikes.status?.get(s.station_id) }))
+      .filter(s => s.distance <= BIKE_RADIUS)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit);
+  }
+  async function refreshBikes(force = false) {
+    if (bikes.loading || (!force && Date.now() - bikes.lastFetch < BIKE_REFRESH)) return;
+    bikes.loading = true;
+    try {
+      if (!bikes.stations) {
+        const info = await fetch(ECOBICI_GBFS + 'station_information.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+        bikes.stations = info.data.stations.map(s => ({ station_id: String(s.station_id), name: String(s.name).replace(/^[A-Z]{1,3}-\d+\s+/, ''), lat: +s.lat, lon: +s.lon, capacity: s.capacity }));
+      }
+      const status = await fetch(ECOBICI_GBFS + 'station_status.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      bikes.status = new Map(status.data.stations.map(s => [String(s.station_id), s]));
+      bikes.updated = (status.last_updated || Date.now() / 1000) * 1000;
+      bikes.error = '';
+    } catch (err) {
+      bikes.error = navigator.onLine === false ? 'Sin conexión: no se pudo consultar Ecobici.' : 'Ecobici no respondió; se intentará de nuevo en un minuto.';
+    } finally {
+      bikes.loading = false;
+      bikes.lastFetch = Date.now();
+      renderBikes();
+      renderTrips();
+    }
+  }
+  function renderBikes() {
+    const node = currentNode();
+    const list = bikesNear(node);
+    const source = '<a href="https://ecobici.cdmx.gob.mx/en/open-data/" target="_blank" rel="noopener">datos abiertos de Ecobici (GBFS)</a>';
+    $('bikeList').innerHTML = list.map(s => {
+      const live = s.live, working = live && live.is_installed && live.is_renting;
+      const bikesAvail = working ? live.num_bikes_available : 0, docks = working ? live.num_docks_available : 0;
+      const walk = Math.max(1, Math.round(s.distance / WALK_M_PER_MIN));
+      return `<div class="bike-item${working && bikesAvail === 0 ? ' empty' : ''}"><span class="bike-name">${esc(s.name)}</span><span class="bike-dist">${Math.round(s.distance)} m · ~${walk} min a pie</span><span class="bike-counts">${working ? `<strong class="bikes">${bikesAvail}</strong> ${bikesAvail === 1 ? 'bici' : 'bicis'} · <strong>${docks}</strong> ${docks === 1 ? 'espacio' : 'espacios'}` : 'Fuera de servicio'}</span></div>`;
+    }).join('');
+    if (bikes.error && !bikes.status) { $('bikeNote').innerHTML = esc(bikes.error); return; }
+    if (!bikes.stations) { $('bikeNote').textContent = 'Consultando Ecobici…'; return; }
+    const age = Math.max(0, Math.round((Date.now() - bikes.updated) / 60000));
+    const when = age < 1 ? 'hace menos de un minuto' : `hace ${age} min`;
+    $('bikeNote').innerHTML = (list.length ? `Disponibilidad en este momento (actualizada ${when}), no es una estimación del modelo. ` : `No hay cicloestaciones de Ecobici a menos de ${BIKE_RADIUS} m de esta estación. `) + (bikes.error ? esc(bikes.error) + ' ' : '') + `Fuente: ${source}.`;
+  }
+  // Solo se consulta mientras la página está visible.
+  setInterval(() => { if (document.visibilityState === 'visible' && $('exploreView').classList.contains('active')) refreshBikes(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshBikes(); });
+
+  // ---------- Vista semanal ----------
+  // Para un conjunto de registros (una estación o las paradas de un viaje), los 7 días desde la fecha elegida.
+  function weekFrom(recs, start = state.index) {
+    const days = [];
+    for (let i = start; i < Math.min(dates.length, start + 7); i++) {
+      const preds = recs.map(r => predictionOf(r, i));
+      const total = preds.reduce((a, p) => a + p.value, 0);
+      const level = preds.reduce((a, p) => levelRank[p.level] > levelRank[a] ? p.level : a, 'baja');
+      const date = dates[i];
+      const hasEvent = recs.some(r => r.eventAdjustments?.some(a => a.date === date && a.factor));
+      const dow = new Date(date + 'T12:00:00Z').getUTCDay();
+      days.push({ index: i, date, total, level, calendar: data.calendar?.[date] || '', hasEvent, weekday: dow >= 1 && dow <= 5 && !(data.calendar?.[date] || '').startsWith('Día festivo') });
+    }
+    const workdays = days.filter(d => d.weekday);
+    const best = workdays.length ? workdays.reduce((a, d) => d.total < a.total ? d : a) : null;
+    const avg = workdays.length ? workdays.reduce((a, d) => a + d.total, 0) / workdays.length : 0;
+    return { days, best, avg };
+  }
+  const dayShort = iso => `${weekday(iso).slice(0, 2).toLowerCase()} ${Number(iso.slice(8, 10))}`;
+  const dayLong = iso => `${weekday(iso).toLowerCase()} ${shortDate(iso)}`;
+  const compact = n => n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));
+  function renderWeek(station) {
+    $('weekSection').hidden = !station;
+    if (!station) return;
+    const { days, best, avg } = weekFrom([station]);
+    $('weekGrid').innerHTML = days.map(d => `<button type="button" class="week-day${d.index === state.index ? ' current' : ''}${best && d.index === best.index ? ' best' : ''}" data-index="${d.index}" aria-label="${dayLong(d.date)}: ${format(d.total)} accesos estimados, ${levelName[d.level].toLowerCase()}${d.calendar ? ', ' + d.calendar : ''}${d.hasEvent ? ', con evento' : ''}">${dayShort(d.date)}<strong>${compact(d.total)}</strong><i style="background:${levelColor[d.level]}"></i><span class="flag">${d.calendar ? '<span class="cal">★</span>' : ''}${d.hasEvent ? '<span class="evt">◆</span>' : ''}</span></button>`).join('');
+    $('weekBest').innerHTML = best
+      ? `Mejor día hábil: <strong>${dayLong(best.date)}</strong>, ${format(best.total)} entradas (${signed((best.total / avg - 1) * 100)} frente al promedio de los días hábiles de la semana). ★ fecha especial · ◆ evento.`
+      : 'No hay días hábiles en este periodo.';
+  }
+
+  function renderTrips() {
+    const trips = readTrips(), date = dates[state.index];
+    $('tripEmpty').hidden = trips.length > 0;
+    $('tripAddToggle').disabled = trips.length >= MAX_TRIPS;
+    const calendarLabel = data.calendar?.[date];
+    $('tripList').innerHTML = trips.map(trip => {
+      const stops = [trip.from, trip.to].filter(Boolean);
+      const events = stops.flatMap(stop => {
+        const record = recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`);
+        const adj = record?.eventAdjustments?.find(a => a.date === date);
+        if (!adj) return [];
+        const info = (data.events?.calendar?.[date] || []).find(e => e.grupo === adj.group);
+        return [`◆ ${esc(info ? info.nombre : adj.group)} (${esc(stop.name)}${adj.factor ? `, ${signed((adj.factor - 1) * 100)}` : ''})`];
+      });
+      const flags = [calendarLabel ? `<span class="cal">★ ${esc(calendarLabel)}</span>` : '', ...events.map(e => `<span class="evt">${e}</span>`)].join('');
+      const tripRecords = stops.map(stop => recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`)).filter(Boolean);
+      const wk = tripRecords.length ? weekFrom(tripRecords) : null;
+      const strip = wk ? `<div class="trip-week" role="group" aria-label="Próximos 7 días de ${esc(trip.label)}">${wk.days.map(d => `<button type="button" data-index="${d.index}" class="${d.index === state.index ? 'current' : ''}${wk.best && d.index === wk.best.index ? ' best' : ''}" style="background:${levelColor[d.level]}" aria-label="${dayLong(d.date)}: ${levelName[d.level].toLowerCase()}">${weekday(d.date).slice(0, 2)}</button>`).join('')}</div>${wk.best ? `<div class="trip-best">Mejor día hábil: <strong>${dayLong(wk.best.date)}</strong></div>` : ''}` : '';
+      return `<div class="trip-item"><div class="trip-top"><strong>${esc(trip.label)}</strong><button type="button" class="trip-remove" data-trip="${esc(trip.id)}" aria-label="Eliminar ${esc(trip.label)}">×</button></div>${stopHtml(trip.from)}${trip.to ? `<div class="trip-arrow" aria-hidden="true">↓</div>${stopHtml(trip.to)}` : ''}${flags ? `<div class="trip-flags">${flags}</div>` : ''}${strip}</div>`;
+    }).join('');
+    const current = { name: currentNode()?.name || state.station, line: state.line };
+    const saved = trips.some(t => !t.to && sameStop(t.from, current));
+    $('saveStation').classList.toggle('saved', saved);
+    $('saveStation').setAttribute('aria-pressed', String(saved));
+    $('saveStation').textContent = saved ? '★ Guardada en Mis viajes · quitar' : '☆ Guardar en Mis viajes';
+    $('saveStation').disabled = !saved && trips.length >= MAX_TRIPS;
+  }
+  const newTripId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const parseStop = value => { if (!value) return null; const [line, ...rest] = value.split('|'); return { line, name: rest.join('|') }; };
+  function toggleSavedStation() {
+    const current = { name: currentNode()?.name || state.station, line: state.line };
+    const trips = readTrips();
+    const index = trips.findIndex(t => !t.to && sameStop(t.from, current));
+    if (index >= 0) trips.splice(index, 1);
+    else if (trips.length < MAX_TRIPS) trips.push({ id: newTripId(), label: current.name, from: current, to: null });
+    writeTrips(trips);
+    renderTrips();
+  }
+  function openTripForm(open) {
+    $('tripForm').hidden = !open;
+    $('tripAddToggle').setAttribute('aria-expanded', String(open));
+    $('tripError').textContent = '';
+    if (open) {
+      $('tripLabel').value = '';
+      $('tripFrom').value = $('stationSelect').value || $('tripFrom').options[0]?.value || '';
+      $('tripTo').value = '';
+      $('tripLabel').focus();
+    }
   }
 
   // ---------- Búsqueda y filtro de la red ----------
@@ -956,10 +1324,10 @@
     list.replaceChildren(...found.map(node => {
       const option = document.createElement('option');
       option.value = node.name;
-      option.textContent = `${node.name} · ${node.lines.join('/')}${byName.has(node.name) ? ' · con modelo' : ''}`;
+      option.textContent = `${node.name} · L${node.lines.join('/L')}${node.modelRecords.length ? '' : ' · sin modelo'}`;
       return option;
     }));
-    list.value = state.station;
+    list.value = currentNode()?.name || '';
     $('mapResultCount').textContent = `${found.length} estaciones encontradas · ${catalog.length} registros estación-línea`;
     mapNodes.forEach(node => node.el?.group.classList.toggle('filtered-out', !visible.has(node.name)));
     document.querySelectorAll('[data-map-line]').forEach(el => { el.style.opacity = !line || el.dataset.mapLine === line ? '' : '.10'; });
@@ -979,11 +1347,24 @@
   }
 
   function renderHotList(rows) {
-    const sorted = [...rows].sort((a, b) => b.rel - a.rel);
-    $('hotList').innerHTML = sorted.map((row, i) => `<button class="hot-item${row.station.name === state.station ? ' active' : ''}" data-station="${row.station.name}" aria-label="${row.station.name}: ${signed(row.rel)} frente a su mediana"><span class="rank">${i + 1}</span><span class="hot-name">${row.station.name}</span><span class="hot-value" style="color:${levelColor[row.prediction.level]}">${signed(row.rel)}</span></button>`).join('');
+    const node = currentNode();
+    const top = [...rows].sort((a, b) => b.rel - a.rel).slice(0, 8);
+    $('hotList').innerHTML = top.map((row, i) => {
+      const target = nodeByKey(row.station.name);
+      const name = target ? target.name : row.station.name;
+      const active = target === node && row.station.line === state.line;
+      return `<button class="hot-item${active ? ' active' : ''}" data-station="${name}" data-line="${row.station.line}" aria-label="${name}, Línea ${row.station.line}: ${signed(row.rel)} frente a su mediana"><span class="rank">${i + 1}</span><span class="hot-name">${linePill(row.station.line)}${name}</span><span class="hot-value" style="color:${levelColor[row.prediction.level]}">${signed(row.rel)}</span></button>`;
+    }).join('');
   }
 
-  function selectStation(name) { state.station = name; render(); savePreferences(); }
+  function selectStation(name, line) {
+    const node = mapNodes.get(name) || nodeByKey(name);
+    state.station = node ? node.name : name;
+    if (line) state.line = line;
+    else if (node && !node.modelRecords.some(r => r.line === state.line)) state.line = node.modelRecords[0]?.line || node.lines[0];
+    render();
+    savePreferences();
+  }
   function setIndex(index, save = true) { state.index = Math.max(0, Math.min(dates.length - 1, index)); render(); if (save) savePreferences(); }
 
   function setPlaying(playing) {
@@ -996,8 +1377,35 @@
   }
 
   // ---------- Eventos ----------
-  $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station); });
-  $('stationSelect').addEventListener('change', event => selectStation(event.target.value));
+  $('saveStation').addEventListener('click', toggleSavedStation);
+  $('tripAddToggle').addEventListener('click', () => openTripForm($('tripForm').hidden));
+  $('tripCancel').addEventListener('click', () => { openTripForm(false); $('tripAddToggle').focus(); });
+  $('tripForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const from = parseStop($('tripFrom').value), to = parseStop($('tripTo').value);
+    if (!from) { $('tripError').textContent = 'Elige una estación de origen.'; return; }
+    if (to && sameStop(from, to)) { $('tripError').textContent = 'El origen y el destino deben ser distintos.'; return; }
+    const trips = readTrips();
+    if (trips.length >= MAX_TRIPS) { $('tripError').textContent = `Puedes guardar hasta ${MAX_TRIPS} viajes.`; return; }
+    const label = $('tripLabel').value.trim() || (to ? `${from.name} → ${to.name}` : from.name);
+    trips.push({ id: newTripId(), label, from, to });
+    writeTrips(trips);
+    openTripForm(false);
+    renderTrips();
+    $('tripAddToggle').focus();
+  });
+  $('weekGrid').addEventListener('click', event => { const day = event.target.closest('.week-day'); if (day) setIndex(+day.dataset.index); });
+  $('tripList').addEventListener('click', event => {
+    const weekDay = event.target.closest('.trip-week button');
+    if (weekDay) { setIndex(+weekDay.dataset.index); return; }
+    const remove = event.target.closest('.trip-remove');
+    if (remove) { writeTrips(readTrips().filter(t => t.id !== remove.dataset.trip)); renderTrips(); return; }
+    const stop = event.target.closest('.trip-stop');
+    if (stop) selectStation(stop.dataset.station, stop.dataset.line);
+  });
+  $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station, item.dataset.line); });
+  $('detailLines').addEventListener('click', event => { const pill = event.target.closest('button.line-pill'); if (pill) selectStation(state.station, pill.dataset.line); });
+  $('stationSelect').addEventListener('change', event => { const [line, ...rest] = event.target.value.split('|'); selectStation(rest.join('|'), line); });
   $('dateRange').addEventListener('input', event => setIndex(+event.target.value));
   $('dateInput').addEventListener('change', event => { const index = dates.indexOf(event.target.value); if (index >= 0) setIndex(index); else render(); });
   $('stepBack').addEventListener('click', () => setIndex(state.index - 1));
@@ -1013,17 +1421,45 @@
   $('zoomReset').addEventListener('click', () => { Object.assign(state, home); applyTransform(); });
 
   // ---------- Inicio ----------
-  $('stationSelect').appendChild(Object.assign(document.createElement('option'), { value: '', textContent: 'Estación sin modelo', disabled: true }));
-  stations.forEach(station => { const option = document.createElement('option'); option.value = station.name; option.textContent = station.name; $('stationSelect').appendChild(option); });
   $('dateInput').min = dataset.forecastStart;
   $('dateInput').max = dataset.forecastEnd;
   $('dateRange').max = dates.length - 1;
   $('rangeStart').textContent = shortDate(dates[0]);
   $('rangeEnd').textContent = shortDate(dates.at(-1));
   $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
-  $('trainCutoff').textContent = shortDate(stations[0].metrics.testStart);
   $('sourceLink').href = data.source.url;
   $('officialSource').href = data.source.url;
+
+  // Eventos: validación dejando una edición fuera, calculada por scripts/build_model_data.py.
+  if (data.events) {
+    const ev = data.events, rowsEv = Object.entries(ev.validation || {});
+    $('eventsCard').hidden = false;
+    $('eventsIntro').textContent = `${ev.count} eventos registrados en eventos.csv (fechas verificadas en fuentes públicas). Cuando un evento futuro afecta a una estación, la estimación se ajusta con la mediana del efecto medido en sus ediciones anteriores (mínimo ${ev.minEditions}). Para validar el ajuste, cada edición pasada se estimó solo con las demás.`;
+    $('eventsTable').innerHTML = rowsEv.map(([group, v]) => `<tr><td><strong>${group}</strong></td><td>${v.cases}</td><td>${v.errorWithout.toFixed(1)}%</td><td style="color:${v.errorWith < v.errorWithout ? '#62d394' : '#ffbd59'}">${v.errorWith.toFixed(1)}%</td><td>${v.improvedShare}% de los casos</td></tr>`).join('');
+    const upcoming = Object.entries(ev.calendar || {}).map(([d, list]) => `${shortDate(d)}: ${list.map(e => e.nombre).join(', ')}`);
+    $('eventsNote').textContent = `Error = diferencia con la afluencia real del día del evento (mediana por estación). Próximos eventos registrados: ${upcoming.join(' · ') || 'ninguno'}. Para agregar conciertos u otros eventos, edita eventos.csv y vuelve a generar el modelo.`;
+  }
+
+  // Clima: resumen medido por scripts/analizar_clima.py (no entra al modelo).
+  const weather = window.MINI_YOLOTZIN_WEATHER;
+  if (weather) {
+    const pct = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`;
+    const range = s => `de ${pct(s.p10)} a ${pct(s.p90)}`;
+    const e = weather.effects, v = weather.validation;
+    $('weatherNote').hidden = false;
+    $('weatherNote').innerHTML = `<strong>Clima:</strong> en días hábiles con lluvia (≥${e.rain.thresholdMm} mm) la red registra en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas. El efecto en cada estación no es concluyente, por eso el modelo no usa el clima.`;
+    $('weatherCard').hidden = false;
+    $('weatherIntro').textContent = `Se comparó la afluencia de ${weather.records} estaciones por línea con el clima diario de 5 zonas de la ciudad, en el periodo de prueba del ${shortDate(weather.period.testStart)} al ${shortDate(weather.period.testEnd)} (temporada de lluvias). Conclusión: la mayoría de los viajes en Metro son obligados (trabajo, escuela) y se hacen llueva o no; a nivel diario el clima cambia poco la afluencia y no mejora la estimación.`;
+    $('wValidation').textContent = `${pct(v.changePct)} de error`;
+    $('wValidationNote').textContent = `Al agregar lluvia y temperatura reales, la estimación empeora (mejora solo en ${v.improvedRecords} de ${weather.records}). En días lluviosos: ${pct(v.rainyDaysChangePct)}.`;
+    $('wRain').textContent = `${pct(e.rain.networkPct)} en la red`;
+    $('wRainNote').textContent = `≥${e.rain.thresholdMm} mm, ~${e.rain.weekdaysPerRecord} días por estación. Por estación, mediana ${pct(e.rain.byStation.median)} (${range(e.rain.byStation)}): demasiado variable para usarlo.`;
+    $('wHeavy').textContent = 'Sin datos suficientes';
+    $('wHeavyNote').textContent = `≥${e.heavyRain.thresholdMm} mm (umbral del SMN): ~${e.heavyRain.weekdaysPerRecord} día hábil por estación en el periodo de prueba; no alcanza para medirlo.`;
+    $('wHeat').textContent = `${pct(e.heat.byStation.median)} (mediana)`;
+    $('wHeatNote').textContent = `Máxima ≥${e.heat.thresholdC} °C contra días templados, ${range(e.heat.byStation)}. Probablemente mezclado con la temporada (abril y mayo).`;
+    $('weatherSource').innerHTML = `Fuente: ${weather.source.name} (${weather.source.license}). ${weather.source.note} Con datos por hora se podría medir si la lluvia cambia la hora de viaje, algo que el dato diario no muestra.`;
+  }
 
   // Metodología y Datos
   $('featureList').innerHTML = data.model.features.map(feature => `<span>${feature}</span>`).join('');
@@ -1033,12 +1469,15 @@
   $('lineCount').textContent = format(dataset.lines);
   $('duplicateCount').textContent = format(dataset.duplicateKeys);
   $('nullCount').textContent = format(Object.values(dataset.nulls).reduce((a, b) => a + b, 0));
-  $('selectedRows').textContent = format(dataset.selectedRows);
+  $('selectedRows').textContent = `${format(dataset.modeledRecords ?? records.length)} de ${format(dataset.records ?? records.length)}`;
   $('sourceName').textContent = data.source.name;
   $('sourceDescription').textContent = `${data.source.publisher} · ${data.source.license} · Descarga utilizada hasta ${shortDate(dataset.endDate)}.`;
-  $('stationTable').innerHTML = stations.map(station => {
+  const sortedRecords = [...records].sort((a, b) => a.line.localeCompare(b.line, 'es', { numeric: true }) || a.name.localeCompare(b.name, 'es'));
+  const beats = records.filter(r => gainOf(r) > 0).length, lowRel = records.filter(r => r.metrics.modelMae / r.summary.median > LOW_RELIABILITY).length;
+  $('tableSummary').textContent = `El modelo supera a la línea base en ${beats} de ${records.length} estaciones por línea. ${lowRel} tienen confiabilidad baja (error típico mayor al 30% de su afluencia habitual).${dataset.skippedRecords ? ` ${dataset.skippedRecords} registros sin modelo por falta de datos.` : ''}`;
+  $('stationTable').innerHTML = sortedRecords.map(station => {
     const gain = gainOf(station);
-    return `<tr><td><strong>${station.name}</strong></td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain > 0 ? '#62d394' : '#ffbd59'}">${gain > 0 ? `−${gain.toFixed(1)}% error` : 'Base competitiva'}</td></tr>`;
+    return `<tr><td><strong>${station.name}</strong></td><td>${linePill(station.line)}</td><td>${format(station.summary.observations)}</td><td>${format(station.metrics.baselineMae)}</td><td>${format(station.metrics.modelMae)}</td><td style="color:${gain > 0 ? '#62d394' : '#ffbd59'}">${gain > 0 ? `−${gain.toFixed(1)}% error` : 'Base competitiva'}</td></tr>`;
   }).join('');
 
   // Perfil y preferencias guardadas
@@ -1047,19 +1486,51 @@
     renderProfile();
     profileOverlay.classList.add('hidden');
     const saved = readPreferences();
-    if (saved?.station && (byName.has(saved.station) || catalog.some(record => record.name === saved.station))) state.station = saved.station;
+    if (saved?.station) { state.station = saved.station; if (saved.line) state.line = saved.line; }
     if (saved?.date && dates.includes(saved.date)) state.index = dates.indexOf(saved.date);
   } else {
     openProfileEditor();
   }
 
   initNetworkMap();
+  // Selector agrupado por línea con los nombres del mapa.
+  [...new Set(records.map(r => r.line))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).forEach(line => {
+    const group = document.createElement('optgroup');
+    group.label = `Línea ${line}`;
+    records.filter(r => r.line === line).map(r => ({ r, node: nodeByKey(r.name) })).sort((a, b) => (a.node?.name || a.r.name).localeCompare(b.node?.name || b.r.name, 'es')).forEach(({ r, node }) => {
+      group.appendChild(Object.assign(document.createElement('option'), { value: `${line}|${node ? node.name : r.name}`, textContent: node ? node.name : r.name }));
+    });
+    $('stationSelect').appendChild(group);
+  });
+  if (!currentNode()) { state.station = firstFeatured.name; state.line = firstFeatured.line; }
   initStationSearch();
+  // Los selectores de Mis viajes reutilizan las opciones agrupadas por línea.
+  [...$('stationSelect').querySelectorAll('optgroup')].forEach(group => { $('tripFrom').appendChild(group.cloneNode(true)); $('tripTo').appendChild(group.cloneNode(true)); });
+  $('tripList').dataset.ready = '1';
   fitNetwork();
   applyTransform();
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitNetwork, 120); });
   render();
+
+  refreshBikes(true);
+
+  // ---------- App instalable (PWA) ----------
+  // El service worker solo funciona servido por http(s) (GitHub Pages), no al abrir el archivo directamente.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  let installPrompt = null;
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone;
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('installApp').hidden = false; });
+  if (isIos && !standalone && location.protocol.startsWith('http')) $('installApp').hidden = false;
+  $('installApp').addEventListener('click', async () => {
+    if (installPrompt) { installPrompt.prompt(); await installPrompt.userChoice.catch(() => null); installPrompt = null; $('installApp').hidden = true; }
+    else { $('installHelp').hidden = false; $('installHelpClose').focus(); }
+  });
+  $('installHelpClose').addEventListener('click', () => { $('installHelp').hidden = true; $('installApp').focus(); });
+  window.addEventListener('appinstalled', () => { $('installApp').hidden = true; });
 })();
 </script>
 </body>
