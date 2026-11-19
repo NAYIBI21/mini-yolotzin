@@ -1114,7 +1114,8 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   }
   const listen = callback => {
     const channel = client.channel('mini-yolotzin-reportes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'incidencias' }, callback)
+      // Aviso público sin datos de la cuenta que hizo el reporte.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_realtime' }, callback)
       .subscribe();
     return () => client.removeChannel(channel);
   };
