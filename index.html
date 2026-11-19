@@ -534,6 +534,15 @@
     .report-send { width: 100%; min-height: 46px; margin-top: 12px; }
     .report-send:disabled { opacity: .5; cursor: not-allowed; }
     #reportMessage { color: #c4b5fd; }
+    .report-question { margin: 14px 0 8px; font-size: .86rem; font-weight: 700; }
+    .report-question span { color: var(--muted); font-weight: 500; font-size: .74rem; }
+    .incident-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .incident { min-height: 44px; padding: 8px 10px; border-radius: 12px; border: 1px solid #3b2f73; background: #1a1533; color: var(--text); font-size: .76rem; text-align: left; cursor: pointer; }
+    .incident[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); font-weight: 700; }
+    .incident[aria-pressed="true"]::before { content: "✓ "; }
+    .emergency { margin-top: 10px; }
+    .incident-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .incident-list span { padding: 4px 9px; border-radius: 999px; background: #3a1420; color: #ffb3bf; font-size: .72rem; font-weight: 700; }
     .report-summary { margin-top: 6px; font-size: .8rem; }
     .report-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .06); margin: 6px 0; }
     .report-bar span:nth-child(1) { background: var(--good); } .report-bar span:nth-child(2) { background: var(--warning); } .report-bar span:nth-child(3) { background: var(--danger); }
@@ -697,7 +706,7 @@
     <div class="date-now"><strong class="clock" id="dateLabel">—</strong><span class="period" id="dayLabel">—</span></div>
     <button class="icon-btn" id="stepForward" aria-label="Día siguiente">›</button>
     <div class="date-field"><label for="dateInput">Elegir fecha</label><input type="date" id="dateInput"></div>
-    <button class="chip-btn" id="resetDate">Mañana</button>
+    <button class="chip-btn" id="resetDate">Hoy</button>
     <div class="calendar-chip" id="calendarChip" hidden></div>
     <div class="event-chip" id="eventChip" hidden></div>
   </section>
@@ -770,6 +779,16 @@
             <button type="button" class="report-level normal" data-level="normal" aria-pressed="false"><strong>Normal</strong><span>De pie, pero se sube al primer tren</span></button>
             <button type="button" class="report-level lleno" data-level="lleno" aria-pressed="false"><strong>Lleno</strong><span>Hay que dejar pasar uno o más trenes</span></button>
           </div>
+          <p class="report-question" id="incidentLabel">¿Pasa algo más? <span>(opcional, puedes marcar varias)</span></p>
+          <div class="incident-grid" role="group" aria-labelledby="incidentLabel">
+            <button type="button" class="incident" data-incident="saturada" aria-pressed="false">Estación saturada</button>
+            <button type="button" class="incident" data-incident="tren_detenido" aria-pressed="false">Tren detenido</button>
+            <button type="button" class="incident" data-incident="retraso" aria-pressed="false">Trenes lentos o con retraso</button>
+            <button type="button" class="incident" data-incident="accidente" aria-pressed="false">Accidente o persona lesionada</button>
+            <button type="button" class="incident" data-incident="falla" aria-pressed="false">Falla de escaleras, elevador o luz</button>
+            <button type="button" class="incident" data-incident="acceso_cerrado" aria-pressed="false">Acceso o andén cerrado</button>
+          </div>
+          <p class="note emergency">En una emergencia avisa al personal del Metro o llama al <strong>911</strong>: este reporte no llega a las autoridades.</p>
           <button type="button" class="play-btn report-send" id="reportSend" disabled>Enviar reporte</button>
           <p class="profile-error" id="reportMessage" role="status"></p>
           <div class="report-summary" id="reportSummary"></div>
@@ -976,7 +995,9 @@
   };
   const LOW_RELIABILITY = .30; // error típico mayor al 30% de la mediana
   const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
-  const defaultIndex = () => Math.max(0, dates.indexOf(tomorrowIso));
+  const todayIndex = () => dates.indexOf([new Date().getFullYear(), String(new Date().getMonth() + 1).padStart(2, '0'), String(new Date().getDate()).padStart(2, '0')].join('-'));
+  // La app abre en el día de hoy (si está dentro del periodo pronosticado).
+  const defaultIndex = () => Math.max(0, todayIndex());
   const firstFeatured = data.featured?.[0] || { line: records[0].line, name: records[0].name };
 
   const state = { station: firstFeatured.name, line: firstFeatured.line, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
@@ -1722,12 +1743,15 @@
 
   // ---------- Reportes «¿Cómo va ahora?» (solo con el servidor de cuentas) ----------
   let reportChoice = null, reportKey = '';
+  const reportIncidents = new Set();
   const REPORT_NAMES = { vacio: 'vacío', normal: 'normal', lleno: 'lleno' };
+  const INCIDENT_NAMES = { saturada: 'Estación saturada', tren_detenido: 'Tren detenido', retraso: 'Trenes lentos o con retraso', accidente: 'Accidente o persona lesionada', falla: 'Falla de escaleras, elevador o luz', acceso_cerrado: 'Acceso o andén cerrado' };
   const reportTarget = () => ({ estacion: currentNode()?.name || state.station, linea: state.line });
   function updateReportControls() {
     document.querySelectorAll('.report-level').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === reportChoice)));
+    document.querySelectorAll('.incident').forEach(b => b.setAttribute('aria-pressed', String(reportIncidents.has(b.dataset.incident))));
     const logged = Boolean(activeProfile?.account);
-    $('reportSend').disabled = logged && !reportChoice;
+    $('reportSend').disabled = logged && !reportChoice && !reportIncidents.size;
     $('reportSend').textContent = logged ? 'Enviar reporte' : 'Inicia sesión para reportar';
   }
   async function loadReports() {
@@ -1741,9 +1765,13 @@
   function showReportSummary(s) {
     if (!s) { $('reportSummary').textContent = 'No se pudieron consultar los reportes.'; return; }
     if (!s.total) { $('reportSummary').textContent = `Aún no hay reportes en los últimos ${s.ventana} minutos.`; return; }
+    const levels = s.vacio + s.normal + s.lleno;
     const top = ['lleno', 'normal', 'vacio'].reduce((a, k) => s[k] > s[a] ? k : a, 'lleno');
-    const pct = k => (s[k] / s.total * 100).toFixed(0);
-    $('reportSummary').innerHTML = `<div class="report-bar" role="img" aria-label="${s.vacio} vacío, ${s.normal} normal, ${s.lleno} lleno"><span style="width:${pct('vacio')}%"></span><span style="width:${pct('normal')}%"></span><span style="width:${pct('lleno')}%"></span></div><strong>Mayoría: ${REPORT_NAMES[top]}</strong> · ${s.total} ${s.total === 1 ? 'reporte' : 'reportes'} en ${s.ventana} min, el último hace ${s.minutos <= 0 ? 'menos de un minuto' : `${s.minutos} min`}.`;
+    const pct = k => (s[k] / levels * 100).toFixed(0);
+    const bar = levels ? `<div class="report-bar" role="img" aria-label="${s.vacio} vacío, ${s.normal} normal, ${s.lleno} lleno"><span style="width:${pct('vacio')}%"></span><span style="width:${pct('normal')}%"></span><span style="width:${pct('lleno')}%"></span></div><strong>Mayoría: ${REPORT_NAMES[top]}</strong> · ` : '';
+    const incidents = Object.entries(s.incidencias || {}).filter(([code]) => INCIDENT_NAMES[code]).sort((a, b) => b[1] - a[1]);
+    const incidentHtml = incidents.length ? `<div class="incident-list" aria-label="Incidencias reportadas">${incidents.map(([code, n]) => `<span>${INCIDENT_NAMES[code]} (${n})</span>`).join('')}</div>` : '';
+    $('reportSummary').innerHTML = `${bar}${s.total} ${s.total === 1 ? 'reporte' : 'reportes'} en ${s.ventana} min, el último hace ${s.minutos <= 0 ? 'menos de un minuto' : `${s.minutos} min`}.${incidentHtml}`;
   }
   function openReport(open) {
     $('reportPanel').hidden = !open;
@@ -1751,20 +1779,27 @@
     $('reportMessage').textContent = '';
     if (!open) return;
     reportChoice = null;
+    reportIncidents.clear();
     updateReportControls();
     loadReports();
     $('reportTitle').focus();
   }
   $('reportButton').addEventListener('click', () => openReport($('reportPanel').hidden));
-  document.querySelectorAll('.report-level').forEach(b => b.addEventListener('click', () => { reportChoice = b.dataset.level; updateReportControls(); }));
+  document.querySelectorAll('.report-level').forEach(b => b.addEventListener('click', () => { reportChoice = reportChoice === b.dataset.level ? null : b.dataset.level; updateReportControls(); }));
+  document.querySelectorAll('.incident').forEach(b => b.addEventListener('click', () => {
+    const code = b.dataset.incident;
+    if (reportIncidents.has(code)) reportIncidents.delete(code); else reportIncidents.add(code);
+    updateReportControls();
+  }));
   $('reportSend').addEventListener('click', async () => {
     if (!activeProfile?.account) { openProfileEditor(); return; }
-    if (!reportChoice) return;
-    const res = await api('reportes', { method: 'POST', body: JSON.stringify({ ...reportTarget(), nivel: reportChoice }) }).catch(() => null);
+    if (!reportChoice && !reportIncidents.size) return;
+    const res = await api('reportes', { method: 'POST', body: JSON.stringify({ ...reportTarget(), nivel: reportChoice || '', incidencias: [...reportIncidents] }) }).catch(() => null);
     if (!res) { $('reportMessage').textContent = 'No se pudo conectar con el servidor.'; return; }
     if (!res.ok) { $('reportMessage').textContent = res.data.error || 'No se pudo enviar.'; return; }
     $('reportMessage').textContent = '¡Gracias! Tu reporte se sumó.';
     reportChoice = null;
+    reportIncidents.clear();
     updateReportControls();
     showReportSummary(res.data);
   });

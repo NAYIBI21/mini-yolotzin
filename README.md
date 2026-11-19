@@ -17,7 +17,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
   - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo, «Guardar» y «Reportar cómo está». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
   - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el recorrido por fechas y las estaciones con más gente que de costumbre.
   - **Agenda**: festivos, conciertos, partidos y marchas de los próximos meses, con las estaciones afectadas y filtros (incluido «Mis estaciones»).
-- La fecha se elige arriba (día anterior / siguiente, calendario o «Mañana») y vale para todas las pestañas.
+- La fecha se elige arriba (día anterior / siguiente, calendario o «Hoy») y vale para todas las pestañas. La app abre en el día de hoy.
 - Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
 - Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
@@ -70,7 +70,7 @@ y abre `http://localhost:8000/`.
 
 En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la computadora de Nayibi puede servir la página con cuentas: cada persona crea un usuario y una contraseña, y Mis viajes se guarda en una base de datos en esa computadora, así que aparece en cualquier navegador donde la persona inicie sesión.
 
-Con el servidor también aparece **«Reportar cómo está»** en cada estación: quien tiene sesión dice en un toque si está vacía, normal o llena, y todos ven el resumen de los últimos 30 minutos. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
+Con el servidor también aparece **«Reportar cómo está»** en cada estación: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
 
 Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
 

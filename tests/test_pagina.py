@@ -26,6 +26,19 @@ def test_loads_with_model_and_map(page, model_data):
     assert page.locator("#stationSelect option").count() == len(model_data["stations"])
 
 
+def test_opens_on_today(page, model_data):
+    from datetime import date
+    today = date.today().isoformat()
+    in_range = model_data["dataset"]["forecastStart"] <= today <= model_data["dataset"]["forecastEnd"]
+    if in_range:
+        assert page.input_value("#dateInput") == today
+        assert page.text_content("#dateLabel").startswith("Hoy")
+    set_date(page, "2026-12-03")
+    page.click("#resetDate")                               # el botón «Hoy» regresa al día de hoy
+    if in_range:
+        assert page.input_value("#dateInput") == today
+
+
 def test_tabs_with_keyboard(page):
     assert page.is_visible("#todayView")                  # la app abre en Hoy
     page.focus("#tab-today")

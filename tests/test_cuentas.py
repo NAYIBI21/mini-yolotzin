@@ -80,7 +80,8 @@ def test_reports_are_anonymous_and_limited(account_server):
     base, db = account_server
     call = client()
     url = base + "api/reportes?estacion=Hidalgo&linea=3"
-    assert call(url) == (200, {"vacio": 0, "normal": 0, "lleno": 0, "total": 0, "minutos": None, "ventana": 30})
+    assert call(url) == (200, {"vacio": 0, "normal": 0, "lleno": 0, "incidencias": {}, "total": 0,
+                               "minutos": None, "ventana": 30})
     report = {"estacion": "Hidalgo", "linea": "3", "nivel": "lleno"}
     assert call(base + "api/reportes", "POST", report)[0] == 401          # sin sesión no se reporta
     call(base + "api/registro", "POST", {"usuario": "beto", "contrasena": "clave-segura"})
@@ -90,12 +91,25 @@ def test_reports_are_anonymous_and_limited(account_server):
     assert call(base + "api/reportes", "POST", report)[0] == 429          # una vez cada 10 minutos
     other = client()
     other(base + "api/registro", "POST", {"usuario": "carla", "contrasena": "clave-segura"})
-    other(base + "api/reportes", "POST", {**report, "nivel": "normal"})
-    assert call(url)[1]["total"] == 2
+    assert other(base + "api/reportes", "POST", {**report, "nivel": "", "incidencias": ["robo"]})[0] == 400
+    assert other(base + "api/reportes", "POST", {**report, "nivel": "", "incidencias": []})[0] == 400
+    status, summary = other(base + "api/reportes", "POST",
+                            {**report, "nivel": "", "incidencias": ["tren_detenido", "saturada", "saturada"]})
+    assert status == 200 and summary["total"] == 2 and summary["lleno"] == 1
+    assert summary["incidencias"] == {"saturada": 1, "tren_detenido": 1}
     assert call(base + "api/reportes?estacion=Hidalgo&linea=2")[1]["total"] == 0
     with sqlite3.connect(db) as con:                                       # sin usuario en la tabla
         columns = [row[1] for row in con.execute("PRAGMA table_info(reportes)")]
-    assert columns == ["estacion", "linea", "nivel", "creado"]
+    assert columns == ["estacion", "linea", "nivel", "creado", "incidencias"]
+
+
+def test_old_report_table_gets_incidents_column(tmp_path):
+    db = tmp_path / "vieja.db"
+    with sqlite3.connect(db) as con:      # tabla como la de la primera versión, sin incidencias
+        con.execute("CREATE TABLE reportes (estacion TEXT NOT NULL, linea TEXT NOT NULL, nivel TEXT NOT NULL, creado REAL NOT NULL)")
+    store = sc.Store(db)
+    store.add_report("Hidalgo", "3", "lleno", ["accidente"])
+    assert store.report_summary("Hidalgo", "3")["incidencias"] == {"accidente": 1}
 
 
 def test_rejects_bad_input_and_locks_after_failures(account_server):
@@ -170,8 +184,10 @@ def test_login_in_page_keeps_trips(browser, account_server):
     page.click("#reportButton")
     page.wait_for_function("document.querySelector('#reportSummary').textContent.includes('Aún no hay reportes')")
     page.click('.report-level[data-level="lleno"]')
+    page.click('.incident[data-incident="tren_detenido"]')
     page.click("#reportSend")
     page.wait_for_function("document.querySelector('#reportSummary').textContent.includes('Mayoría: lleno')")
+    assert "Tren detenido (1)" in page.text_content("#reportSummary")
     assert "Gracias" in page.text_content("#reportMessage")
 
     # Otro dispositivo (contexto nuevo, sin localStorage): al entrar recupera el viaje del servidor.
