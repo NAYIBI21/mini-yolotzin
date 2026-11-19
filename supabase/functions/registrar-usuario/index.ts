@@ -15,7 +15,7 @@ const admin = createClient(projectUrl, secretKey, {
 const safeOrigin = (origin: string) =>
   origin === "https://nayibi21.github.io" ||
   /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d{2,5})?$/.test(origin) ||
-  /^http:\/(?:\/10\.|\/192\.168\.|\/172\.(?:1[6-9]|2\d|3[01])\.)(?:\d{1,3}\.){2}\d{1,3}(?::\d{2,5})?$/.test(origin);
+  /^http:\/\/(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d{2,5})?$/.test(origin);
 const headersFor = (origin: string) => ({
   "Access-Control-Allow-Origin": safeOrigin(origin) ? origin : "https://nayibi21.github.io",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
