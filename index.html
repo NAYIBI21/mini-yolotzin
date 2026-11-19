@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#081019">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mini Yolotzin">
   <title>Mini Yolotzin · Demanda diaria del Metro CDMX</title>
   <meta name="description" content="Demostración académica de estimación de afluencia diaria del Metro CDMX con datos oficiales y validación temporal.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23081019'/%3E%3Cpath d='M14 18h10l8 12 8-12h10L37 38v10H27V38z' fill='%23ff6b35'/%3E%3Ccircle cx='32' cy='44' r='5' fill='%235dd6e8'/%3E%3C/svg%3E">
@@ -277,6 +281,28 @@
     .trip-actions .ghost-btn { margin-top: 0; min-height: 42px; }
     .save-station { margin-top: 12px; width: 100%; min-height: 38px; border: 1px dashed rgba(255, 189, 89, .45); border-radius: 10px; background: transparent; color: #ffd48a; font-size: .74rem; font-weight: 700; cursor: pointer; }
     .save-station.saved { border-style: solid; background: rgba(255, 189, 89, .1); }
+    .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .week-day { display: grid; justify-items: center; gap: 3px; padding: 7px 2px 6px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .02); cursor: pointer; font-size: .6rem; color: var(--muted); }
+    .week-day:hover { border-color: rgba(93, 214, 232, .45); }
+    .week-day.current { border-color: var(--accent); background: rgba(255, 107, 53, .1); color: var(--text); }
+    .week-day.best { box-shadow: inset 0 0 0 1px var(--good); }
+    .week-day strong { color: var(--text); font-size: .7rem; font-variant-numeric: tabular-nums; }
+    .week-day i { width: 100%; height: 4px; border-radius: 3px; }
+    .week-day .flag { min-height: 11px; font-size: .58rem; line-height: 1; }
+    .week-day .flag .cal { color: #ffd48a; } .week-day .flag .evt { color: #a8e6ef; }
+    .week-best { margin: 10px 0 0; color: var(--text-2); font-size: .7rem; line-height: 1.45; }
+    .week-best strong { color: var(--good); }
+    .trip-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 7px; }
+    .trip-week button { height: 22px; border: 0; border-radius: 5px; font-size: .56rem; font-weight: 700; color: #081019; cursor: pointer; opacity: .85; }
+    .trip-week button.current { outline: 2px solid var(--text); outline-offset: 1px; opacity: 1; }
+    .trip-week button.best { box-shadow: 0 0 0 2px var(--good); opacity: 1; }
+    .trip-best { margin-top: 4px; font-size: .62rem; color: var(--muted); }
+    .trip-best strong { color: var(--good); }
+    .install-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 12px; border: 1px solid rgba(255, 107, 53, .5); border-radius: 10px; background: rgba(255, 107, 53, .12); color: var(--text); font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .install-btn[hidden] { display: none; }
+    .install-help { position: fixed; z-index: 900; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-solid); box-shadow: var(--shadow); font-size: .74rem; line-height: 1.5; }
+    .install-help[hidden] { display: none; }
+    .install-help button { margin-top: 8px; }
     .hot-item { width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 7px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
     .hot-item:hover, .hot-item.active { background: rgba(255, 255, 255, .05); }
     .hot-item.active .rank { background: var(--accent); color: #fff; }
@@ -473,6 +499,7 @@
       <div class="metric"><small>Demanda alta</small><strong id="highCount">—</strong><span id="highCountLabel">estaciones por línea</span></div>
       <div class="metric"><small>Error típico</small><strong id="stationMae">—</strong><span>MAE de la estación</span></div>
     </div>
+    <button type="button" class="install-btn" id="installApp" hidden>⤓ Instalar app</button>
     <button class="profile-button" id="profileButton" aria-label="Editar perfil"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
   </header>
 
@@ -589,6 +616,11 @@
         <div class="reliability" id="reliabilityNote" hidden></div>
         </div>
       </section>
+      <section class="section" id="weekSection" aria-labelledby="weekTitle">
+        <p class="eyebrow" id="weekTitle">Próximos 7 días</p>
+        <div class="week-grid" id="weekGrid"></div>
+        <p class="week-best" id="weekBest"></p>
+      </section>
       <section class="section" id="historySection">
         <p class="eyebrow">Historial mensual</p>
         <div class="bar-chart" id="barChart" role="img" aria-label="Promedio diario observado por mes y estimación seleccionada"></div>
@@ -650,6 +682,7 @@
   </main>
 </div>
 
+<div class="install-help" id="installHelp" role="dialog" aria-labelledby="installHelpTitle" hidden><strong id="installHelpTitle">Instalar Mini Yolotzin</strong><br>En iPhone o iPad: abre la página en Safari, toca <b>Compartir</b> y elige <b>Agregar a pantalla de inicio</b>.<br><button type="button" class="ghost-btn" id="installHelpClose">Entendido</button></div>
 <script>
 (() => {
   const data = window.MINI_YOLOTZIN_DATA;
@@ -1060,6 +1093,7 @@
       $('levelMessage').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para un modelo validado.';
       $('geoTitle').textContent = 'Ficha geográfica';
       $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
+      renderWeek(null);
       renderHotList(rows);
       renderTrips();
       return;
@@ -1089,6 +1123,7 @@
     $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.${station.summary.closedDays ? ` Se excluyeron ${format(station.summary.closedDays)} días sin servicio.` : ''}`;
 
     renderBars(station, prediction.value, date);
+    renderWeek(station);
     renderHotList(rows);
     renderTrips();
   }
@@ -1102,6 +1137,37 @@
     const p = predictionOf(record, state.index);
     return `<button type="button" class="trip-stop${active ? ' active' : ''}" data-station="${esc(stop.name)}" data-line="${esc(stop.line)}" aria-label="${esc(stop.name)}, Línea ${esc(stop.line)}: ${format(p.value)} accesos estimados, ${levelName[p.level].toLowerCase()}">${linePill(esc(stop.line))}<span class="name">${esc(stop.name)}</span><span class="val" style="color:${levelColor[p.level]}">${format(p.value)}</span></button>`;
   }
+  // ---------- Vista semanal ----------
+  // Para un conjunto de registros (una estación o las paradas de un viaje), los 7 días desde la fecha elegida.
+  function weekFrom(recs, start = state.index) {
+    const days = [];
+    for (let i = start; i < Math.min(dates.length, start + 7); i++) {
+      const preds = recs.map(r => predictionOf(r, i));
+      const total = preds.reduce((a, p) => a + p.value, 0);
+      const level = preds.reduce((a, p) => levelRank[p.level] > levelRank[a] ? p.level : a, 'baja');
+      const date = dates[i];
+      const hasEvent = recs.some(r => r.eventAdjustments?.some(a => a.date === date && a.factor));
+      const dow = new Date(date + 'T12:00:00Z').getUTCDay();
+      days.push({ index: i, date, total, level, calendar: data.calendar?.[date] || '', hasEvent, weekday: dow >= 1 && dow <= 5 && !(data.calendar?.[date] || '').startsWith('Día festivo') });
+    }
+    const workdays = days.filter(d => d.weekday);
+    const best = workdays.length ? workdays.reduce((a, d) => d.total < a.total ? d : a) : null;
+    const avg = workdays.length ? workdays.reduce((a, d) => a + d.total, 0) / workdays.length : 0;
+    return { days, best, avg };
+  }
+  const dayShort = iso => `${weekday(iso).slice(0, 2).toLowerCase()} ${Number(iso.slice(8, 10))}`;
+  const dayLong = iso => `${weekday(iso).toLowerCase()} ${shortDate(iso)}`;
+  const compact = n => n >= 10000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n));
+  function renderWeek(station) {
+    $('weekSection').hidden = !station;
+    if (!station) return;
+    const { days, best, avg } = weekFrom([station]);
+    $('weekGrid').innerHTML = days.map(d => `<button type="button" class="week-day${d.index === state.index ? ' current' : ''}${best && d.index === best.index ? ' best' : ''}" data-index="${d.index}" aria-label="${dayLong(d.date)}: ${format(d.total)} accesos estimados, ${levelName[d.level].toLowerCase()}${d.calendar ? ', ' + d.calendar : ''}${d.hasEvent ? ', con evento' : ''}">${dayShort(d.date)}<strong>${compact(d.total)}</strong><i style="background:${levelColor[d.level]}"></i><span class="flag">${d.calendar ? '<span class="cal">★</span>' : ''}${d.hasEvent ? '<span class="evt">◆</span>' : ''}</span></button>`).join('');
+    $('weekBest').innerHTML = best
+      ? `Mejor día hábil: <strong>${dayLong(best.date)}</strong>, ${format(best.total)} entradas (${signed((best.total / avg - 1) * 100)} frente al promedio de los días hábiles de la semana). ★ fecha especial · ◆ evento.`
+      : 'No hay días hábiles en este periodo.';
+  }
+
   function renderTrips() {
     const trips = readTrips(), date = dates[state.index];
     $('tripEmpty').hidden = trips.length > 0;
@@ -1117,7 +1183,10 @@
         return [`◆ ${esc(info ? info.nombre : adj.group)} (${esc(stop.name)}${adj.factor ? `, ${signed((adj.factor - 1) * 100)}` : ''})`];
       });
       const flags = [calendarLabel ? `<span class="cal">★ ${esc(calendarLabel)}</span>` : '', ...events.map(e => `<span class="evt">${e}</span>`)].join('');
-      return `<div class="trip-item"><div class="trip-top"><strong>${esc(trip.label)}</strong><button type="button" class="trip-remove" data-trip="${esc(trip.id)}" aria-label="Eliminar ${esc(trip.label)}">×</button></div>${stopHtml(trip.from)}${trip.to ? `<div class="trip-arrow" aria-hidden="true">↓</div>${stopHtml(trip.to)}` : ''}${flags ? `<div class="trip-flags">${flags}</div>` : ''}</div>`;
+      const tripRecords = stops.map(stop => recordByLineKey.get(`${stop.line}|${stationKey(stop.name)}`)).filter(Boolean);
+      const wk = tripRecords.length ? weekFrom(tripRecords) : null;
+      const strip = wk ? `<div class="trip-week" role="group" aria-label="Próximos 7 días de ${esc(trip.label)}">${wk.days.map(d => `<button type="button" data-index="${d.index}" class="${d.index === state.index ? 'current' : ''}${wk.best && d.index === wk.best.index ? ' best' : ''}" style="background:${levelColor[d.level]}" aria-label="${dayLong(d.date)}: ${levelName[d.level].toLowerCase()}">${weekday(d.date).slice(0, 2)}</button>`).join('')}</div>${wk.best ? `<div class="trip-best">Mejor día hábil: <strong>${dayLong(wk.best.date)}</strong></div>` : ''}` : '';
+      return `<div class="trip-item"><div class="trip-top"><strong>${esc(trip.label)}</strong><button type="button" class="trip-remove" data-trip="${esc(trip.id)}" aria-label="Eliminar ${esc(trip.label)}">×</button></div>${stopHtml(trip.from)}${trip.to ? `<div class="trip-arrow" aria-hidden="true">↓</div>${stopHtml(trip.to)}` : ''}${flags ? `<div class="trip-flags">${flags}</div>` : ''}${strip}</div>`;
     }).join('');
     const current = { name: currentNode()?.name || state.station, line: state.line };
     const saved = trips.some(t => !t.to && sameStop(t.from, current));
@@ -1243,7 +1312,10 @@
     renderTrips();
     $('tripAddToggle').focus();
   });
+  $('weekGrid').addEventListener('click', event => { const day = event.target.closest('.week-day'); if (day) setIndex(+day.dataset.index); });
   $('tripList').addEventListener('click', event => {
+    const weekDay = event.target.closest('.trip-week button');
+    if (weekDay) { setIndex(+weekDay.dataset.index); return; }
     const remove = event.target.closest('.trip-remove');
     if (remove) { writeTrips(readTrips().filter(t => t.id !== remove.dataset.trip)); renderTrips(); return; }
     const stop = event.target.closest('.trip-stop');
@@ -1358,6 +1430,23 @@
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitNetwork, 120); });
   render();
+
+  // ---------- App instalable (PWA) ----------
+  // El service worker solo funciona servido por http(s) (GitHub Pages), no al abrir el archivo directamente.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+  let installPrompt = null;
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone;
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; $('installApp').hidden = false; });
+  if (isIos && !standalone && location.protocol.startsWith('http')) $('installApp').hidden = false;
+  $('installApp').addEventListener('click', async () => {
+    if (installPrompt) { installPrompt.prompt(); await installPrompt.userChoice.catch(() => null); installPrompt = null; $('installApp').hidden = true; }
+    else { $('installHelp').hidden = false; $('installHelpClose').focus(); }
+  });
+  $('installHelpClose').addEventListener('click', () => { $('installHelp').hidden = true; $('installApp').focus(); });
+  window.addEventListener('appinstalled', () => { $('installApp').hidden = true; });
 })();
 </script>
 </body>
