@@ -2,7 +2,7 @@
    Estrategia «red primero»: siempre intenta descargar la versión más reciente
    (para que los datos nuevos se vean en cuanto se publiquen) y, si no hay red,
    usa la copia guardada. Cambia CACHE al modificar la lista de archivos. */
-const CACHE = 'mini-yolotzin-v1';
+const CACHE = 'mini-yolotzin-v2';
 const FILES = [
   './', './index.html', './model-data.js', './metro-catalog.js', './weather-summary.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
@@ -22,7 +22,9 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const request = event.request;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  // Las cuentas (/api/) nunca se guardan en la copia sin conexión.
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
   event.respondWith(
     fetch(request)
       .then(response => {

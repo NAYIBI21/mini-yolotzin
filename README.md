@@ -21,7 +21,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Búsqueda de estaciones (sin importar acentos), filtro por línea y ficha geográfica para las estaciones que no tienen modelo.
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
 - Pestañas **Metodología** y **Datos** con el proceso, la cobertura y la validación por estación.
-- Perfiles locales de clase que se guardan solamente en el navegador.
+- Perfiles locales de clase que se guardan solamente en el navegador, o cuentas con usuario y contraseña cuando se usa el servidor de la demo (ver «Cuentas para la demo»).
 - **Próximos 7 días** de la estación elegida y de cada viaje, con el mejor día hábil (excluye festivos) y marcas de fechas especiales (★) y eventos (◆).
 - **App instalable** (PWA): en Android/Chrome aparece «Instalar app»; en iPhone, Safari → Compartir → Agregar a pantalla de inicio. Funciona sin conexión con la última versión descargada.
 - **Ecobici cerca, en vivo**: las 3 cicloestaciones más cercanas (≤500 m) con bicis y espacios disponibles, desde el feed oficial GBFS de Ecobici (datos abiertos, sin clave). Se actualiza cada minuto mientras la página está visible y no forma parte del modelo. 61 de las 163 estaciones de Metro tienen una cicloestación a menos de 500 m.
@@ -57,12 +57,30 @@ python3 -m http.server 8000
 
 y abre `http://localhost:8000/`.
 
+## Cuentas para la demo (usuario y contraseña)
+
+En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la computadora de Nayibi puede servir la página con cuentas: cada persona crea un usuario y una contraseña, y Mis viajes se guarda en una base de datos en esa computadora, así que aparece en cualquier navegador donde la persona inicie sesión.
+
+Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
+
+```bash
+python scripts/servidor_cuentas.py --wifi
+```
+
+- Imprime dos direcciones: `http://localhost:8000/` para la propia computadora y otra como `http://192.168.x.x:8000/` para los celulares conectados al **mismo Wi-Fi**. Sin `--wifi`, solo funciona en la computadora.
+- La base queda en `~/.mini-yolotzin/cuentas.db`, fuera del repositorio (se puede cambiar con `--db`; el servidor no permite ponerla dentro del repositorio). Para borrar todas las cuentas, se borra ese archivo.
+- Las contraseñas se guardan cifradas con scrypt y sal aleatoria; nadie, ni Nayibi, puede leerlas. Tras 5 intentos fallidos, el usuario se bloquea un minuto.
+- La conexión por Wi-Fi es `http` sin cifrar: úsala solo en una red de confianza, como la de la escuela, y pide a la clase que no repita contraseñas que usa en otros sitios.
+- La computadora debe estar encendida con el servidor corriendo; si se apaga, la página publicada en GitHub Pages sigue funcionando con perfiles locales.
+- `Ctrl+C` detiene el servidor.
+
 ## Pruebas automáticas
 
 Las pruebas están en `tests/` (Python con `pytest`) y se corren solas en cada Pull Request con GitHub Actions (`.github/workflows/pruebas.yml`):
 
 - `test_datos.py`: coherencia de `model-data.js`, `eventos.csv` (fuente obligatoria, estaciones válidas, sin duplicados), catálogo, clima y `sw.js`.
 - `test_modelo.py`: festivos, Pascua, puentes, nombres de estaciones y una corrida del modelo con datos sintéticos (cierres, estaciones sin datos recientes, ajuste por eventos).
+- `test_cuentas.py`: el servidor de cuentas (contraseñas cifradas, sesiones, bloqueo por intentos, archivos que no se exponen) y el inicio de sesión en la página.
 - `test_pagina.py`: la página en Chromium, servida por http: pestañas, estimaciones, festivos y eventos, búsqueda, mapa, vista de 7 días, Mis viajes, perfil, modo sin conexión y pantallas pequeñas.
 
 Para correrlas localmente:
@@ -202,6 +220,7 @@ Descarga el clima de Open-Meteo (reanálisis ERA5, CC BY 4.0) a `clima_openmeteo
 - `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).
 - `scripts/build_model_data.py`: limpieza, entrenamiento, validación y exportación.
+- `scripts/servidor_cuentas.py`: servidor opcional de la demo con cuentas (usuario y contraseña) y Mis viajes en SQLite.
 - `tests/`, `pytest.ini`, `requirements-dev.txt`, `.github/workflows/pruebas.yml`: pruebas automáticas.
 - `AGENTS.md`: reglas para asistentes de programación.
 - `CONTRIBUTING.md`: flujo recomendado de colaboración.

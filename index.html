@@ -405,6 +405,10 @@
     .profile-submit { width: 100%; height: 48px; margin-top: 22px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; box-shadow: 0 12px 28px rgba(255, 107, 53, .22); }
     .profile-submit:hover { background: var(--accent-hover); }
     .profile-secondary { width: 100%; margin-top: 9px; border: 0; background: transparent; color: var(--muted); font-size: .68rem; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .account-alt { width: 100%; height: 44px; margin-top: 9px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
+    .account-alt:hover { border-color: rgba(93, 214, 232, .45); }
+    #accountForm > p, #accountSession p { margin: 7px 0 22px; color: var(--muted); font-size: .75rem; }
+    #accountForm h3, #accountSession h3 { margin: 0; font-size: 1.22rem; letter-spacing: -.03em; }
     .profile-error { min-height: 18px; margin-top: 5px; color: var(--danger); font-size: .66rem; }
     .profile-open { overflow: hidden; }
 
@@ -465,8 +469,33 @@
         <h2>Tu viaje comienza aquí</h2>
         <p>Crea un perfil de clase para personalizar Mini Yolotzin y conservar tus preferencias en este dispositivo.</p>
       </div>
-      <div class="profile-privacy"><strong>Privacidad simple:</strong> tu nombre, grupo y preferencias se guardan únicamente en este navegador. No usamos contraseñas ni enviamos estos datos a un servidor.</div>
+      <div class="profile-privacy" id="profilePrivacy"><strong>Privacidad simple:</strong> tu nombre, grupo y preferencias se guardan únicamente en este navegador. No usamos contraseñas ni enviamos estos datos a un servidor.</div>
     </section>
+    <div class="profile-form" id="accountPanel" hidden>
+      <form id="accountForm">
+        <h3 id="accountTitle">Iniciar sesión</h3>
+        <p>Con tu cuenta, Mis viajes se guardan en el servidor de la clase.</p>
+        <div class="profile-field">
+          <label for="accountUser">Usuario</label>
+          <input id="accountUser" name="username" maxlength="32" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Ej. nayibi" required>
+          <small>De 3 a 32 letras, números, punto, guion o guion bajo.</small>
+        </div>
+        <div class="profile-field">
+          <label for="accountPassword">Contraseña</label>
+          <input id="accountPassword" name="password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required>
+          <small>Al menos 8 caracteres. Se guarda cifrada, nunca en texto.</small>
+        </div>
+        <div class="profile-error" id="accountError" role="alert"></div>
+        <button class="profile-submit" type="submit">Iniciar sesión</button>
+        <button class="account-alt" id="registerButton" type="button">Crear cuenta</button>
+        <button class="profile-secondary" id="noAccountButton" type="button">Continuar sin cuenta</button>
+      </form>
+      <div id="accountSession" hidden>
+        <h3>Tu cuenta</h3>
+        <p>Sesión iniciada como <strong id="accountUserName"></strong>. Tus viajes se guardan en el servidor de la clase.</p>
+        <button class="profile-submit" id="logoutButton" type="button">Cerrar sesión</button>
+      </div>
+    </div>
     <form class="profile-form" id="profileForm">
       <h3 id="profileTitle">Crear perfil de clase</h3>
       <p>Tardarás menos de un minuto y podrás modificarlo después.</p>
@@ -490,6 +519,7 @@
       <div class="profile-error" id="profileError" role="alert"></div>
       <button class="profile-submit" type="submit">Entrar a Mini Yolotzin</button>
       <button class="profile-secondary" id="newProfileButton" type="button" hidden>Crear otro perfil en este dispositivo</button>
+      <button class="profile-secondary" id="useAccountButton" type="button" hidden>Iniciar sesión con una cuenta</button>
     </form>
   </div>
 </div>
@@ -784,7 +814,8 @@
     chooseProfileColor(activeProfile?.color || DEFAULT_COLOR);
     $('newProfileButton').hidden = !activeProfile;
     $('profileError').textContent = '';
-    $('profileNameInput').focus();
+    if (accountsAvailable && (!activeProfile || activeProfile.account)) showAccountPanel();
+    else showLocalForm();
   }
   function closeProfileEditor() {
     if (!activeProfile) return;
@@ -801,7 +832,11 @@
   const TRIPS_PREFIX = 'mini_yolotzin_trips_v1_', MAX_TRIPS = 8;
   const tripsKey = () => activeProfile ? TRIPS_PREFIX + activeProfile.id : null;
   const readTrips = () => { const key = tripsKey(); const list = key ? safeRead(key) : null; return Array.isArray(list) ? list : []; };
-  const writeTrips = list => { const key = tripsKey(); return key ? safeWrite(key, list.slice(0, MAX_TRIPS)) : false; };
+  const writeTrips = list => {
+    const key = tripsKey(), trips = list.slice(0, MAX_TRIPS);
+    if (activeProfile?.account) api('viajes', { method: 'PUT', body: JSON.stringify({ viajes: trips }) }).catch(() => null);
+    return key ? safeWrite(key, trips) : false;
+  };
   const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const readPreferences = () => { const key = preferencesKey(); return key ? safeRead(key) : null; };
   function savePreferences() {
@@ -814,7 +849,7 @@
     if (profileOverlay.classList.contains('hidden')) return;
     if (event.key === 'Escape') { if (activeProfile) { event.preventDefault(); closeProfileEditor(); } return; }
     if (event.key !== 'Tab') return;
-    const focusable = [...profileOverlay.querySelectorAll('input,button')].filter(el => !el.hidden && !el.disabled);
+    const focusable = [...profileOverlay.querySelectorAll('input,button')].filter(el => !el.disabled && el.getClientRects().length > 0);
     if (!focusable.length) return;
     const first = focusable[0], last = focusable.at(-1);
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
@@ -845,6 +880,76 @@
     chooseProfileColor(DEFAULT_COLOR);
     $('profileNameInput').focus();
   });
+
+  // ---------- Cuentas (solo cuando la página la sirve scripts/servidor_cuentas.py) ----------
+  // En GitHub Pages no hay servidor: /api/estado no existe y todo sigue con el perfil local.
+  let accountsAvailable = false;
+  const api = (path, options = {}) => fetch('./api/' + path, { credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, ...options })
+    .then(async response => ({ ok: response.ok, data: await response.json().catch(() => ({})) }));
+  const accountProfile = usuario => ({ id: 'cuenta-' + usuario, name: usuario, group: 'Cuenta', color: '#6a44d6', account: true });
+  function showAccountPanel() {
+    const logged = Boolean(activeProfile?.account);
+    $('profileForm').hidden = true;
+    $('accountPanel').hidden = false;
+    $('accountForm').hidden = logged;
+    $('accountSession').hidden = !logged;
+    $('accountUserName').textContent = logged ? activeProfile.name : '';
+    $('accountError').textContent = '';
+    profileOverlay.setAttribute('aria-labelledby', 'accountTitle');
+    $('profilePrivacy').innerHTML = '<strong>Cuentas de la clase:</strong> tu usuario y tus viajes se guardan en la computadora que corre el servidor de Mini Yolotzin. La contraseña se guarda cifrada. Sin cuenta, todo queda solo en este navegador.';
+    (logged ? $('logoutButton') : $('accountUser')).focus();
+  }
+  function showLocalForm() {
+    $('accountPanel').hidden = true;
+    $('profileForm').hidden = false;
+    $('useAccountButton').hidden = !accountsAvailable || Boolean(activeProfile);
+    profileOverlay.setAttribute('aria-labelledby', 'profileTitle');
+    $('profileNameInput').focus();
+  }
+  async function enterAccount(usuario) {
+    activeProfile = accountProfile(usuario);
+    renderProfile();
+    const res = await api('viajes').catch(() => null);
+    if (res?.ok && Array.isArray(res.data.viajes)) safeWrite(tripsKey(), res.data.viajes);
+    if ($('tripList').dataset.ready) renderTrips();
+  }
+  async function submitAccount(kind) {
+    const usuario = $('accountUser').value.trim().toLowerCase(), contrasena = $('accountPassword').value;
+    if (usuario.length < 3 || contrasena.length < 8) { $('accountError').textContent = 'Escribe tu usuario y una contraseña de al menos 8 caracteres.'; return; }
+    $('accountError').textContent = '';
+    const res = await api(kind, { method: 'POST', body: JSON.stringify({ usuario, contrasena }) }).catch(() => null);
+    if (!res) { $('accountError').textContent = 'No se pudo conectar con el servidor de cuentas.'; return; }
+    if (!res.ok) { $('accountError').textContent = res.data.error || 'No se pudo iniciar sesión.'; return; }
+    $('accountPassword').value = '';
+    await enterAccount(res.data.usuario);
+    closeProfileEditor();
+  }
+  $('accountForm').addEventListener('submit', event => { event.preventDefault(); submitAccount('entrar'); });
+  $('registerButton').addEventListener('click', () => submitAccount('registro'));
+  $('noAccountButton').addEventListener('click', showLocalForm);
+  $('useAccountButton').addEventListener('click', showAccountPanel);
+  $('logoutButton').addEventListener('click', async () => {
+    await api('salir', { method: 'POST' }).catch(() => null);
+    try { localStorage.removeItem(tripsKey()); } catch {}
+    activeProfile = safeRead(PROFILE_KEY);
+    if (activeProfile) { renderProfile(); renderTrips(); closeProfileEditor(); }
+    else { renderTrips(); showAccountPanel(); }
+  });
+  async function detectAccounts() {
+    if (!location.protocol.startsWith('http')) return;
+    // Solo el servidor de cuentas manda esta cabecera; así en GitHub Pages ni se consulta /api/.
+    const head = await fetch('./', { method: 'HEAD', cache: 'no-store' }).catch(() => null);
+    if (head?.headers.get('X-Mini-Yolotzin-Cuentas') !== '1') return;
+    const res = await api('estado').catch(() => null);
+    if (!res?.ok || res.data.cuentas !== true) return;
+    accountsAvailable = true;
+    if (res.data.usuario) {
+      await enterAccount(res.data.usuario);
+      if (!profileOverlay.classList.contains('hidden')) closeProfileEditor();
+    } else if (!profileOverlay.classList.contains('hidden') && !activeProfile) {
+      showAccountPanel();
+    }
+  }
 
   // ---------- Pestañas ----------
   const navTabs = [...document.querySelectorAll('.nav-btn')];
@@ -1515,6 +1620,7 @@
   render();
 
   refreshBikes(true);
+  detectAccounts();
 
   // ---------- App instalable (PWA) ----------
   // El service worker solo funciona servido por http(s) (GitHub Pages), no al abrir el archivo directamente.
