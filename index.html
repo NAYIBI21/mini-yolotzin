@@ -1037,8 +1037,8 @@
     if (!activeProfile) return;
     $('profileAvatar').textContent = profileInitials(activeProfile.name);
     $('profileAvatar').style.background = activeProfile.color;
-    $('profileDisplayName').textContent = activeProfile.name;
-    $('profileDisplayGroup').textContent = activeProfile.group || 'Perfil local';
+    $('profileDisplayName').textContent = activeProfile.name || 'Sin cuenta';
+    $('profileDisplayGroup').textContent = activeProfile.guest ? 'Iniciar sesión' : activeProfile.group || 'Perfil local';
     if ($('tripList').dataset.ready) renderToday();
   }
   function chooseProfileColor(color) {
@@ -1061,7 +1061,7 @@
     chooseProfileColor(activeProfile?.color || DEFAULT_COLOR);
     $('newProfileButton').hidden = !activeProfile;
     $('profileError').textContent = '';
-    if (accountsAvailable && (!activeProfile || activeProfile.account)) showAccountPanel();
+    if (accountsAvailable && (!activeProfile || activeProfile.account || activeProfile.guest)) showAccountPanel();
     else showLocalForm();
   }
   function closeProfileEditor() {
@@ -1188,7 +1188,17 @@
   }
   $('accountForm').addEventListener('submit', event => { event.preventDefault(); submitAccount('entrar'); });
   $('registerButton').addEventListener('click', () => submitAccount('registro'));
-  $('noAccountButton').addEventListener('click', showLocalForm);
+  // «Continuar sin cuenta» entra directo a la app, sin pedir nombre: los viajes se guardan en este navegador.
+  $('noAccountButton').addEventListener('click', () => {
+    if (!activeProfile) {
+      activeProfile = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, name: '', group: '', color: DEFAULT_COLOR, guest: true, createdAt: new Date().toISOString() };
+      safeWrite(PROFILE_KEY, activeProfile);
+      renderProfile();
+      if ($('tripList').dataset.ready) renderTrips();
+      savePreferences();
+    }
+    closeProfileEditor();
+  });
   $('useAccountButton').addEventListener('click', showAccountPanel);
   $('logoutButton').addEventListener('click', async () => {
     await api('salir', { method: 'POST' }).catch(() => null);

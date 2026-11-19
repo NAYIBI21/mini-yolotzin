@@ -210,9 +210,13 @@ def test_login_in_page_keeps_trips(browser, account_server):
     page.click("#logoutButton")
     page.wait_for_selector("#accountUser")
     assert page.locator(".trip-item").count() == 0          # al salir no quedan viajes de la cuenta
-    page.click("#noAccountButton")                          # se puede seguir sin cuenta
-    page.fill("#profileNameInput", "Invitada")
-    page.click("#profileForm .profile-submit")
-    assert page.text_content("#profileDisplayName") == "Invitada"
+    page.click("#noAccountButton")                          # se sigue sin cuenta, directo a la app
+    page.wait_for_selector("#profileOverlay.hidden", state="attached")
+    assert page.text_content("#profileDisplayName") == "Sin cuenta"
+    assert page.text_content("#todayGreeting") == "Hola."
+    page.reload()                                           # la siguiente vez entra directo
+    assert not page.is_visible("#profileOverlay")
+    page.click("#profileButton")                            # y desde el perfil se puede iniciar sesión
+    assert page.is_visible("#accountUser")
     context.close()
     assert not errors, errors
