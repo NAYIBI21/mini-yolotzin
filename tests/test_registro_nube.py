@@ -78,7 +78,7 @@ def test_registro_sin_correo_en_navegador(browser, site_url):
     page.wait_for_function("document.querySelector(\'#profileOverlay\').classList.contains(\'hidden\')")
     assert page.text_content("#profileDisplayName") == "ana123"
     page.click("#tab-explore")
-    page.select_option("#stationSelect", "2|Hidalgo")
+    page.select_option("#stationSelect", "2|Hidalgo", force=True)  # selector oculto en diseño móvil
     page.click("#reportButton")
     page.click('.report-level[data-level="lleno"]')
     page.click('.incident[data-incident="retraso"]')
