@@ -163,9 +163,13 @@ def test_agenda_lists_events_and_filters(page):
     assert page.locator("#agendaList .notice").count() == 0
 
 
-def test_reports_need_the_class_server(page):
-    go(page, "explore")
-    assert not page.is_visible("#reportButton")             # en GitHub Pages no hay reportes
+def test_login_screen_like_the_design(browser, site_url):
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    page.goto(site_url)
+    assert page.text_content("#profileOverlay h2") == "Mini Yolotzin"
+    assert page.is_visible("#profilePrivacy")
+    context.close()
 
 
 def test_profile_dialog_escape_returns_focus(page):

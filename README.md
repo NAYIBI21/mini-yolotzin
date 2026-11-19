@@ -70,7 +70,9 @@ y abre `http://localhost:8000/`.
 
 En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la computadora de Nayibi puede servir la página con cuentas: cada persona crea un usuario y una contraseña, y Mis viajes se guarda en una base de datos en esa computadora, así que aparece en cualquier navegador donde la persona inicie sesión.
 
-Con el servidor también aparece **«Reportar cómo está»** en cada estación: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
+En GitHub Pages, **«🚨 ¿Cómo va?»** y «Reportar cómo está» funcionan como versión de prueba: el reporte se guarda solo en ese navegador y la pantalla lo avisa. La página `alertas.html` (primer prototipo de Yolotzin Alerta) ahora lleva a esa misma sección.
+
+Con el servidor, **«Reportar cómo está»** se comparte entre todos: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se marcan como «no verificados», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
 
 Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
 
@@ -91,6 +93,7 @@ Las pruebas están en `tests/` (Python con `pytest`) y se corren solas en cada P
 
 - `test_datos.py`: coherencia de `model-data.js`, `eventos.csv` (fuente obligatoria, estaciones válidas, sin duplicados), catálogo, clima y `sw.js`.
 - `test_modelo.py`: festivos, Pascua, puentes, nombres de estaciones y una corrida del modelo con datos sintéticos (cierres, estaciones sin datos recientes, ajuste por eventos).
+- `test_alertas.py`: «¿Cómo va?» sin servidor (se guarda solo en el navegador, sin peticiones) y la redirección de `alertas.html`.
 - `test_cuentas.py`: el servidor de cuentas (contraseñas cifradas, sesiones, bloqueo por intentos, reportes anónimos, archivos que no se exponen) y el inicio de sesión y los reportes en la página.
 - `test_pagina.py`: la página en Chromium, servida por http: pestañas Hoy, Estaciones, Mapa y Agenda, estimaciones, festivos y eventos, búsqueda, mapa, vista de 7 días, Mis viajes, perfil, modo sin conexión y pantallas pequeñas.
 
