@@ -1,0 +1,29 @@
+{
+ "last_updated": 1794545000,
+ "ttl": 10,
+ "data": {
+  "stations": [
+   {
+    "station_id": "9001",
+    "name": "CE-901 Prueba Uno",
+    "lat": 19.4384,
+    "lon": -99.1453,
+    "capacity": 20
+   },
+   {
+    "station_id": "9002",
+    "name": "CE-902 Prueba Dos",
+    "lat": 19.4394,
+    "lon": -99.1478,
+    "capacity": 20
+   },
+   {
+    "station_id": "9003",
+    "name": "CE-903 Lejana",
+    "lat": 19.4674,
+    "lon": -99.1168,
+    "capacity": 20
+   }
+  ]
+ }
+}

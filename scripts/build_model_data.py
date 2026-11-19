@@ -2,12 +2,21 @@
 
 The raw CSV is an input artifact and is intentionally not shipped with the site.
 The output contains only aggregate history, validation metrics and precomputed
-future estimates for the five selected stations.
+future estimates for every station-line record of the Metro that has enough
+recent data (option A: one model per station and line, as the official
+resource publishes it).
+
+Usage:
+    python scripts/build_model_data.py [ruta/al/afluencia_simple.csv] [ruta/de/salida.js]
 """
 
 from __future__ import annotations
 
 import json
+import re
+import sys
+import unicodedata
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -24,14 +33,25 @@ SOURCE_URL = (
     "resource/0e8ffe58-28bb-4dde-afcd-e5f5b4de4ccb"
 )
 DOWNLOAD_URL = SOURCE_URL + "/download/0e8ffe58-28bb-4dde-afcd-e5f5b4de4ccb.csv"
-SELECTED_LINE = "Línea 3"
-SELECTED_STATIONS = [
-    "Indios Verdes",
-    "La Raza",
-    "Hidalgo",
-    "Centro Médico",
-    "Universidad",
+
+# Estaciones destacadas de la versión original (se muestran primero en la interfaz).
+FEATURED = [
+    ("3", "Indios Verdes"),
+    ("3", "La Raza"),
+    ("3", "Hidalgo"),
+    ("3", "Centro Médico"),
+    ("3", "Universidad"),
 ]
+
+TEST_DAYS = 180            # validación cronológica: últimos 180 días observados
+FORECAST_DAYS = 366        # horizonte de pronóstico
+MIN_TRAIN_DAYS = 365       # días válidos mínimos para entrenar
+MIN_TEST_DAYS = 90         # días válidos mínimos para validar
+MAX_STALE_DAYS = 30        # si el último dato válido es más antiguo, no se pronostica
+TRAIN_START = "2023-01-01"  # se omite 2021-2022 (recuperación tras la pandemia) si hay suficiente historial
+RECENT_DAYS = 365          # el último año antes del corte pesa más al entrenar
+RECENT_WEIGHT = 3.0
+RF_PARAMS = dict(n_estimators=160, max_depth=14, min_samples_leaf=4, random_state=42, n_jobs=-1)
 
 
 def repair_mojibake(value: object) -> object:
@@ -43,80 +63,267 @@ def repair_mojibake(value: object) -> object:
         return value
 
 
-def features(dates: pd.Series | pd.DatetimeIndex) -> pd.DataFrame:
+# ---------- Calendario de México ----------
+# Días de descanso obligatorio (Ley Federal del Trabajo, art. 74) y fechas con efecto
+# conocido en la movilidad de la CDMX. Todas se conocen con anticipación, así que
+# también sirven para el pronóstico.
+
+def easter_sunday(year: int) -> date:
+    """Domingo de Pascua (algoritmo gregoriano anónimo)."""
+    a, b, c = year % 19, year // 100, year % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    month = (h + l - 7 * m + 114) // 31
+    day = (h + l - 7 * m + 114) % 31 + 1
+    return date(year, month, day)
+
+
+def nth_monday(year: int, month: int, n: int) -> date:
+    first = date(year, month, 1)
+    return first + timedelta(days=(7 - first.weekday()) % 7 + 7 * (n - 1))
+
+
+def mexican_calendar(years: range) -> tuple[dict, dict, dict]:
+    """Regresa (festivos, fechas especiales, periodos vacacionales) como {fecha: nombre}."""
+    holidays, special, periods = {}, {}, {}
+    for y in years:
+        holidays[date(y, 1, 1)] = "Año Nuevo"
+        holidays[nth_monday(y, 2, 1)] = "Día de la Constitución"
+        holidays[nth_monday(y, 3, 3)] = "Natalicio de Benito Juárez"
+        holidays[date(y, 5, 1)] = "Día del Trabajo"
+        holidays[date(y, 9, 16)] = "Día de la Independencia"
+        holidays[nth_monday(y, 11, 3)] = "Día de la Revolución"
+        holidays[date(y, 12, 25)] = "Navidad"
+        if (y - 2024) % 6 == 0:
+            holidays[date(y, 10, 1)] = "Transmisión del Poder Ejecutivo"
+        easter = easter_sunday(y)
+        special[easter - timedelta(days=3)] = "Jueves Santo"
+        special[easter - timedelta(days=2)] = "Viernes Santo"
+        special[date(y, 11, 2)] = "Día de Muertos"
+        special[date(y, 12, 12)] = "Día de la Virgen de Guadalupe"
+        special[date(y, 12, 24)] = "Nochebuena"
+        special[date(y, 12, 31)] = "Fin de año"
+        for offset in range(-6, 8):   # Semana Santa y Semana de Pascua
+            periods[easter + timedelta(days=offset)] = "Vacaciones de Semana Santa"
+        for offset in range(0, 20):   # 18 de diciembre al 6 de enero
+            periods[date(y, 12, 18) + timedelta(days=offset)] = "Vacaciones de invierno"
+    return holidays, special, periods
+
+
+CALENDAR = mexican_calendar(range(2019, 2032))
+
+
+def features(dates: pd.Series | pd.DatetimeIndex, calendar: bool = True) -> pd.DataFrame:
     dates = pd.DatetimeIndex(dates)
-    day_of_year = dates.dayofyear.to_numpy()
-    return pd.DataFrame(
-        {
-            "month": dates.month,
-            "dow": dates.dayofweek,
-            "day": dates.day,
-            "weekend": (dates.dayofweek >= 5).astype(int),
-            "sin_year": np.sin(2 * np.pi * day_of_year / 365.25),
-            "cos_year": np.cos(2 * np.pi * day_of_year / 365.25),
-        }
-    )
+    day_of_year = dates.day_of_year.to_numpy()
+    columns = {
+        "month": dates.month,
+        "dow": dates.day_of_week,
+        "day": dates.day,
+        "weekend": (dates.day_of_week >= 5).astype(int),
+        "sin_year": np.sin(2 * np.pi * day_of_year / 365.25),
+        "cos_year": np.cos(2 * np.pi * day_of_year / 365.25),
+    }
+    if calendar:
+        holidays, special, periods = CALENDAR
+        days = [d.date() for d in dates]
+        columns["holiday"] = [int(d in holidays) for d in days]
+        columns["special"] = [int(d in special) for d in days]
+        # Viernes antes de un lunes festivo (puente).
+        columns["bridge"] = [int(d.weekday() == 4 and (d + timedelta(days=3)) in holidays) for d in days]
+        columns["easter_break"] = [int(periods.get(d) == "Vacaciones de Semana Santa") for d in days]
+        columns["winter_break"] = [int(periods.get(d) == "Vacaciones de invierno") for d in days]
+    return pd.DataFrame(columns)
+
+
+def calendar_labels(dates: pd.DatetimeIndex) -> dict:
+    """Etiquetas para mostrar en la interfaz durante el horizonte de pronóstico."""
+    holidays, special, periods = CALENDAR
+    labels = {}
+    for d in dates:
+        day = d.date()
+        parts = []
+        if day in holidays:
+            parts.append(f"Día festivo: {holidays[day]}")
+        if day in special:
+            parts.append(special[day])
+        if day.weekday() == 4 and (day + timedelta(days=3)) in holidays:
+            parts.append("Puente")
+        if day in periods:
+            parts.append(periods[day])
+        if parts:
+            labels[d.strftime("%Y-%m-%d")] = " · ".join(parts)
+    return labels
 
 
 def rounded(value: float) -> int:
     return int(round(float(value)))
 
 
-def build_station(station: str, frame: pd.DataFrame, forecast_dates: pd.DatetimeIndex) -> dict:
-    data = frame.loc[frame["estacion"] == station, ["fecha", "afluencia"]].copy()
-    data = data.sort_values("fecha").drop_duplicates("fecha", keep="last")
+def line_code(label: str) -> str:
+    """'Línea 3' -> '3', 'Línea A' -> 'A'."""
+    return label.replace("Línea", "").strip()
 
-    cutoff = data["fecha"].max() - pd.DateOffset(days=179)
-    train = data[data["fecha"] < cutoff].copy()
-    test = data[data["fecha"] >= cutoff].copy()
 
-    baseline_table = train.assign(
-        month=train["fecha"].dt.month,
-        dow=train["fecha"].dt.dayofweek,
-    ).groupby(["month", "dow"])["afluencia"].mean()
+def fold(text: str) -> str:
+    """Quita acentos y mayúsculas para comparar nombres."""
+    return "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn").casefold()
+
+
+def unify_station_names(valid: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
+    """El recurso oficial cambió la escritura de algunos nombres el 2023-06-01
+    (p. ej. «Gómez Farías» → «Gómez Farias», «Peñón Viejo» → «Peñón viejo»).
+    Dentro de cada línea, los nombres que solo difieren en acentos o mayúsculas
+    se unifican con la forma que aparece primero en el tiempo."""
+    first_seen = valid.groupby(["linea", "estacion"])["fecha"].min().reset_index()
+    first_seen["key"] = first_seen["estacion"].map(fold)
+    canonical, renamed = {}, []
+    for (line, _), group in first_seen.groupby(["linea", "key"]):
+        group = group.sort_values("fecha")
+        target = group["estacion"].iloc[0]
+        for variant in group["estacion"].iloc[1:]:
+            canonical[(line, variant)] = target
+            renamed.append({"line": line, "from": variant, "to": target})
+    if canonical:
+        keys = list(zip(valid["linea"], valid["estacion"]))
+        valid = valid.assign(estacion=[canonical.get(key, key[1]) for key in keys])
+    return valid, renamed
+
+
+# ---------- Eventos (eventos.csv, mantenido por el equipo) ----------
+EVENTS_PATH = ROOT / "eventos.csv"
+MIN_EVENT_EDITIONS = 2     # ediciones previas medidas para ajustar una fecha futura
+
+
+def station_key(name: str) -> str:
+    """Clave para relacionar nombres del CSV oficial, del catálogo y de eventos.csv (igual que index.html)."""
+    k = re.sub(r"[^a-z0-9]", "", fold(name.split("/")[0]))
+    return {"mixhiuca": "mixiuhca"}.get(k, k)
+
+
+def load_events(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    events = []
+    for row in pd.read_csv(path, dtype=str).fillna("").to_dict("records"):
+        stations = []
+        for item in row["estaciones"].split(";"):
+            if "|" in item:
+                line, name = item.split("|", 1)
+                stations.append((line.strip(), station_key(name.strip())))
+        events.append({**row, "fecha": pd.Timestamp(row["fecha"]), "stations": stations})
+    return events
+
+
+def event_occurrences(series: pd.Series, events: list[dict]) -> list[tuple[str, pd.Timestamp, float]]:
+    """Efecto de cada edición pasada: afluencia del día ÷ mediana del mismo día de la semana
+    en las 3 semanas previas y posteriores (sin otros eventos ni festivos)."""
+    holidays, special, _ = CALENDAR
+    event_days = {e["fecha"] for e in events}
+    out = []
+    for e in events:
+        day = e["fecha"]
+        if day not in series.index:
+            continue
+        refs = [day + pd.Timedelta(days=7 * k) for k in (-3, -2, -1, 1, 2, 3)]
+        refs = [r for r in refs if r in series.index and r not in event_days and r.date() not in holidays and r.date() not in special]
+        if len(refs) >= 3:
+            out.append((e["grupo"], day, float(series[day] / np.median(series[refs]))))
+    return out
+
+
+def build_record(line: str, station: str, frame: pd.DataFrame, max_date: pd.Timestamp,
+                 forecast_dates: pd.DatetimeIndex, events: list[dict] | None = None) -> tuple[dict | None, dict | None]:
+    """Train and validate one station-line record. Returns (record, skipped)."""
+    data = frame[["fecha", "afluencia"]].sort_values("fecha").drop_duplicates("fecha", keep="last")
+    zero_days = int((data["afluencia"] <= 0).sum())
+    # Los días con afluencia 0 corresponden a cierres (obras, contingencias): no son demanda baja.
+    data = data[data["afluencia"] > 0]
+    base = {"name": station, "line": line}
+
+    if data.empty:
+        return None, {**base, "reason": "sin registros con afluencia", "lastDate": None}
+    last_date = data["fecha"].max()
+    if (max_date - last_date).days > MAX_STALE_DAYS:
+        return None, {**base, "reason": "sin datos recientes (posible cierre)", "lastDate": last_date.strftime("%Y-%m-%d")}
+
+    cutoff = last_date - pd.DateOffset(days=TEST_DAYS - 1)
+    train_all = data[data["fecha"] < cutoff]
+    test = data[data["fecha"] >= cutoff]
+    if len(train_all) < MIN_TRAIN_DAYS or len(test) < MIN_TEST_DAYS:
+        return None, {**base, "reason": "historial insuficiente para validar", "lastDate": last_date.strftime("%Y-%m-%d")}
+
+    # Ventana de entrenamiento: desde 2023 si hay al menos un año de datos válidos;
+    # si no (estaciones con cierres largos, p. ej. Líneas 1 y 12), todo el historial.
+    recent_only = train_all[train_all["fecha"] >= TRAIN_START]
+    train = recent_only if len(recent_only) >= MIN_TRAIN_DAYS else train_all
+    full = data[data["fecha"] >= TRAIN_START] if len(recent_only) >= MIN_TRAIN_DAYS else data
+    window_start = train["fecha"].min().strftime("%Y-%m-%d")
+
+    def recency_weights(dates: pd.Series, reference: pd.Timestamp) -> np.ndarray:
+        return np.where(dates >= reference - pd.DateOffset(days=RECENT_DAYS), RECENT_WEIGHT, 1.0)
+
+    baseline_table = train.assign(month=train["fecha"].dt.month, dow=train["fecha"].dt.day_of_week).groupby(["month", "dow"])["afluencia"].mean()
     station_mean = float(train["afluencia"].mean())
-    baseline_pred = [
-        baseline_table.get((date.month, date.dayofweek), station_mean)
-        for date in test["fecha"]
-    ]
+    baseline_pred = [baseline_table.get((day.month, day.day_of_week), station_mean) for day in test["fecha"]]
 
-    model = RandomForestRegressor(
-        n_estimators=160,
-        max_depth=14,
-        min_samples_leaf=4,
-        random_state=42,
-        n_jobs=-1,
-    )
-    model.fit(features(train["fecha"]), train["afluencia"])
+    # 1) Validación: se entrena solo con el pasado y se evalúa en los últimos días observados.
+    model = RandomForestRegressor(**RF_PARAMS)
+    model.fit(features(train["fecha"]), train["afluencia"], sample_weight=recency_weights(train["fecha"], cutoff))
     model_pred = model.predict(features(test["fecha"]))
-    future_pred = np.maximum(0, model.predict(features(forecast_dates)))
+    # 2) Pronóstico: una vez validado, el mismo modelo se reentrena con todos los datos
+    #    válidos, incluidos los más recientes, antes de estimar el horizonte futuro.
+    final_model = RandomForestRegressor(**RF_PARAMS)
+    final_model.fit(features(full["fecha"]), full["afluencia"], sample_weight=recency_weights(full["fecha"], last_date))
+    future_pred = np.maximum(0, final_model.predict(features(forecast_dates)))
+
+    # 3) Eventos: si una fecha futura tiene un evento que afecta a esta estación, se ajusta
+    #    con la mediana del efecto medido en ediciones anteriores (mínimo MIN_EVENT_EDITIONS).
+    events = events or []
+    past = event_occurrences(data.set_index("fecha")["afluencia"], [e for e in events if e["fecha"] <= last_date])
+    adjustments, loo = [], []
+    for group in {g for g, _, _ in past}:
+        ratios = [r for g, _, r in past if g == group]
+        for i, ratio in enumerate(ratios):   # validación dejando una edición fuera
+            others = ratios[:i] + ratios[i + 1:]
+            if len(others) >= MIN_EVENT_EDITIONS:
+                loo.append({"group": group, "without": abs(ratio - 1) / ratio, "with": abs(ratio - float(np.median(others))) / ratio})
+    date_index = {d: i for i, d in enumerate(forecast_dates)}
+    for e in events:
+        i = date_index.get(e["fecha"])
+        if i is None:
+            continue
+        ratios = [r for g, _, r in past if g == e["grupo"]]
+        factor = float(np.median(ratios)) if len(ratios) >= MIN_EVENT_EDITIONS else None
+        if factor is not None:
+            future_pred[i] *= factor
+        adjustments.append({"date": e["fecha"].strftime("%Y-%m-%d"), "group": e["grupo"],
+                            "factor": round(factor, 3) if factor is not None else None, "editions": len(ratios)})
 
     q33, q67 = train["afluencia"].quantile([0.33, 0.67]).tolist()
     q25, median, q75 = train["afluencia"].quantile([0.25, 0.5, 0.75]).tolist()
-    recent_start = data["fecha"].max() - pd.DateOffset(months=17)
     recent = (
-        data[data["fecha"] >= recent_start]
-        .set_index("fecha")["afluencia"]
-        .resample("MS")
-        .mean()
-        .dropna()
+        data[data["fecha"] >= last_date - pd.DateOffset(months=17)]
+        .set_index("fecha")["afluencia"].resample("MS").mean().dropna()
     )
 
-    predictions = {}
-    for date, prediction in zip(forecast_dates, future_pred):
-        level = "baja" if prediction < q33 else "media" if prediction < q67 else "alta"
-        predictions[date.strftime("%Y-%m-%d")] = {"value": rounded(prediction), "level": level}
-
-    return {
-        "name": station,
+    record = {
+        **base,
         "summary": {
-            "mean": rounded(train["afluencia"].mean()),
+            "mean": rounded(station_mean),
             "median": rounded(median),
             "p25": rounded(q25),
             "p75": rounded(q75),
             "lowThreshold": rounded(q33),
             "highThreshold": rounded(q67),
             "observations": int(len(data)),
+            "trainStart": window_start,
+            "closedDays": zero_days,
         },
         "metrics": {
             "baselineMae": rounded(mean_absolute_error(test["afluencia"], baseline_pred)),
@@ -126,34 +333,71 @@ def build_station(station: str, frame: pd.DataFrame, forecast_dates: pd.Datetime
             "testStart": test["fecha"].min().strftime("%Y-%m-%d"),
             "testEnd": test["fecha"].max().strftime("%Y-%m-%d"),
         },
-        "history": [
-            {"month": date.strftime("%Y-%m"), "value": rounded(value)}
-            for date, value in recent.items()
-        ],
-        "predictions": predictions,
+        "history": [{"month": d.strftime("%Y-%m"), "value": rounded(v)} for d, v in recent.items()],
+        # Alineado con dataset.forecastStart, un valor por día. El nivel (baja/media/alta)
+        # se calcula en el navegador con lowThreshold/highThreshold, con la misma regla de antes.
+        "predictions": [rounded(v) for v in future_pred],
     }
+    if adjustments:
+        record["eventAdjustments"] = adjustments
+    record["_loo"] = loo
+    return record, None
 
 
 def main() -> None:
-    frame = pd.read_csv(CSV_PATH, dtype={"linea": "string", "estacion": "string"})
+    csv_path = Path(sys.argv[1]) if len(sys.argv) > 1 else CSV_PATH
+    output_path = Path(sys.argv[2]) if len(sys.argv) > 2 else OUTPUT_PATH
+    frame = pd.read_csv(csv_path, dtype={"linea": "string", "estacion": "string"})
     for column in ["mes", "linea", "estacion"]:
-        frame[column] = frame[column].map(repair_mojibake)
-    # The official resource changed labels from “Línea 3” to “Linea 3” on
-    # 2023-06-01. Normalize that schema drift before filtering or counting.
-    frame["linea"] = frame["linea"].str.replace(r"^Linea ", "Línea ", regex=True)
+        if column in frame:
+            frame[column] = frame[column].map(repair_mojibake)
+    # El recurso oficial cambió la etiqueta “Línea” por “Linea” el 2023-06-01.
+    frame["linea"] = frame["linea"].str.strip().str.replace(r"^Linea ", "Línea ", regex=True)
+    frame["estacion"] = frame["estacion"].str.strip()
     frame["fecha"] = pd.to_datetime(frame["fecha"], errors="coerce")
     frame["afluencia"] = pd.to_numeric(frame["afluencia"], errors="coerce")
 
     nulls = {key: int(value) for key, value in frame.isna().sum().items()}
     valid = frame.dropna(subset=["fecha", "linea", "estacion", "afluencia"]).copy()
-    selected = valid[(valid["linea"] == SELECTED_LINE) & valid["estacion"].isin(SELECTED_STATIONS)]
-    missing = sorted(set(SELECTED_STATIONS) - set(selected["estacion"].unique()))
-    if missing:
-        raise RuntimeError(f"Selected stations absent from the official CSV: {missing}")
-
+    valid, renamed = unify_station_names(valid)
+    for item in renamed:
+        print(f"Nombre unificado en {item['line']}: {item['from']} → {item['to']}")
     max_date = valid["fecha"].max()
-    forecast_dates = pd.date_range(max_date + pd.DateOffset(days=1), periods=366, freq="D")
-    stations = [build_station(name, selected, forecast_dates) for name in SELECTED_STATIONS]
+    forecast_dates = pd.date_range(max_date + pd.DateOffset(days=1), periods=FORECAST_DAYS, freq="D")
+
+    events = load_events(EVENTS_PATH)
+    print(f"Eventos cargados: {len(events)} desde {EVENTS_PATH.name}")
+    records, skipped = [], []
+    groups = valid.groupby(["linea", "estacion"], sort=True)
+    for index, ((line_label, station), group) in enumerate(groups, start=1):
+        line, key = line_code(line_label), station_key(station)
+        record_events = [e for e in events if (line, key) in e["stations"]]
+        record, skip = build_record(line, station, group, max_date, forecast_dates, record_events)
+        (records if record else skipped).append(record or skip)
+        print(f"[{index}/{groups.ngroups}] Línea {line_code(line_label)} · {station}: {'ok' if record else skip['reason']}", flush=True)
+
+    loo = [row for r in records for row in r.pop("_loo")]
+    event_validation = {}
+    for group in sorted({row["group"] for row in loo}):
+        rows = [row for row in loo if row["group"] == group]
+        event_validation[group] = {
+            "cases": len(rows),
+            "errorWithout": round(float(np.median([r["without"] for r in rows])) * 100, 1),
+            "errorWith": round(float(np.median([r["with"] for r in rows])) * 100, 1),
+            "improvedShare": round(float(np.mean([r["with"] < r["without"] for r in rows])) * 100, 0),
+        }
+    horizon = {d.strftime("%Y-%m-%d") for d in forecast_dates}
+    events_calendar = {}
+    for e in events:
+        day = e["fecha"].strftime("%Y-%m-%d")
+        if day in horizon:
+            events_calendar.setdefault(day, []).append({k: e[k] for k in ["grupo", "nombre", "tipo", "recinto", "fuente"]})
+    if loo:
+        print(f"Eventos (validación dejando una edición fuera): error mediano {np.median([r['without'] for r in loo])*100:.1f}% → {np.median([r['with'] for r in loo])*100:.1f}%")
+
+    missing = [f"{line} {name}" for line, name in FEATURED if not any(r["line"] == line and r["name"] == name for r in records)]
+    if missing:
+        raise RuntimeError(f"Estaciones destacadas sin modelo: {missing}")
 
     payload = {
         "generatedAt": pd.Timestamp.now(tz="America/Mexico_City").isoformat(),
@@ -171,32 +415,59 @@ def main() -> None:
             "endDate": max_date.strftime("%Y-%m-%d"),
             "lines": int(valid["linea"].nunique()),
             "stations": int(valid["estacion"].nunique()),
+            "records": int(groups.ngroups),
+            "modeledRecords": len(records),
+            "skippedRecords": len(skipped),
+            "zeroRows": int((valid["afluencia"] <= 0).sum()),
             "duplicateKeys": int(valid.duplicated(["fecha", "linea", "estacion"]).sum()),
+            "renamedStations": renamed,
             "nulls": nulls,
-            "selectedLine": SELECTED_LINE,
-            "selectedRows": int(len(selected)),
             "forecastStart": forecast_dates.min().strftime("%Y-%m-%d"),
             "forecastEnd": forecast_dates.max().strftime("%Y-%m-%d"),
+            "forecastDays": FORECAST_DAYS,
         },
         "model": {
             "name": "Random Forest Regressor",
-            "trees": 160,
-            "features": ["mes", "día de la semana", "día del mes", "fin de semana", "ciclo anual"],
-            "validation": "Partición cronológica: últimos 180 días observados",
-            "seed": 42,
+            "trees": RF_PARAMS["n_estimators"],
+            "features": ["mes", "día de la semana", "día del mes", "fin de semana", "ciclo anual",
+                         "días festivos", "fechas especiales", "puentes", "vacaciones de Semana Santa", "vacaciones de invierno"],
+            "refit": "Tras validar, el modelo se reentrena con todos los datos válidos de su ventana antes de pronosticar.",
+            "trainingWindow": f"Desde {TRAIN_START} si hay al menos {MIN_TRAIN_DAYS} días válidos; si no, todo el historial.",
+            "recentWeight": f"Los últimos {RECENT_DAYS} días antes del corte pesan {RECENT_WEIGHT:g} veces más.",
+            "validation": f"Partición cronológica por estación y línea: últimos {TEST_DAYS} días observados",
+            "unit": "Un modelo por estación y línea, como publica el recurso oficial",
+            "seed": RF_PARAMS["random_state"],
+            "rules": {
+                "zeroDays": "Los días con afluencia 0 (cierres) se excluyen del entrenamiento y la validación.",
+                "minTrainDays": MIN_TRAIN_DAYS,
+                "minTestDays": MIN_TEST_DAYS,
+                "maxStaleDays": MAX_STALE_DAYS,
+            },
         },
-        "stations": stations,
+        "calendar": calendar_labels(forecast_dates),
+        "events": {
+            "source": "eventos.csv (mantenido por el equipo; fechas verificadas en fuentes públicas)",
+            "method": "Ajuste = mediana del efecto en ediciones anteriores (día del evento ÷ mismo día de la semana ±3 semanas).",
+            "minEditions": MIN_EVENT_EDITIONS,
+            "count": len(events),
+            "validation": event_validation,
+            "calendar": events_calendar,
+        },
+        "featured": [{"line": line, "name": name} for line, name in FEATURED],
+        "stations": records,
+        "skipped": skipped,
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(
+    output_path.write_text(
         "window.MINI_YOLOTZIN_DATA = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n",
         encoding="utf-8",
     )
     print(json.dumps(payload["dataset"], ensure_ascii=False, indent=2))
-    print("metrics")
-    for station in stations:
-        print(station["name"], station["metrics"])
+    print(f"Modelados: {len(records)} · Omitidos: {len(skipped)}")
+    for item in skipped:
+        print("  omitido:", item)
+    gains = [(r["metrics"]["baselineMae"] - r["metrics"]["modelMae"]) / r["metrics"]["baselineMae"] for r in records if r["metrics"]["baselineMae"]]
+    print(f"El modelo supera a la línea base en {sum(g > 0 for g in gains)} de {len(gains)} registros")
 
 
 if __name__ == "__main__":
