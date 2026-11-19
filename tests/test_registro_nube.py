@@ -75,7 +75,7 @@ def test_registro_sin_correo_en_navegador(browser, site_url):
     page.fill("#accountPassword", "clave-segura-123")
     page.fill("#accountPasswordConfirm", "clave-segura-123")
     page.click('#accountForm button[type="submit"]')
-    page.wait_for_selector("#profileOverlay.hidden")
+    page.wait_for_function("document.querySelector(\'#profileOverlay\').classList.contains(\'hidden\')")
     assert page.text_content("#profileDisplayName") == "ana123"
     page.click("#tab-explore")
     page.select_option("#stationSelect", "2|Hidalgo")
