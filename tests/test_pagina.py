@@ -223,3 +223,23 @@ def test_no_horizontal_scroll(page, width):
     page.set_viewport_size({"width": width, "height": 844})
     page.wait_for_timeout(150)
     assert page.evaluate("document.documentElement.scrollWidth") <= width
+
+
+def test_today_weather_and_event_icons(page):
+    page.click("#resetDate")                                        # hoy: hay pronóstico de prueba
+    page.wait_for_function("document.getElementById('weatherTitle').textContent.includes('°C')")
+    assert page.text_content("#weatherTitle") == "19 °C · lluvia (80%)"
+    assert "casi no cambia" in page.text_content("#weatherText")
+    assert page.get_attribute("#weatherIcon svg", "viewBox") == "0 0 24 24"
+    set_date(page, "2026-12-03")                                    # concierto de Bruno Mars en el Estadio GNP
+    concert = page.locator('#todayNotices .notice[data-icon="concierto"]')
+    assert concert.count() >= 1 and "Estadio GNP" in concert.first.text_content()
+    set_date(page, "2026-12-12")
+    assert page.locator('#todayNotices .notice[data-icon="festivo"]').count() == 1
+
+
+def test_weather_failure_keeps_today_working(page):
+    page.context.weather_mode = "fail"
+    page.reload()
+    page.wait_for_function("document.getElementById('weatherText').textContent.includes('Sin pronóstico')")
+    assert page.text_content("#weatherTitle") == "Clima"

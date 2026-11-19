@@ -13,7 +13,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 ## Qué incluye
 
 - Pensada para quien viaja, con fondo oscuro y botones morados, y **4 pestañas** (abajo en el celular, arriba en computadora):
-  - **Hoy**: saludo, tus viajes con lenguaje simple (más gente / lo normal / menos gente) y los avisos del día (festivos, eventos y clima).
+  - **Hoy**: saludo; arriba, el clima del día con su icono (pronóstico de [Open-Meteo](https://open-meteo.com/), datos abiertos sin clave, hasta 16 días) y los avisos con icono según el tipo (♪ conciertos, trofeo para partidos, megáfono para marchas, estrella para festivos); abajo, tus viajes con lenguaje simple (más gente / lo normal / menos gente). El clima solo se muestra: no entra al modelo.
   - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo y «Guardar». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
   - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el recorrido por fechas y las estaciones con más gente que de costumbre.
   - **Agenda**: festivos, conciertos, partidos y marchas de los próximos meses, con las estaciones afectadas y filtros (incluido «Mis estaciones»).
