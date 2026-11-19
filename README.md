@@ -14,7 +14,7 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 - Pensada para quien viaja, con fondo oscuro y botones morados, y **4 pestañas** (abajo en el celular, arriba en computadora):
   - **Hoy**: saludo, tus viajes con lenguaje simple (más gente / lo normal / menos gente) y los avisos del día (festivos, eventos y clima).
-  - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo, «Guardar» y «Reportar cómo está». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
+  - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo y «Guardar». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
   - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el recorrido por fechas y las estaciones con más gente que de costumbre.
   - **Agenda**: festivos, conciertos, partidos y marchas de los próximos meses, con las estaciones afectadas y filtros (incluido «Mis estaciones»).
 - La fecha se elige arriba (día anterior / siguiente, calendario o «Hoy») y vale para todas las pestañas. La app abre en el día de hoy.
@@ -70,9 +70,9 @@ y abre `http://localhost:8000/`.
 
 En GitHub Pages solo hay perfiles locales. Para la demostración en clase, la computadora de Nayibi puede servir la página con cuentas: cada persona crea un usuario y una contraseña, y Mis viajes se guarda en una base de datos en esa computadora, así que aparece en cualquier navegador donde la persona inicie sesión.
 
-En GitHub Pages, **«🚨 ¿Cómo va?»** y «Reportar cómo está» funcionan como versión de prueba: el reporte se guarda solo en ese navegador y la pantalla lo avisa. La página `alertas.html` (primer prototipo de Yolotzin Alerta) ahora lleva a esa misma sección.
+En GitHub Pages, **«🚨 ¿Cómo va?»** (botón del encabezado, en todas las pestañas) funciona como versión de prueba: el reporte se guarda solo en ese navegador y la pantalla lo avisa. La página `alertas.html` (primer prototipo de Yolotzin Alerta) ahora lleva a esa misma sección.
 
-Con el servidor, **«Reportar cómo está»** se comparte entre todos: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se muestran bajo «Lo que dicen otras personas», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
+Con el servidor, **«¿Cómo va?»** se comparte entre todos: quien tiene sesión dice en un toque si está vacía, normal o llena y, si quiere, marca incidencias (estación saturada, tren detenido, trenes lentos, accidente, falla de escaleras/elevador/luz, acceso cerrado). Todos ven el resumen de los últimos 30 minutos. No hay texto libre, así que no hace falta moderar, y la pantalla recuerda que en una emergencia hay que avisar al personal o llamar al 911. Los reportes se guardan sin usuario (anónimos), se muestran bajo «Lo que dicen otras personas», no cambian la estimación del modelo y cada persona puede reportar la misma estación una vez cada 10 minutos.
 
 Desde la raíz del repositorio (solo necesita Python 3, sin instalar nada más):
 

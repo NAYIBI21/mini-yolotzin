@@ -180,8 +180,8 @@ def test_login_in_page_keeps_trips(browser, account_server):
     page.click("#saveStation")
     assert page.locator(".trip-item").count() == 1
 
-    # Reportar cómo está (solo con el servidor y con sesión).
-    page.click("#reportButton")
+    # «¿Cómo va?» (solo con el servidor y con sesión).
+    page.click("#alertButton")
     page.wait_for_function("document.querySelector('#reportSummary').textContent.includes('Aún no hay reportes')")
     page.click('.report-level[data-level="lleno"]')
     page.click('.incident[data-incident="tren_detenido"]')
