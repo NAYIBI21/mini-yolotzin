@@ -26,6 +26,19 @@ def test_loads_with_model_and_map(page, model_data):
     assert page.locator("#stationSelect option").count() == len(model_data["stations"])
 
 
+def test_opens_on_today(page, model_data):
+    from datetime import date
+    today = date.today().isoformat()
+    in_range = model_data["dataset"]["forecastStart"] <= today <= model_data["dataset"]["forecastEnd"]
+    if in_range:
+        assert page.input_value("#dateInput") == today
+        assert page.text_content("#dateLabel").startswith("Hoy")
+    set_date(page, "2026-12-03")
+    page.click("#resetDate")                               # el botón «Hoy» regresa al día de hoy
+    if in_range:
+        assert page.input_value("#dateInput") == today
+
+
 def test_tabs_with_keyboard(page):
     assert page.is_visible("#todayView")                  # la app abre en Hoy
     page.focus("#tab-today")
@@ -150,9 +163,13 @@ def test_agenda_lists_events_and_filters(page):
     assert page.locator("#agendaList .notice").count() == 0
 
 
-def test_reports_need_the_class_server(page):
-    go(page, "explore")
-    assert not page.is_visible("#reportButton")             # en GitHub Pages no hay reportes
+def test_login_screen_like_the_design(browser, site_url):
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    page.goto(site_url)
+    assert page.text_content("#profileOverlay h2") == "Mini Yolotzin"
+    assert page.is_visible("#profilePrivacy")
+    context.close()
 
 
 def test_profile_dialog_escape_returns_focus(page):

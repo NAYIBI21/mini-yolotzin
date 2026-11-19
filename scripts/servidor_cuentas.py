@@ -1,7 +1,7 @@
 """Servidor de cuentas de Mini Yolotzin para la demostración en clase.
 
 Sirve la página y guarda cuentas (usuario + contraseña), Mis viajes y los reportes
-«¿Cómo va ahora?» (vacío / normal / lleno) en una base SQLite en la computadora
+«¿Cómo va ahora?» (vacío / normal / lleno e incidencias) en una base SQLite en la computadora
 donde se ejecuta. La página sigue funcionando sin este
 servidor (por ejemplo en GitHub Pages): ahí solo hay perfiles locales.
 
@@ -49,6 +49,8 @@ COOKIE = "my_sesion"
 PUBLIC_EXT = {".html", ".js", ".css", ".json", ".webmanifest", ".png", ".svg", ".ico", ".csv"}
 PUBLIC_DIRS = {"", "icons", "assets"}
 REPORT_LEVELS = ("vacio", "normal", "lleno")
+# Incidencias que se pueden marcar (opcionales, varias a la vez). Sin texto libre: nada que moderar.
+REPORT_INCIDENTS = ("saturada", "tren_detenido", "retraso", "accidente", "falla", "acceso_cerrado")
 REPORT_WINDOW = 30 * 60        # se muestran los reportes de los últimos 30 minutos
 REPORT_COOLDOWN = 10 * 60      # una persona puede reportar la misma estación cada 10 minutos
 SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1, "dklen": 32}
@@ -93,7 +95,8 @@ class Store:
                     estacion TEXT NOT NULL,
                     linea TEXT NOT NULL,
                     nivel TEXT NOT NULL,
-                    creado REAL NOT NULL
+                    creado REAL NOT NULL,
+                    incidencias TEXT NOT NULL DEFAULT ''
                 );
                 CREATE INDEX IF NOT EXISTS reportes_estacion ON reportes (estacion, linea, creado);
                 CREATE TABLE IF NOT EXISTS sesiones (
@@ -102,6 +105,10 @@ class Store:
                     expira REAL NOT NULL
                 );
             """)
+
+            columns = [row[1] for row in db.execute("PRAGMA table_info(reportes)")]
+            if "incidencias" not in columns:   # bases creadas antes de agregar incidencias
+                db.execute("ALTER TABLE reportes ADD COLUMN incidencias TEXT NOT NULL DEFAULT ''")
 
     def _db(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=10)
@@ -157,25 +164,28 @@ class Store:
                        (json.dumps(trips, ensure_ascii=False), usuario))
 
 
-    def add_report(self, estacion: str, linea: str, nivel: str) -> None:
+    def add_report(self, estacion: str, linea: str, nivel: str, incidencias: list[str]) -> None:
         with self._db() as db:
             db.execute("DELETE FROM reportes WHERE creado < ?", (time.time() - 7 * 86400,))
-            db.execute("INSERT INTO reportes VALUES (?, ?, ?, ?)", (estacion, linea, nivel, time.time()))
+            db.execute("INSERT INTO reportes (estacion, linea, nivel, creado, incidencias) VALUES (?, ?, ?, ?, ?)",
+                       (estacion, linea, nivel, time.time(), ",".join(incidencias)))
 
     def report_summary(self, estacion: str, linea: str) -> dict:
         since = time.time() - REPORT_WINDOW
         with self._db() as db:
-            rows = db.execute("SELECT nivel, COUNT(*), MAX(creado) FROM reportes "
-                              "WHERE estacion = ? AND linea = ? AND creado >= ? GROUP BY nivel",
+            rows = db.execute("SELECT nivel, incidencias, creado FROM reportes "
+                              "WHERE estacion = ? AND linea = ? AND creado >= ?",
                               (estacion, linea, since)).fetchall()
         counts = {level: 0 for level in REPORT_LEVELS}
-        last = 0.0
-        for nivel, count, newest in rows:
-            counts[nivel] = count
-            last = max(last, newest)
-        total = sum(counts.values())
-        return {**counts, "total": total, "minutos": round((time.time() - last) / 60) if total else None,
-                "ventana": REPORT_WINDOW // 60}
+        incidents: dict[str, int] = {}
+        for nivel, incidencias, _ in rows:
+            if nivel in counts:
+                counts[nivel] += 1
+            for code in filter(None, incidencias.split(",")):
+                incidents[code] = incidents.get(code, 0) + 1
+        last = max((row[2] for row in rows), default=0.0)
+        return {**counts, "incidencias": incidents, "total": len(rows),
+                "minutos": round((time.time() - last) / 60) if rows else None, "ventana": REPORT_WINDOW // 60}
 
 
 def valid_trips(value) -> bool:
@@ -358,14 +368,19 @@ def make_handler(store: Store, root: Path = ROOT, secure_cookie: bool = False):
             if not isinstance(data, dict):
                 return self._json(400, {"error": "Petición no válida."})
             estacion, linea, nivel = (str(data.get(k, "")).strip() for k in ("estacion", "linea", "nivel"))
-            if nivel not in REPORT_LEVELS or not 0 < len(estacion) <= 60 or not 0 < len(linea) <= 3:
+            incidencias = data.get("incidencias", [])
+            if not isinstance(incidencias, list) or any(i not in REPORT_INCIDENTS for i in incidencias):
+                return self._json(400, {"error": "Incidencia no válida."})
+            incidencias = sorted(set(incidencias))
+            if (nivel and nivel not in REPORT_LEVELS) or not (nivel or incidencias) \
+                    or not 0 < len(estacion) <= 60 or not 0 < len(linea) <= 3:
                 return self._json(400, {"error": "Reporte no válido."})
             key, now = (user, estacion, linea), time.time()
             with reports_lock:
                 if now - recent_reports.get(key, 0) < REPORT_COOLDOWN:
                     return self._json(429, {"error": "Ya reportaste esta estación hace poco. Gracias."})
                 recent_reports[key] = now
-            store.add_report(estacion, linea, nivel)
+            store.add_report(estacion, linea, nivel, incidencias)
             self._json(200, store.report_summary(estacion, linea))
 
         def do_PUT(self):

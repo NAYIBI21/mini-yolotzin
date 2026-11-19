@@ -534,6 +534,15 @@
     .report-send { width: 100%; min-height: 46px; margin-top: 12px; }
     .report-send:disabled { opacity: .5; cursor: not-allowed; }
     #reportMessage { color: #c4b5fd; }
+    .report-question { margin: 14px 0 8px; font-size: .86rem; font-weight: 700; }
+    .report-question span { color: var(--muted); font-weight: 500; font-size: .74rem; }
+    .incident-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .incident { min-height: 44px; padding: 8px 10px; border-radius: 12px; border: 1px solid #3b2f73; background: #1a1533; color: var(--text); font-size: .76rem; text-align: left; cursor: pointer; }
+    .incident[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); font-weight: 700; }
+    .incident[aria-pressed="true"]::before { content: "✓ "; }
+    .emergency { margin-top: 10px; }
+    .incident-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .incident-list span { padding: 4px 9px; border-radius: 999px; background: #3a1420; color: #ffb3bf; font-size: .72rem; font-weight: 700; }
     .report-summary { margin-top: 6px; font-size: .8rem; }
     .report-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .06); margin: 6px 0; }
     .report-bar span:nth-child(1) { background: var(--good); } .report-bar span:nth-child(2) { background: var(--warning); } .report-bar span:nth-child(3) { background: var(--danger); }
@@ -575,6 +584,29 @@
     .agenda-day h3 { margin: 0 0 8px; font-size: .74rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
     .agenda-day .notice + .notice { margin-top: 8px; }
     .back-btn { margin: 0 0 12px; padding: 0; }
+    /* Inicio de sesión: una columna, como en el lienzo */
+    .profile-dialog { width: min(420px, 100%); max-height: calc(100vh - 32px); overflow: auto; grid-template-columns: 1fr; background: #081019; border-color: #22344a; }
+    .profile-welcome { min-height: 0; padding: 36px 28px 4px; border: 0; background: none; align-items: center; justify-content: flex-start; gap: 12px; text-align: center; }
+    .profile-welcome-mark { width: 72px; height: 72px; border-radius: 20px; }
+    .profile-welcome-mark svg { width: 44px; height: 44px; }
+    .profile-welcome h2 { margin: 2px 0 0; font-size: 1.6rem; }
+    .profile-welcome p { max-width: 300px; color: #b9cad8; font-size: .9rem; line-height: 1.45; }
+    .profile-form { padding: 18px 28px 6px; }
+    #accountTitle { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    #accountForm > p { margin: 0 0 14px; text-align: center; }
+    .profile-field input { min-height: 50px; border-radius: 14px; }
+    .profile-submit { height: 52px; border-radius: 14px; box-shadow: none; font-size: .95rem; }
+    .account-alt { height: 52px; border-radius: 14px; border-color: var(--accent); color: #c4b5fd; font-size: .95rem; }
+    .account-alt:hover { border-color: var(--accent); background: rgba(106, 68, 214, .15); }
+    .or-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: .8rem; }
+    .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: #22344a; }
+    .no-account { width: 100%; height: 50px; border: 1px solid #22344a; border-radius: 14px; background: #0e1b29; color: var(--text); font-weight: 600; font-size: .9rem; cursor: pointer; }
+    .no-account:hover { border-color: #a78bfa; }
+    .profile-overlay .profile-privacy { margin: 10px 28px 26px; padding: 0; border: 0; text-align: center; font-size: .72rem; line-height: 1.5; }
+    .alert-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 13px; border: 1px solid var(--accent); border-radius: 12px; background: transparent; color: #c4b5fd; font-weight: 700; white-space: nowrap; cursor: pointer; }
+    .alert-btn:hover { background: rgba(106, 68, 214, .15); }
+    .report-mode { margin: 6px 0 0; padding: 10px 12px; border-radius: 12px; border: 1px solid #5a4520; background: #241d0e; color: #e7c989; font-size: .74rem; line-height: 1.45; }
+    .report-mode[hidden] { display: none; }
     @media (max-width: 1180px) {
       .station-grid { grid-template-columns: 260px minmax(0, 1fr); }
       .side-col { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
@@ -613,12 +645,9 @@
 <div class="profile-overlay" id="profileOverlay" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
   <div class="profile-dialog">
     <section class="profile-welcome">
-      <div>
         <div class="profile-welcome-mark"><svg viewBox="0 0 24 24"><path d="M12 22s7.5-6.4 7.5-12.2a7.5 7.5 0 1 0-15 0C4.5 15.6 12 22 12 22z"/><path d="M7.8 10.2h2l1.3-2.6 1.8 4.8 1.3-2.2h2"/></svg></div>
-        <h2>Tu viaje comienza aquí</h2>
-        <p>Crea un perfil de clase para personalizar Mini Yolotzin y conservar tus preferencias en este dispositivo.</p>
-      </div>
-      <div class="profile-privacy" id="profilePrivacy"><strong>Privacidad simple:</strong> tu nombre, grupo y preferencias se guardan únicamente en este navegador. No usamos contraseñas ni enviamos estos datos a un servidor.</div>
+        <h2>Mini Yolotzin</h2>
+        <p id="welcomeText">Crea un perfil para guardar tus viajes en este dispositivo.</p>
     </section>
     <div class="profile-form" id="accountPanel" hidden>
       <form id="accountForm">
@@ -637,7 +666,8 @@
         <div class="profile-error" id="accountError" role="alert"></div>
         <button class="profile-submit" type="submit">Iniciar sesión</button>
         <button class="account-alt" id="registerButton" type="button">Crear cuenta</button>
-        <button class="profile-secondary" id="noAccountButton" type="button">Continuar sin cuenta</button>
+        <div class="or-divider" aria-hidden="true">o</div>
+        <button class="no-account" id="noAccountButton" type="button">Continuar sin cuenta</button>
       </form>
       <div id="accountSession" hidden>
         <h3>Tu cuenta</h3>
@@ -670,6 +700,7 @@
       <button class="profile-secondary" id="newProfileButton" type="button" hidden>Crear otro perfil en este dispositivo</button>
       <button class="profile-secondary" id="useAccountButton" type="button" hidden>Iniciar sesión con una cuenta</button>
     </form>
+    <p class="profile-privacy" id="profilePrivacy">Sin cuenta, tu perfil y tus viajes se guardan solo en este navegador. Nunca pedimos tu ubicación.</p>
   </div>
 </div>
 
@@ -685,7 +716,7 @@
       <button class="nav-btn" data-view="map" role="tab" id="tab-map" aria-controls="mapView" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Mapa</button>
       <button class="nav-btn" data-view="agenda" role="tab" id="tab-agenda" aria-controls="agendaView" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Agenda</button>
     </nav>
-    <a href="./alertas.html" aria-label="Abrir Yolotzin Alerta, prototipo de reportes" style="display:inline-flex;align-items:center;gap:6px;padding:10px 13px;border:1px solid #567080;border-radius:12px;color:#f4f8fb;text-decoration:none;font-weight:700;white-space:nowrap">🚨 Yolotzin Alerta</a>
+    <button type="button" class="alert-btn" id="alertButton" aria-label="¿Cómo va? Reportar cómo está una estación">🚨 ¿Cómo va?</button>
     <div class="status" id="statusChip">Datos oficiales · copia fija</div>
     <button type="button" class="install-btn" id="installApp" hidden>⤓ Instalar app</button>
     <button class="profile-button" id="profileButton" aria-label="Perfil y cuenta"><span class="profile-avatar" id="profileAvatar">MY</span><span class="profile-copy"><strong id="profileDisplayName">Perfil</strong><span id="profileDisplayGroup">Editar perfil</span></span></button>
@@ -697,7 +728,7 @@
     <div class="date-now"><strong class="clock" id="dateLabel">—</strong><span class="period" id="dayLabel">—</span></div>
     <button class="icon-btn" id="stepForward" aria-label="Día siguiente">›</button>
     <div class="date-field"><label for="dateInput">Elegir fecha</label><input type="date" id="dateInput"></div>
-    <button class="chip-btn" id="resetDate">Mañana</button>
+    <button class="chip-btn" id="resetDate">Hoy</button>
     <div class="calendar-chip" id="calendarChip" hidden></div>
     <div class="event-chip" id="eventChip" hidden></div>
   </section>
@@ -760,16 +791,27 @@
         <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
         <div class="station-actions">
           <button type="button" class="save-station" id="saveStation" aria-pressed="false">☆ Guardar en Mis viajes</button>
-          <button type="button" class="outline-btn" id="reportButton" aria-expanded="false" aria-controls="reportPanel" hidden>Reportar cómo está</button>
+          <button type="button" class="outline-btn" id="reportButton" aria-expanded="false" aria-controls="reportPanel">Reportar cómo está</button>
         </div>
         <section class="report-panel" id="reportPanel" aria-labelledby="reportTitle" hidden>
           <h3 id="reportTitle" tabindex="-1">¿Cómo va ahora?</h3>
           <p class="note" id="reportStation">—</p>
+          <p class="report-mode" id="reportMode" hidden>Versión de prueba: tu reporte se guarda solo en este dispositivo y no se comparte con otras personas. Para compartirlos, abre la app desde el servidor de la clase.</p>
           <div class="report-levels" role="group" aria-label="¿Cuánta gente hay?">
             <button type="button" class="report-level vacio" data-level="vacio" aria-pressed="false"><strong>Vacío</strong><span>Hay lugar para sentarse</span></button>
             <button type="button" class="report-level normal" data-level="normal" aria-pressed="false"><strong>Normal</strong><span>De pie, pero se sube al primer tren</span></button>
             <button type="button" class="report-level lleno" data-level="lleno" aria-pressed="false"><strong>Lleno</strong><span>Hay que dejar pasar uno o más trenes</span></button>
           </div>
+          <p class="report-question" id="incidentLabel">¿Pasa algo más? <span>(opcional, puedes marcar varias)</span></p>
+          <div class="incident-grid" role="group" aria-labelledby="incidentLabel">
+            <button type="button" class="incident" data-incident="saturada" aria-pressed="false">Estación saturada</button>
+            <button type="button" class="incident" data-incident="tren_detenido" aria-pressed="false">Tren detenido</button>
+            <button type="button" class="incident" data-incident="retraso" aria-pressed="false">Trenes lentos o con retraso</button>
+            <button type="button" class="incident" data-incident="accidente" aria-pressed="false">Accidente o persona lesionada</button>
+            <button type="button" class="incident" data-incident="falla" aria-pressed="false">Falla de escaleras, elevador o luz</button>
+            <button type="button" class="incident" data-incident="acceso_cerrado" aria-pressed="false">Acceso o andén cerrado</button>
+          </div>
+          <p class="note emergency">En una emergencia avisa al personal del Metro o llama al <strong>911</strong>: este reporte no llega a las autoridades.</p>
           <button type="button" class="play-btn report-send" id="reportSend" disabled>Enviar reporte</button>
           <p class="profile-error" id="reportMessage" role="status"></p>
           <div class="report-summary" id="reportSummary"></div>
@@ -976,7 +1018,9 @@
   };
   const LOW_RELIABILITY = .30; // error típico mayor al 30% de la mediana
   const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
-  const defaultIndex = () => Math.max(0, dates.indexOf(tomorrowIso));
+  const todayIndex = () => dates.indexOf([new Date().getFullYear(), String(new Date().getMonth() + 1).padStart(2, '0'), String(new Date().getDate()).padStart(2, '0')].join('-'));
+  // La app abre en el día de hoy (si está dentro del periodo pronosticado).
+  const defaultIndex = () => Math.max(0, todayIndex());
   const firstFeatured = data.featured?.[0] || { line: records[0].line, name: records[0].name };
 
   const state = { station: firstFeatured.name, line: firstFeatured.line, index: defaultIndex(), playing: false, speed: 1, timer: null, zoom: 1, tx: 0, ty: 0, drag: null };
@@ -1095,6 +1139,7 @@
     const logged = Boolean(activeProfile?.account);
     $('profileForm').hidden = true;
     $('accountPanel').hidden = false;
+    $('welcomeText').textContent = 'Inicia sesión para guardar tus viajes en todos tus dispositivos.';
     $('accountForm').hidden = logged;
     $('accountSession').hidden = !logged;
     $('accountUserName').textContent = logged ? activeProfile.name : '';
@@ -1111,6 +1156,8 @@
   function showLocalForm() {
     $('accountPanel').hidden = true;
     $('profileForm').hidden = false;
+    $('welcomeText').textContent = 'Crea un perfil para guardar tus viajes en este dispositivo.';
+    $('profilePrivacy').textContent = 'Sin cuenta, tu perfil y tus viajes se guardan solo en este navegador. Nunca pedimos tu ubicación.';
     $('useAccountButton').hidden = !accountsAvailable || Boolean(activeProfile);
     profileOverlay.setAttribute('aria-labelledby', 'profileTitle');
     $('profileNameInput').focus();
@@ -1163,7 +1210,6 @@
     const res = await api('estado').catch(() => null);
     if (!res?.ok || res.data.cuentas !== true) return;
     accountsAvailable = true;
-    $('reportButton').hidden = false;
     if (res.data.usuario) {
       await enterAccount(res.data.usuario);
       if (!profileOverlay.classList.contains('hidden')) closeProfileEditor();
@@ -1720,20 +1766,38 @@
     $('sheetBikes').textContent = !bikes.status ? '—' : near.length ? `${free} ${free === 1 ? 'bici' : 'bicis'}` : 'Ninguna';
   }
 
-  // ---------- Reportes «¿Cómo va ahora?» (solo con el servidor de cuentas) ----------
+  // ---------- Reportes «¿Cómo va ahora?» ----------
+  // Con scripts/servidor_cuentas.py se comparten entre usuarios (con sesión). Sin el servidor (GitHub Pages)
+  // funcionan como prueba: se guardan solo en este navegador y nunca salen de él.
+  const LOCAL_REPORTS = 'mini_yolotzin_reportes_prueba_v1', REPORT_WINDOW_MIN = 30;
+  const sharedReports = () => accountsAvailable && !demoAccounts;
+  const readLocalReports = () => { const list = safeRead(LOCAL_REPORTS); return Array.isArray(list) ? list.filter(r => r && Date.now() - r.creado < 86400000).slice(-100) : []; };
+  function localSummary(t) {
+    const since = Date.now() - REPORT_WINDOW_MIN * 60000;
+    const rows = readLocalReports().filter(r => r.estacion === t.estacion && r.linea === t.linea && r.creado >= since);
+    const s = { vacio: 0, normal: 0, lleno: 0, incidencias: {}, total: rows.length, ventana: REPORT_WINDOW_MIN };
+    rows.forEach(r => { if (['vacio', 'normal', 'lleno'].includes(r.nivel)) s[r.nivel]++; (r.incidencias || []).forEach(code => { s.incidencias[code] = (s.incidencias[code] || 0) + 1; }); });
+    s.minutos = rows.length ? Math.round((Date.now() - Math.max(...rows.map(r => r.creado))) / 60000) : null;
+    return s;
+  }
   let reportChoice = null, reportKey = '';
+  const reportIncidents = new Set();
   const REPORT_NAMES = { vacio: 'vacío', normal: 'normal', lleno: 'lleno' };
+  const INCIDENT_NAMES = { saturada: 'Estación saturada', tren_detenido: 'Tren detenido', retraso: 'Trenes lentos o con retraso', accidente: 'Accidente o persona lesionada', falla: 'Falla de escaleras, elevador o luz', acceso_cerrado: 'Acceso o andén cerrado' };
   const reportTarget = () => ({ estacion: currentNode()?.name || state.station, linea: state.line });
   function updateReportControls() {
     document.querySelectorAll('.report-level').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === reportChoice)));
-    const logged = Boolean(activeProfile?.account);
-    $('reportSend').disabled = logged && !reportChoice;
-    $('reportSend').textContent = logged ? 'Enviar reporte' : 'Inicia sesión para reportar';
+    document.querySelectorAll('.incident').forEach(b => b.setAttribute('aria-pressed', String(reportIncidents.has(b.dataset.incident))));
+    const logged = Boolean(activeProfile?.account) || !sharedReports();
+    $('reportMode').hidden = sharedReports();
+    $('reportSend').disabled = logged && !reportChoice && !reportIncidents.size;
+    $('reportSend').textContent = !logged ? 'Inicia sesión para reportar' : sharedReports() ? 'Enviar reporte' : 'Guardar reporte de prueba';
   }
   async function loadReports() {
     const t = reportTarget();
     reportKey = `${t.linea}|${t.estacion}`;
     $('reportStation').textContent = `${t.estacion} · Línea ${t.linea} · ahora`;
+    if (!sharedReports()) { showReportSummary(localSummary(t)); return; }
     const res = await api(`reportes?estacion=${encodeURIComponent(t.estacion)}&linea=${encodeURIComponent(t.linea)}`).catch(() => null);
     if (reportKey !== `${t.linea}|${t.estacion}`) return;
     showReportSummary(res?.ok ? res.data : null);
@@ -1741,9 +1805,13 @@
   function showReportSummary(s) {
     if (!s) { $('reportSummary').textContent = 'No se pudieron consultar los reportes.'; return; }
     if (!s.total) { $('reportSummary').textContent = `Aún no hay reportes en los últimos ${s.ventana} minutos.`; return; }
+    const levels = s.vacio + s.normal + s.lleno;
     const top = ['lleno', 'normal', 'vacio'].reduce((a, k) => s[k] > s[a] ? k : a, 'lleno');
-    const pct = k => (s[k] / s.total * 100).toFixed(0);
-    $('reportSummary').innerHTML = `<div class="report-bar" role="img" aria-label="${s.vacio} vacío, ${s.normal} normal, ${s.lleno} lleno"><span style="width:${pct('vacio')}%"></span><span style="width:${pct('normal')}%"></span><span style="width:${pct('lleno')}%"></span></div><strong>Mayoría: ${REPORT_NAMES[top]}</strong> · ${s.total} ${s.total === 1 ? 'reporte' : 'reportes'} en ${s.ventana} min, el último hace ${s.minutos <= 0 ? 'menos de un minuto' : `${s.minutos} min`}.`;
+    const pct = k => (s[k] / levels * 100).toFixed(0);
+    const bar = levels ? `<div class="report-bar" role="img" aria-label="${s.vacio} vacío, ${s.normal} normal, ${s.lleno} lleno"><span style="width:${pct('vacio')}%"></span><span style="width:${pct('normal')}%"></span><span style="width:${pct('lleno')}%"></span></div><strong>Mayoría: ${REPORT_NAMES[top]}</strong> · ` : '';
+    const incidents = Object.entries(s.incidencias || {}).filter(([code]) => INCIDENT_NAMES[code]).sort((a, b) => b[1] - a[1]);
+    const incidentHtml = incidents.length ? `<div class="incident-list" aria-label="Incidencias reportadas">${incidents.map(([code, n]) => `<span>${INCIDENT_NAMES[code]} (${n})</span>`).join('')}</div>` : '';
+    $('reportSummary').innerHTML = `${bar}${s.total} ${s.total === 1 ? 'reporte' : 'reportes'} en ${s.ventana} min, el último hace ${s.minutos <= 0 ? 'menos de un minuto' : `${s.minutos} min`}.${incidentHtml}`;
   }
   function openReport(open) {
     $('reportPanel').hidden = !open;
@@ -1751,20 +1819,38 @@
     $('reportMessage').textContent = '';
     if (!open) return;
     reportChoice = null;
+    reportIncidents.clear();
     updateReportControls();
     loadReports();
     $('reportTitle').focus();
   }
   $('reportButton').addEventListener('click', () => openReport($('reportPanel').hidden));
-  document.querySelectorAll('.report-level').forEach(b => b.addEventListener('click', () => { reportChoice = b.dataset.level; updateReportControls(); }));
+  $('alertButton').addEventListener('click', () => { goTo('explore'); openReport(true); });
+  document.querySelectorAll('.report-level').forEach(b => b.addEventListener('click', () => { reportChoice = reportChoice === b.dataset.level ? null : b.dataset.level; updateReportControls(); }));
+  document.querySelectorAll('.incident').forEach(b => b.addEventListener('click', () => {
+    const code = b.dataset.incident;
+    if (reportIncidents.has(code)) reportIncidents.delete(code); else reportIncidents.add(code);
+    updateReportControls();
+  }));
   $('reportSend').addEventListener('click', async () => {
-    if (!activeProfile?.account) { openProfileEditor(); return; }
-    if (!reportChoice) return;
-    const res = await api('reportes', { method: 'POST', body: JSON.stringify({ ...reportTarget(), nivel: reportChoice }) }).catch(() => null);
+    if (sharedReports() && !activeProfile?.account) { openProfileEditor(); return; }
+    if (!reportChoice && !reportIncidents.size) return;
+    if (!sharedReports()) {
+      const t = reportTarget();
+      safeWrite(LOCAL_REPORTS, [...readLocalReports(), { ...t, nivel: reportChoice || '', incidencias: [...reportIncidents], creado: Date.now() }]);
+      $('reportMessage').textContent = 'Guardado solo en este dispositivo (versión de prueba).';
+      reportChoice = null;
+      reportIncidents.clear();
+      updateReportControls();
+      showReportSummary(localSummary(t));
+      return;
+    }
+    const res = await api('reportes', { method: 'POST', body: JSON.stringify({ ...reportTarget(), nivel: reportChoice || '', incidencias: [...reportIncidents] }) }).catch(() => null);
     if (!res) { $('reportMessage').textContent = 'No se pudo conectar con el servidor.'; return; }
     if (!res.ok) { $('reportMessage').textContent = res.data.error || 'No se pudo enviar.'; return; }
     $('reportMessage').textContent = '¡Gracias! Tu reporte se sumó.';
     reportChoice = null;
+    reportIncidents.clear();
     updateReportControls();
     showReportSummary(res.data);
   });
@@ -1993,6 +2079,7 @@
 
   refreshBikes(true);
   detectAccounts();
+  if (location.hash === '#como-va') { goTo('explore'); openReport(true); }
 
   // ---------- App instalable (PWA) ----------
   // El service worker solo funciona servido por http(s) (GitHub Pages), no al abrir el archivo directamente.
