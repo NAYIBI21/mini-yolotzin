@@ -1061,7 +1061,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   }
   async function sendReport(body) {
     const user = await userNow();
-    if (!user) return errorResult('Inicia sesión con tu correo para enviar incidencias.');
+    if (!user) return errorResult('Inicia sesión para enviar incidencias.');
     const estacion = String(body.estacion || '').trim();
     const linea = String(body.linea || '').trim();
     const nivel = body.nivel || null;
