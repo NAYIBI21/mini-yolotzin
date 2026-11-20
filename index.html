@@ -1230,8 +1230,8 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       return errorResult('Ruta desconocida.');
     } catch (error) { return errorResult(error); }
   }
-  const listen = callback => {
-    const channel = client.channel('mini-yolotzin-reportes')
+  const listen = (callback, topic = 'mini-yolotzin-reportes') => {
+    const channel = client.channel(topic)
       // Aviso público sin datos de la cuenta que hizo el reporte.
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'avisos_realtime' }, callback)
       .subscribe();
