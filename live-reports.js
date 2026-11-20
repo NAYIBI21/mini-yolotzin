@@ -41,7 +41,7 @@
     panels.push({ status, list });
   }
   if (!panels.length) return;
-  let loading = false, lastSuccess = 0, timer = null, realtime = 'Conectando';
+  let loading = false, lastSuccess = 0, timer = null, realtime = 'Consulta periódica (30 s)';
   const setStatus = text => panels.forEach(p => { p.status.textContent = text; });
   const render = reports => {
     const byStation = new Map();
