@@ -73,7 +73,7 @@
         flagged.set(k, (flagged.get(k) || 0) + 1);
       }
     });
-    return { risk, flagged };
+    return { risk, flagged, hasModel: Boolean(records?.length) };
   }
 
   function describe(graph, ids, types, live) {
@@ -105,7 +105,7 @@
     const average = visits ? sum / visits : 0.95;
     return {
       ids, legs, stops, transfers, minutes, average, alerts,
-      demand: average < 0.8 ? 'Menor' : average < 1.45 ? 'Moderada' : 'Mayor',
+      demand: !live.hasModel ? 'Sin pronóstico' : average < 0.8 ? 'Menor' : average < 1.45 ? 'Moderada' : 'Mayor',
       fingerprint: legs.map(l => l.line + ':' + key(l.from) + '>' + key(l.to)).join('|')
     };
   }
