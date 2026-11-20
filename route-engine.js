@@ -3,11 +3,11 @@
    3 min de espera al inicio. La afluencia estimada es DIARIA. */
 (function (root) {
   'use strict';
-  const RIDE = 2.4, TRANSFER = 6, WAIT = 3;
+  const RIDE_FALLBACK = 2.4, WALK_TRANSFER = 3, WAIT_FALLBACK = 3;
   const key = name => String(name || '').split('/')[0].normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  function buildGraph(stations) {
+  function buildGraph(stations, gtfs = null, service = '1') {
     const nodes = new Map(), edges = new Map(), byName = new Map(), byLine = new Map();
     (stations || []).forEach(s => {
       if (!s?.id || !s?.name || !s?.line) return;
@@ -19,21 +19,31 @@
       if (!byLine.has(line)) byLine.set(line, []);
       byLine.get(line).push(id);
     });
-    const link = (a, b, type, minutes) => {
-      edges.get(a).push({ to: b, type, minutes });
-      edges.get(b).push({ to: a, type, minutes });
+    const wait = line => {
+      const headway = gtfs?.headways?.[line]?.[String(service)];
+      return Number.isFinite(headway) && headway > 0 ? headway / 2 : WAIT_FALLBACK;
     };
-    // La lista oficial guarda las estaciones en orden de recorrido de cada línea.
-    byLine.forEach(ids => { for (let i = 1; i < ids.length; i++)
-      link(ids[i - 1], ids[i], 'ride', RIDE); });
+    const link = (from, to, type, duration) => edges.get(from).push({
+      to, type, minutes: duration
+    });
+    // GTFS stop_times: el recorrido puede tener un tiempo distinto según su sentido.
+    byLine.forEach(ids => { for (let i = 1; i < ids.length; i++) {
+      const a = ids[i - 1], b = ids[i];
+      link(a, b, 'ride', gtfs?.segments?.[a + '>' + b] ?? RIDE_FALLBACK);
+      link(b, a, 'ride', gtfs?.segments?.[b + '>' + a] ?? RIDE_FALLBACK);
+    } });
+    // Transbordo: caminata estimada + media espera publicada para la nueva línea.
     byName.forEach(ids => { for (let i = 0; i < ids.length; i++)
       for (let j = i + 1; j < ids.length; j++)
-        if (nodes.get(ids[i]).line !== nodes.get(ids[j]).line)
-          link(ids[i], ids[j], 'transfer', TRANSFER); });
+        if (nodes.get(ids[i]).line !== nodes.get(ids[j]).line) {
+          link(ids[i], ids[j], 'transfer', WALK_TRANSFER + wait(nodes.get(ids[j]).line));
+          link(ids[j], ids[i], 'transfer', WALK_TRANSFER + wait(nodes.get(ids[i]).line));
+        }
+    });
     const names = [...byName].map(([k, ids]) => ({
       key: k, name: nodes.get(ids[0]).name, lines: ids.map(id => nodes.get(id).line)
     })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    return { nodes, edges, byName, names };
+    return { nodes, edges, byName, names, wait, gtfsCoverage: gtfs?.coverage || null };
   }
 
   function crowdRisks(records, index, reports) {
@@ -68,11 +78,12 @@
 
   function describe(graph, ids, types, live) {
     const nodes = ids.map(id => graph.nodes.get(id));
-    let stops = 0, transfers = 0, sum = 0, visits = 0;
+    let stops = 0, transfers = 0, sum = 0, visits = 0, minutesPrecise = graph.wait(nodes[0].line);
     const legs = [], seen = new Set(), alerts = [];
     let leg = { line: nodes[0].line, from: nodes[0].name, to: nodes[0].name, stops: 0 };
     for (let i = 0; i < types.length; i++) {
-      const next = nodes[i + 1], type = types[i], lookup = next.line + '|' + next.key;
+      const next = nodes[i + 1], type = types[i].type, lookup = next.line + '|' + next.key;
+      minutesPrecise += types[i].minutes;
       if (type === 'ride') {
         stops++;
         leg.to = next.name;
@@ -90,7 +101,7 @@
       }
     }
     legs.push(leg);
-    const minutes = Math.round(stops * RIDE + transfers * TRANSFER + WAIT);
+    const minutes = Math.round(minutesPrecise);
     const average = visits ? sum / visits : 0.95;
     return {
       ids, legs, stops, transfers, minutes, average, alerts,
@@ -104,7 +115,7 @@
     const ends = new Set(graph.byName.get(key(to)) || []);
     if (!starts.length || !ends.size) return null;
     const distances = new Map(), previous = new Map(), q = [], done = new Set();
-    starts.forEach(id => { distances.set(id, 0); q.push([0, id]); });
+    starts.forEach(id => { const initialWait = graph.wait(graph.nodes.get(id).line); distances.set(id, initialWait * weights.time); q.push([initialWait * weights.time, id]); });
     while (q.length) {
       q.sort((a, b) => a[0] - b[0]);
       const [cost, id] = q.shift();
@@ -115,7 +126,7 @@
         let cur = id;
         while (previous.has(cur)) {
           const p = previous.get(cur);
-          types.unshift(p.type);
+          types.unshift({ type: p.type, minutes: p.minutes });
           ids.unshift(p.id);
           cur = p.id;
         }
@@ -133,7 +144,7 @@
         const next = cost + edge.minutes * weights.time + exposure * weights.crowd + novelty;
         if (next < (distances.get(edge.to) ?? Infinity)) {
           distances.set(edge.to, next);
-          previous.set(edge.to, { id, type: edge.type });
+          previous.set(edge.to, { id, type: edge.type, minutes: edge.minutes });
           q.push([next, edge.to]);
         }
       }
