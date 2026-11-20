@@ -46,7 +46,49 @@
     return { nodes, edges, byName, names, wait, gtfsCoverage: gtfs?.coverage || null };
   }
 
-  function crowdRisks(records, index, reports) {
+  // Señales ciudadanas no verificadas: la intensidad decae durante 30 minutos.
+  // No son ocupación real ni reemplazan el pronóstico histórico.
+  function reportSignals(reports, now = Date.now()) {
+    const grouped = new Map();
+    for (const r of reports || []) {
+      if (!r?.linea || !r?.estacion) continue;
+      const timestamp = r.creado_en ? Date.parse(r.creado_en) : now;
+      const age = (now - timestamp) / 60000;
+      if (!Number.isFinite(age) || age < -2 || age > 30) continue;
+      const t = Array.isArray(r.tipos) ? r.tipos : [];
+      const severity = Math.max(
+        r.afluencia === 'lleno' ? 2 : r.afluencia === 'normal' ? 0.4 : 0,
+        t.includes('tren_detenido') ? 6 : 0,
+        t.includes('acceso_cerrado') ? 5 : 0,
+        t.includes('accidente') ? 5 : 0,
+        t.includes('retraso') ? 3 : 0,
+        t.includes('saturada') ? 2.5 : 0,
+        t.includes('falla') ? 1.5 : 0
+      );
+      const id = String(r.linea) + '|' + key(r.estacion);
+      const entry = grouped.get(id) || { count: 0, weight: 0, severity: 0, latest: 0 };
+      entry.count++;
+      // Cada observación tiene menos efecto con la antigüedad.
+      const freshness = Math.max(0, 1 - Math.max(0, age) / 30);
+      entry.weight += severity * freshness;
+      entry.severity = Math.max(entry.severity, severity);
+      entry.latest = Math.max(entry.latest, timestamp);
+      grouped.set(id, entry);
+    }
+    const result = new Map();
+    for (const [id, v] of grouped) {
+      // Reportes múltiples se corroboran parcialmente; techo evita manipulación masiva.
+      // Sin identidad pública no puede garantizarse independencia de personas.
+      const confirmation = v.count >= 3 ? 1 : v.count === 2 ? 0.8 : 0.55;
+      result.set(id, {
+        count: v.count, latest: v.latest,
+        penalty: Math.min(7, v.weight * confirmation)
+      });
+    }
+    return result;
+  }
+
+  function crowdRisks(records, index, reports, now = Date.now()) {
     const risk = new Map(), flagged = new Map();
     (records || []).forEach(r => {
       const p = r?.predictions?.[index];
@@ -55,24 +97,12 @@
         p >= r.summary.highThreshold ? 1.75 : 0.95;
       risk.set(String(r.line) + '|' + key(r.name), level);
     });
-    (reports || []).forEach(r => {
-      if (!r?.linea || !r?.estacion) return;
-      const k = String(r.linea) + '|' + key(r.estacion);
-      const t = Array.isArray(r.tipos) ? r.tipos : [];
-      const penalty = Math.max(
-        r.afluencia === 'lleno' ? 2 : r.afluencia === 'normal' ? 0.6 : 0,
-        t.includes('tren_detenido') ? 6 : 0,
-        t.includes('acceso_cerrado') ? 5 : 0,
-        t.includes('accidente') ? 5 : 0,
-        t.includes('retraso') ? 3 : 0,
-        t.includes('saturada') ? 2.5 : 0,
-        t.includes('falla') ? 1 : 0
-      );
-      if (penalty) {
-        risk.set(k, Math.max(risk.get(k) || 0.95, 0.95 + penalty));
-        flagged.set(k, (flagged.get(k) || 0) + 1);
-      }
-    });
+    const signals = reportSignals(reports, now);
+    for (const [id, signal] of signals) {
+      if (signal.penalty <= 0) continue;
+      risk.set(id, Math.max(risk.get(id) || 0.95, 0.95 + signal.penalty));
+      flagged.set(id, signal.count);
+    }
     return { risk, flagged, hasModel: Boolean(records?.length) };
   }
 
@@ -152,10 +182,10 @@
     return null;
   }
 
-  function findRoutes({ graph, from, to, records, dateIndex = 0, reports = [] }) {
+  function findRoutes({ graph, from, to, records, dateIndex = 0, reports = [], now = Date.now() }) {
     if (!graph || key(from) === key(to) || !graph.byName.has(key(from)) ||
         !graph.byName.has(key(to))) return [];
-    const live = crowdRisks(records, dateIndex, reports);
+    const live = crowdRisks(records, dateIndex, reports, now);
     const fastest = shortest(graph, from, to, { time: 1, crowd: 0 }, live, null);
     if (!fastest) return [];
     const routes = [fastest], signatures = new Set([fastest.fingerprint]);
@@ -190,5 +220,5 @@
     return routes.slice().sort((a, b) => score(a) - score(b) ||
       a.minutes - b.minutes)[0];
   }
-  root.MINI_YOLOTZIN_ROUTER = { buildGraph, findRoutes, recommend, key };
+  root.MINI_YOLOTZIN_ROUTER = { buildGraph, findRoutes, recommend, reportSignals, key };
 })(window);
