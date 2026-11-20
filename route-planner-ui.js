@@ -130,7 +130,7 @@
   if (window.MINI_YOLOTZIN_CLOUD?.listen) {
     window.MINI_YOLOTZIN_CLOUD.listen(() => {
       if (document.body.dataset.view === 'routes' && alreadySearched) plan();
-    });
+    }, 'mini-yolotzin-rutas');
   }
   setInterval(() => {
     if (document.visibilityState === 'visible' && document.body.dataset.view === 'routes' && alreadySearched)
