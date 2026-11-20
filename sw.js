@@ -2,10 +2,10 @@
    Estrategia «red primero»: siempre intenta descargar la versión más reciente
    (para que los datos nuevos se vean en cuanto se publiquen) y, si no hay red,
    usa la copia guardada. Cambia CACHE al modificar la lista de archivos. */
-const CACHE = 'mini-yolotzin-v5';
+const CACHE = 'mini-yolotzin-v6';
 const FILES = [
   './', './index.html', './model-data.js', './metro-catalog.js', './weather-summary.js',
-  './gtfs-segments.js', './route-engine.js', './route-planner-ui.js',
+  './gtfs-segments.js', './route-engine.js', './route-planner-ui.js', './live-reports.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];
 
