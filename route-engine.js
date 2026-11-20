@@ -184,9 +184,9 @@
   function recommend(routes, preference) {
     if (!routes?.length) return null;
     const score = r => preference === 'tranquila'
-      ? r.minutes * 0.35 + r.average * Math.max(7, r.stops * 1.5) + r.alerts.length * 3
+      ? r.minutes * 0.35 + r.average * Math.max(7, r.stops * 1.5) + r.alerts.length * 7
       : preference === 'rapida' ? r.minutes
-      : r.minutes + r.average * Math.max(4, r.stops * 0.85) + r.alerts.length * 2;
+      : r.minutes + r.average * Math.max(4, r.stops * 0.85) + r.alerts.length * 6;
     return routes.slice().sort((a, b) => score(a) - score(b) ||
       a.minutes - b.minutes)[0];
   }
