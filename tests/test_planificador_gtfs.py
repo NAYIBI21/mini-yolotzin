@@ -62,3 +62,5 @@ def test_planificador_fecha_sin_prediccion_no_inventa_nivel(page):
     page.evaluate("document.querySelector('#dateInput').value = '2027-12-31'")
     page.click("#routesForm button[type=submit]")
     page.wait_for_function("document.querySelector('#routesMessage').textContent.includes('fuera del horizonte')")
+    assert "sin pronóstico" in page.text_content("#routesResults")
+
