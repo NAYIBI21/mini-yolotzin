@@ -47,7 +47,8 @@ Antes de entregar un cambio, corre `pytest` (ver README); las pruebas automatiza
 
 1. Verificar que la página abra sin errores de JavaScript.
 2. Probar las pestañas Hoy, Estaciones, Mapa y Agenda, con clic y con las flechas del teclado, y los enlaces «Cómo se calcula» y «Datos».
-3. Confirmar que la selección de estación y fecha (lista, barra, fecha exacta y ±1 día) actualiza la estimación y el mapa.
+3. Confirmar que la selección de estación (búsqueda y resultados) y de fecha (calendario, ±1 día e «Ir a hoy») actualiza la estimación y el mapa.
+   No repetir controles ni textos: cada dato o acción aparece una vez por pantalla (ver la auditoría de duplicados en la PR «Quita controles y textos duplicados»).
 4. Confirmar que el mapa permite reproducir, pausar, seleccionar estaciones (incluida la lista de demanda relativa) y hacer zoom, y que su ficha corta sigue a la estación elegida.
 5. Confirmar que la búsqueda y el filtro por línea encuentran estaciones, que en las correspondencias se puede cambiar de línea y que todas las estaciones del catálogo tienen su registro del modelo.
 6. Probar la vista de 7 días (cambia la fecha al hacer clic) y, servida por http, que la app abra sin conexión.

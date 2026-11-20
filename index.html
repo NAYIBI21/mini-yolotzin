@@ -657,7 +657,7 @@
       .datebar .chip-btn { grid-column: 3 / 5; }
       .datebar .calendar-chip, .datebar .event-chip { grid-column: 1 / -1; }
       .datebar .date-field label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-      .search-col .field:has(#mapLineFilter), .search-col .field:has(#stationSelect) { display: none; }
+      .search-col .field:has(#mapLineFilter) { display: none; }
       .search-col select.result-list { height: 112px; }
       .today-grid, .station-grid, .side-col { grid-template-columns: 1fr; }
       .tab-page { padding: 16px 14px 28px; }
@@ -762,7 +762,7 @@
     <div class="date-now"><strong class="clock" id="dateLabel">—</strong><span class="period" id="dayLabel">—</span></div>
     <button class="icon-btn" id="stepForward" aria-label="Día siguiente">›</button>
     <div class="date-field"><label for="dateInput">Elegir fecha</label><input type="date" id="dateInput"></div>
-    <button class="chip-btn" id="resetDate">Hoy</button>
+    <button class="chip-btn" id="resetDate">Ir a hoy</button>
     <div class="calendar-chip" id="calendarChip" hidden></div>
     <div class="event-chip" id="eventChip" hidden></div>
   </section>
@@ -809,7 +809,8 @@
         <div class="field"><label for="mapLineFilter">Línea</label><select id="mapLineFilter"><option value="">Todas las líneas</option></select></div>
         <div class="field"><label for="mapStationList">Resultados</label><select id="mapStationList" class="result-list" size="6"></select></div>
         <p class="result-count" id="mapResultCount" aria-live="polite"></p>
-        <div class="field"><label for="stationSelect">Estación con estimación</label><select id="stationSelect"></select></div>
+        <!-- Lista completa de estaciones con estimación: no se muestra (se elige con la búsqueda); la usan Mis viajes y «¿Cómo va?». -->
+        <div class="field" hidden><label for="stationSelect">Estación con estimación</label><select id="stationSelect"></select></div>
       </aside>
 
       <section class="detail-col" aria-live="polite" aria-label="Estación elegida">
@@ -822,7 +823,6 @@
           <strong id="riskText">—</strong>
           <p id="riskEstimate">—</p>
         </div>
-        <p class="level-message" id="levelMessage">—</p>
         <p class="calendar-note" id="calendarNote" hidden></p>
         <div class="event-note" id="eventNote" hidden></div>
         <div class="geo-card" id="geoDetail" hidden><strong id="geoTitle">—</strong><span id="geoText">—</span></div>
@@ -835,10 +835,8 @@
           <details class="more">
             <summary>Más datos de esta estación</summary>
             <div class="detail-grid">
-              <div class="detail-card main"><small>Afluencia diaria estimada</small><strong id="detailEstimate">—</strong><span id="detailRange">accesos estimados</span></div>
               <div class="detail-card"><small>Vs. mediana</small><strong id="detailRelative">—</strong><span>histórica</span></div>
               <div class="detail-card"><small>Observaciones</small><strong id="detailObs">—</strong><span>días con dato</span></div>
-              <div class="detail-card"><small>Error del modelo</small><strong id="detailMae">—</strong><span>entradas/día (MAE)</span></div>
               <div class="detail-card"><small>Error línea base</small><strong id="detailBase">—</strong><span>entradas/día (MAE)</span></div>
             </div>
             <div id="historySection">
@@ -897,9 +895,7 @@
         <button type="button" class="play-btn wide" data-goto="explore" id="sheetOpen">Ver ficha completa</button>
       </section>
       <section class="card-block">
-        <h3>Recorrer fechas</h3>
-        <input id="dateRange" type="range" min="0" max="365" step="1" value="0" aria-label="Fecha de la estimación">
-        <div class="range-labels"><span id="rangeStart">—</span><span id="rangeEnd">—</span></div>
+        <h3>Recorrer los próximos días</h3>
         <button class="play-btn wide" id="playPause">Reproducir</button>
         <div class="speed-row" role="group" aria-label="Velocidad de reproducción">
           <button class="speed-btn active" data-speed="1" aria-pressed="true">1 día</button>
@@ -910,12 +906,6 @@
       <section class="card-block">
         <h3>Más gente que de costumbre</h3>
         <div class="hot-list" id="hotList"></div>
-        <div class="legend">
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-low"></i> Menos gente</span><span id="legendLow">—</span></div>
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-mid"></i> Lo normal</span><span id="legendMid">—</span></div>
-          <div class="legend-row"><span class="legend-key"><i class="heat-dot dot-high"></i> Más gente</span><span id="legendHigh">—</span></div>
-        </div>
-        <p class="note">Niveles comparados con el histórico de cada estación y línea. Los días hábiles suelen salir en «lo normal» o «más gente» y los domingos en «menos gente».</p>
       </section>
     </aside>
   </main>
@@ -930,9 +920,8 @@
         <button type="button" class="filter-btn" data-filter="evt" aria-pressed="false">Eventos</button>
         <button type="button" class="filter-btn" data-filter="mine" aria-pressed="false">Mis estaciones</button>
       </div>
-      <p class="weather-tip" id="agendaWeather" hidden></p>
       <div class="agenda-list" id="agendaList" aria-live="polite"></div>
-      <p class="note">Las marchas se anuncian con uno o dos días de anticipación: revisa también los avisos oficiales del Metro. Fechas de eventos verificadas en fuentes públicas (eventos.csv).</p>
+      <p class="note">Las marchas se anuncian con uno o dos días de anticipación: revisa también los avisos oficiales del Metro.</p>
     </div>
   </main>
 
@@ -1210,11 +1199,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   const levelName = { baja: 'Demanda baja', media: 'Demanda media', alta: 'Demanda alta' };
   const levelColor = { baja: '#62d394', media: '#ffbd59', alta: '#ff5d73' };
   const levelRank = { baja: 0, media: 1, alta: 2 };
-  const levelCopy = {
-    baja: 'Se espera una afluencia inferior a la habitual para esta estación en esa fecha.',
-    media: 'Se espera una afluencia cercana al comportamiento habitual de esta estación.',
-    alta: 'Se espera una afluencia superior a la habitual para esta estación en esa fecha.'
-  };
   const LOW_RELIABILITY = .30; // error típico mayor al 30% de la mediana
   const tomorrowIso = (() => { const t = new Date(); t.setDate(t.getDate() + 1); return [t.getFullYear(), String(t.getMonth() + 1).padStart(2, '0'), String(t.getDate()).padStart(2, '0')].join('-'); })();
   const todayIndex = () => dates.indexOf([new Date().getFullYear(), String(new Date().getMonth() + 1).padStart(2, '0'), String(new Date().getDate()).padStart(2, '0')].join('-'));
@@ -1714,11 +1698,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
         ? `<strong>Evento: ${name}.</strong> La estimación incluye un ajuste de ${signed((adjustment.factor - 1) * 100)}, medido en ${adjustment.editions} ediciones anteriores en esta estación. Sin el evento serían unas ${format(value / adjustment.factor)} entradas.${volatile}`
         : `<strong>Evento: ${name}.</strong> Afecta a esta estación, pero su efecto no se pudo medir (${adjustment.editions === 1 ? 'solo 1 edición' : `${adjustment.editions} ediciones`} con datos; se necesitan ${data.events.minEditions}). La estimación no incluye ajuste.${volatile}`;
     }
-    $('dateRange').value = state.index;
     $('dateInput').value = date;
-    $('legendLow').textContent = station ? `< ${format(station.summary.lowThreshold)}` : '—';
-    $('legendMid').textContent = station ? `${format(station.summary.lowThreshold)} – ${format(station.summary.highThreshold)}` : '—';
-    $('legendHigh').textContent = station ? `> ${format(station.summary.highThreshold)}` : '—';
     if (node && $('mapStationList').value !== node.name) $('mapStationList').value = node.name;
     if (station) $('trainCutoff').textContent = shortDate(station.metrics.testStart);
 
@@ -1742,8 +1722,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       $('riskBox').className = 'risk none';
       $('riskText').textContent = 'Sin estimación';
       $('riskKicker').textContent = 'ESTACIÓN SIN MODELO';
-      $('riskEstimate').textContent = '';
-      $('levelMessage').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para un modelo validado.';
+      $('riskEstimate').textContent = 'Esta estación no tiene datos suficientes en el recurso oficial para estimar su afluencia.';
       $('geoTitle').textContent = 'Ficha geográfica';
       $('geoText').textContent = `Líneas: ${lines.join(', ')} · ${count} registro(s) estación-línea · coordenadas oficiales aproximadas (SEMOVI/STC).`;
       renderWeek(null);
@@ -1761,12 +1740,8 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     $('riskText').textContent = plainLevel[prediction.level];
     $('riskKicker').textContent = `${dayName(date).toUpperCase()} EN LA LÍNEA ${station.line}`;
     $('riskEstimate').innerHTML = `Unas <strong>${format(prediction.value)} entradas</strong> en el día. Lo normal es entre ${format(station.summary.lowThreshold)} y ${format(station.summary.highThreshold)}; puede variar ±${format(station.metrics.modelMae)}.`;
-    $('levelMessage').textContent = levelCopy[prediction.level];
-    $('detailEstimate').textContent = format(prediction.value);
-    $('detailRange').textContent = `accesos estimados en Línea ${station.line} · error típico ±${format(station.metrics.modelMae)}`;
     $('detailRelative').textContent = signed(rel);
     $('detailObs').textContent = format(station.summary.observations);
-    $('detailMae').textContent = format(station.metrics.modelMae);
     $('detailBase').textContent = format(station.metrics.baselineMae);
     const gain = gainOf(station);
     const comparison = $('comparisonNote');
@@ -1999,8 +1974,8 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       .map(r => predictionOf(r, state.index).level);
     const busy = levels.filter(l => l === 'alta').length;
     const when = `${dayName(date)}${dayName(date) === weekday(date) ? ` ${Number(date.slice(8, 10))}` : ''}`;
-    $('todaySummary').textContent = !levels.length
-      ? `${when}: guarda tus estaciones para ver aquí cómo vienen.`
+    $('todaySummary').hidden = !levels.length;   // sin viajes, Mis viajes ya explica qué hacer
+    $('todaySummary').textContent = !levels.length ? ''
       : busy ? `${when}, ${busy === 1 ? 'una de tus estaciones va' : `${busy} de tus estaciones van`} con más gente de lo normal.`
         : `${when}, tus estaciones van normal o con menos gente.`;
     renderWeather();
@@ -2202,7 +2177,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     const found = [...mapNodes.values()]
       .filter(node => (!line || node.lines.includes(line)) && normalize(node.name).includes(term))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    const visible = new Set(found.map(node => node.name));
     const list = $('mapStationList');
     list.replaceChildren(...found.map(node => {
       const option = document.createElement('option');
@@ -2212,8 +2186,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     }));
     list.value = currentNode()?.name || '';
     $('mapResultCount').textContent = `${found.length} estaciones encontradas · ${catalog.length} registros estación-línea`;
-    mapNodes.forEach(node => node.el?.group.classList.toggle('filtered-out', !visible.has(node.name)));
-    document.querySelectorAll('[data-map-line]').forEach(el => { el.style.opacity = !line || el.dataset.mapLine === line ? '' : '.10'; });
   }
 
   function renderBars(station, prediction, date) {
@@ -2296,7 +2268,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   $('hotList').addEventListener('click', event => { const item = event.target.closest('.hot-item'); if (item) selectStation(item.dataset.station, item.dataset.line); });
   $('detailLines').addEventListener('click', event => { const pill = event.target.closest('button.line-pill'); if (pill) selectStation(state.station, pill.dataset.line); });
   $('stationSelect').addEventListener('change', event => { const [line, ...rest] = event.target.value.split('|'); selectStation(rest.join('|'), line); });
-  $('dateRange').addEventListener('input', event => setIndex(+event.target.value));
   $('dateInput').addEventListener('change', event => { const index = dates.indexOf(event.target.value); if (index >= 0) setIndex(index); else render(); });
   $('stepBack').addEventListener('click', () => setIndex(state.index - 1));
   $('stepForward').addEventListener('click', () => setIndex(state.index + 1));
@@ -2313,9 +2284,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   // ---------- Inicio ----------
   $('dateInput').min = dataset.forecastStart;
   $('dateInput').max = dataset.forecastEnd;
-  $('dateRange').max = dates.length - 1;
-  $('rangeStart').textContent = shortDate(dates[0]);
-  $('rangeEnd').textContent = shortDate(dates.at(-1));
   $('statusChip').textContent = `Datos oficiales · corte al ${shortDate(dataset.endDate)}`;
   $('sourceLink').href = data.source.url;
   $('officialSource').href = data.source.url;
@@ -2336,8 +2304,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     const pct = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}%`;
     const range = s => `de ${pct(s.p10)} a ${pct(s.p90)}`;
     const e = weather.effects, v = weather.validation;
-    $('agendaWeather').hidden = false;
-    $('agendaWeather').innerHTML = `<strong>¿Y si llueve?</strong> En días hábiles con lluvia la red tiene en promedio ${Math.abs(e.rain.networkPct).toFixed(1)}% ${e.rain.networkPct < 0 ? 'menos' : 'más'} entradas: casi no cambia tu viaje.`;
     $('weatherCard').hidden = false;
     $('weatherIntro').textContent = `Se comparó la afluencia de ${weather.records} estaciones por línea con el clima diario de 5 zonas de la ciudad, en el periodo de prueba del ${shortDate(weather.period.testStart)} al ${shortDate(weather.period.testEnd)} (temporada de lluvias). Conclusión: la mayoría de los viajes en Metro son obligados (trabajo, escuela) y se hacen llueva o no; a nivel diario el clima cambia poco la afluencia y no mejora la estimación.`;
     $('wValidation').textContent = `${pct(v.changePct)} de error`;

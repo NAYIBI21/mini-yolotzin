@@ -15,9 +15,9 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 - Pensada para quien viaja, con fondo oscuro y botones morados, y **4 pestañas** (abajo en el celular, arriba en computadora):
   - **Hoy**: saludo; arriba, el clima del día con su icono (pronóstico de [Open-Meteo](https://open-meteo.com/), datos abiertos sin clave, hasta 16 días) y los avisos con icono según el tipo (♪ conciertos, trofeo para partidos, megáfono para marchas, estrella para festivos); abajo, tus viajes con lenguaje simple (más gente / lo normal / menos gente). El clima solo se muestra: no entra al modelo.
   - **Estaciones**: búsqueda y ficha de la estación con la respuesta grande arriba, la semana, Ecobici en vivo y «Guardar». El error del modelo y la comparación con la línea base quedan a la vista; el resto, en «Más datos de esta estación».
-  - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el recorrido por fechas y las estaciones con más gente que de costumbre.
+  - **Mapa**: la red completa con zoom, la ficha corta de la estación elegida, el botón para recorrer los próximos días y las estaciones con más gente que de costumbre.
   - **Agenda**: festivos, conciertos, partidos y marchas de los próximos meses, con las estaciones afectadas y filtros (incluido «Mis estaciones»).
-- La fecha se elige arriba (día anterior / siguiente, calendario o «Hoy») y vale para todas las pestañas. La app abre en el día de hoy.
+- La fecha se elige arriba (día anterior / siguiente, calendario o «Ir a hoy») y vale para todas las pestañas. La app abre en el día de hoy.
 - Predicción diaria para cada estación y línea de la red (un modelo por registro, como lo publica el recurso oficial), con su error típico (MAE) y aviso de confiabilidad baja cuando el error supera el 30% de la afluencia habitual.
 - Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
