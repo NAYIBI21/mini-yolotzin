@@ -48,6 +48,8 @@ def test_tabs_with_keyboard(page):
     page.keyboard.press("End")
     assert page.is_visible("#agendaView")
     page.keyboard.press("ArrowLeft")
+    assert page.is_visible("#routesView")
+    page.keyboard.press("ArrowLeft")
     assert page.is_visible("#mapView")
     page.keyboard.press("Home")
     assert page.is_visible("#todayView")
