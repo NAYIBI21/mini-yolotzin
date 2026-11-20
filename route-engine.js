@@ -79,7 +79,7 @@
     for (const [id, v] of grouped) {
       // Reportes múltiples se corroboran parcialmente; techo evita manipulación masiva.
       // Sin identidad pública no puede garantizarse independencia de personas.
-      const confirmation = v.count >= 3 ? 1 : v.count === 2 ? 0.8 : 0.55;
+      const confirmation = v.count >= 3 ? 1 : v.count === 2 ? 0.85 : v.severity >= 5 ? 0.85 : 0.55;
       result.set(id, {
         count: v.count, latest: v.latest,
         penalty: Math.min(7, v.weight * confirmation)
