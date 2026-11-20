@@ -57,9 +57,8 @@ def test_planificador_fecha_sin_prediccion_no_inventa_nivel(page):
     page.click("#routesForm button[type=submit]")
     page.wait_for_selector("#routesResults .planner-route")
     assert "L3" in page.text_content("#routesResults")
-    page.evaluate("""() => {
-      const el = document.querySelector('#dateInput');
-      el.value = '2027-12-31';
-      el.dispatchEvent(new Event('change', {bubbles:true}));
-    }""")
+    # El selector global restringe el horizonte; forzamos el valor en el DOM
+    # sin activar su validador, para comprobar el caso de datos fuera de rango.
+    page.evaluate("document.querySelector('#dateInput').value = '2027-12-31'")
+    page.click("#routesForm button[type=submit]")
     page.wait_for_function("document.querySelector('#routesMessage').textContent.includes('fuera del horizonte')")
