@@ -68,15 +68,14 @@ def test_method_and_data_pages_from_station(page):
 
 def test_station_and_date_show_model_value(page, model_data):
     go(page, "explore")
-    page.select_option("#stationSelect", "3|Hidalgo")
+    page.select_option("#stationSelect", "3|Hidalgo", force=True)
     set_date(page, "2026-11-17")
     expected = model_value(model_data, "3", "Hidalgo", "2026-11-17")
-    assert page.text_content("#detailEstimate") == f"{expected:,}"
-    assert f"{expected:,} entradas" in page.text_content("#riskEstimate")
+    assert f"Unas {expected:,} entradas" in page.text_content("#riskEstimate")
     assert page.text_content("#riskText") in ("Más gente de lo normal", "Lo normal", "Menos gente de lo normal")
     page.click('#detailLines button[data-line="2"]')
     expected_l2 = model_value(model_data, "2", "Hidalgo", "2026-11-17")
-    assert page.text_content("#detailEstimate") == f"{expected_l2:,}"
+    assert f"Unas {expected_l2:,} entradas" in page.text_content("#riskEstimate")
 
 
 def test_holiday_and_event_notes(page):
@@ -85,7 +84,7 @@ def test_holiday_and_event_notes(page):
     assert not page.is_visible("#calendarChip")                   # en Hoy no se repite en la barra de fecha
     go(page, "explore")
     assert "Revolución" in page.text_content("#calendarChip")
-    page.select_option("#stationSelect", "9|Ciudad Deportiva")
+    page.select_option("#stationSelect", "9|Ciudad Deportiva", force=True)
     set_date(page, "2026-11-01")
     assert page.is_visible("#eventChip")
     go(page, "today")
@@ -105,6 +104,22 @@ def test_search_and_line_filter(page):
     assert page.locator("#mapStationList option").count() == 10
 
 
+def test_no_duplicated_controls(page):
+    assert not page.is_visible("#stationSelect")                    # un solo selector: buscar + resultados
+    assert page.locator("#levelMessage, #detailEstimate, #detailMae, #dateRange, #agendaWeather, #legendLow").count() == 0
+    assert page.text_content("#resetDate") == "Ir a hoy"
+    assert not page.is_visible("#todaySummary")                     # sin viajes, solo lo explica Mis viajes
+    go(page, "map")
+    assert page.locator("#mapView .map-legend").count() == 1
+
+
+def test_station_search_does_not_hide_map(page):
+    go(page, "explore")
+    page.fill("#mapSearch", "zocalo")
+    go(page, "map")
+    assert page.locator("#networkViewport .station.filtered-out").count() == 0
+
+
 def test_map_playback_and_zoom(page):
     go(page, "map")
     before = page.text_content("#dateLabel")
@@ -119,7 +134,7 @@ def test_map_playback_and_zoom(page):
 
 def test_map_sheet_follows_station(page, model_data):
     go(page, "explore")
-    page.select_option("#stationSelect", "3|Hidalgo")
+    page.select_option("#stationSelect", "3|Hidalgo", force=True)
     set_date(page, "2026-11-17")
     go(page, "map")
     assert page.text_content("#sheetName") == "Hidalgo"
@@ -199,7 +214,7 @@ def test_works_offline_after_first_visit(page):
 
 def test_ecobici_live_near_station(page):
     go(page, "explore")
-    page.select_option("#stationSelect", "3|Hidalgo")
+    page.select_option("#stationSelect", "3|Hidalgo", force=True)
     page.wait_for_selector("#bikeList .bike-item")
     items = page.locator("#bikeList .bike-item").all_text_contents()
     assert len(items) == 2                               # la tercera está a más de 500 m
@@ -210,7 +225,7 @@ def test_ecobici_live_near_station(page):
     distances = [int(re.search(r"(\d+) m ·", item).group(1)) for item in items]
     assert distances == sorted(distances)                  # de la más cercana a la más lejana
     assert "no es una estimación del modelo" in page.text_content("#bikeNote")
-    page.select_option("#stationSelect", "3|Indios Verdes")
+    page.select_option("#stationSelect", "3|Indios Verdes", force=True)
     assert page.locator("#bikeList .bike-item").count() == 0
     assert "No hay cicloestaciones" in page.text_content("#bikeNote")
 
@@ -220,7 +235,7 @@ def test_ecobici_failure_keeps_page_working(page, model_data):
     page.reload()
     page.wait_for_function("!document.getElementById('bikeNote').textContent.includes('Consultando')")
     assert "Ecobici no respondió" in page.text_content("#bikeNote")
-    assert page.text_content("#detailEstimate") != "—"   # el modelo se sigue mostrando
+    assert "entradas" in page.text_content("#riskEstimate")   # el modelo se sigue mostrando
 
 
 @pytest.mark.parametrize("width", [1024, 390])
