@@ -81,12 +81,17 @@ def test_station_and_date_show_model_value(page, model_data):
 
 def test_holiday_and_event_notes(page):
     set_date(page, "2026-11-16")
-    assert "Revolución" in page.text_content("#calendarChip")
     assert "Revolución" in page.text_content("#todayNotices")
+    assert not page.is_visible("#calendarChip")                   # en Hoy no se repite en la barra de fecha
     go(page, "explore")
+    assert "Revolución" in page.text_content("#calendarChip")
     page.select_option("#stationSelect", "9|Ciudad Deportiva")
     set_date(page, "2026-11-01")
     assert page.is_visible("#eventChip")
+    go(page, "today")
+    assert not page.is_visible("#eventChip")
+    assert page.locator("#todayNotices .notice.evt").count() == 1
+    go(page, "explore")
     note = page.text_content("#eventNote")
     assert "Gran Premio" in note and "Sin el evento" in note
 
@@ -243,3 +248,10 @@ def test_weather_failure_keeps_today_working(page):
     page.reload()
     page.wait_for_function("document.getElementById('weatherText').textContent.includes('Sin pronóstico')")
     assert page.text_content("#weatherTitle") == "Clima"
+
+
+def test_greeting_hides_email_domain(page):
+    page.evaluate("""() => { const p = JSON.parse(localStorage.getItem('mini_yolotzin_profile_v1'));
+        p.name = 'karen@ejemplo.com'; localStorage.setItem('mini_yolotzin_profile_v1', JSON.stringify(p)); }""")
+    page.reload()
+    assert page.text_content("#todayGreeting") == "Hola, karen."
