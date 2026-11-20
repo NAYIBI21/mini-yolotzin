@@ -10,6 +10,31 @@ Después de activar GitHub Pages, la aplicación estará disponible en:
 
 <https://nayibi21.github.io/mini-yolotzin/>
 
+## Planeador de rutas con tiempos GTFS (versión experimental)
+
+La pestaña **Rutas** muestra alternativas de recorrido desde cualquier estación del Metro hasta otra, con tiempo orientativo, número de transbordos y una recomendación según la preferencia «rápida», «menos afluencia» o «equilibrada».
+
+### De dónde vienen los tiempos
+
+- Fuente primaria: [GTFS estático publicado por SEMOVI CDMX](https://datos.cdmx.gob.mx/dataset/gtfs).
+- **Copia de acceso**: [archivos GTFS del Metro procesados y archivados por Semíramis G. de la Cruz y Federico Salinas Samaniego](https://github.com/FedeSS99/MCE-TSP-Optimizacion/tree/main/output_metro); se consultaron `stop_times_metro.csv`, `trips_metro.csv`, `stops_metro.csv`, `frequencies_metro.csv`.
+- El enlace actual del portal CDMX al ZIP oficial no respondió al intentar descargarlo en este entorno; **no se debe interpretar esta copia como una actualización oficial de 2026**. El conjunto original al que remite la documentación del repositorio fue publicado en torno a 2022. La vigencia de la operación actual no se verificó con mediciones independientes.
+- Se vincularon los `stop_id` del GTFS con el catálogo geográfico de Yolotzin por **línea y proximidad de coordenadas** (tolerancia inferior a 500 m), y se calcularon diferencias `arrival_time` de la siguiente estación menos la de la anterior, respetando el sentido de marcha.
+- El archivo `gtfs-segments.js` almacena **366 tiempos dirigidos** para los **183 pares consecutivos** de las **12 líneas** (195 registros estación-línea), y las frecuencias de `frequencies_metro.csv` por tipo de día.
+- La duración total suma tramos GTFS y una **espera esperada de medio intervalo de frecuencia** al comenzar; para cada transbordo agrega **3 minutos supuestos de caminata** más la espera de la línea siguiente. El tiempo real puede diferir considerablemente.
+- `route-engine.js` construye un grafo, calcula rutas candidatas mediante un algoritmo de camino más corto y ordena alternativas según el tiempo y la afluencia diaria estimada por el modelo. Si no hay datos horarios se utiliza solo afluencia **diaria**; **no** equivale a ocupación real ni pronóstico por hora.
+- La consulta opcional a Supabase obtiene solo los avisos ciudadanos de los **últimos 30 minutos**, sin identidad del autor, y puede modificar la recomendación. Son **reportes no verificados** y no sustituyen avisos oficiales.
+- Si no hay red para consultar los avisos compartidos, la app explica esa limitación. En fechas fuera del horizonte de predicción, no presenta una predicción inventada.
+
+**Limitaciones operativas:** el grafo representa el catálogo de la red, no valida obras, cierres, desvíos ni el estado operativo real de cada estación. Las rutas y tiempos NO deben usarse como sustituto de la información oficial del STC. Si se obtiene un GTFS más actual o mediciones validadas, se podrá volver a generar `gtfs-segments.js` sin modificar el resto del planificador.
+
+### Probar
+
+1. En **Rutas**, elige origen y destino (ejemplo: Hidalgo → Pantitlán) y pulsa **Comparar rutas**.
+2. Cambia la prioridad entre rapidez y menos afluencia para ver si cambia la recomendación.
+3. Envía en **¿Cómo va?** un reporte de saturación en una estación de la ruta; actualiza **Rutas** y revisa las advertencias (en Supabase los avisos se comparten entre dispositivos).
+4. Comprueba en móvil y escritorio las otras pestañas. El login, **Mis viajes** y los datos originales de afluencia no se modifican.
+
 ## Qué incluye
 
 - Pensada para quien viaja, con fondo oscuro y botones morados, y **4 pestañas** (abajo en el celular, arriba en computadora):
