@@ -64,3 +64,31 @@ def test_planificador_fecha_sin_prediccion_no_inventa_nivel(page):
     page.wait_for_function("document.querySelector('#routesMessage').textContent.includes('fuera del horizonte')")
     assert "sin pronóstico" in page.text_content("#routesResults")
 
+
+def test_aviso_ciudadano_puede_cambiar_recomendacion(page):
+    # Reportes y nivel de afluencia siguen siendo datos separados: la alerta
+    # influye en la recomendación, sin presentarse como falla confirmada.
+    switched = page.evaluate("""() => {
+      const routing = window.MINI_YOLOTZIN_ROUTER;
+      const graph = routing.buildGraph(
+        window.METRO_CATALOG.stations, window.MINI_YOLOTZIN_GTFS, '1');
+      const opts = {
+        graph, from: 'Hidalgo', to: 'Pantitlán',
+        records: window.MINI_YOLOTZIN_DATA.stations, dateIndex: 49
+      };
+      const normal = routing.recommend(routing.findRoutes(opts), 'equilibrada');
+      const withAlert = routing.recommend(routing.findRoutes({
+        ...opts, reports: [{
+          estacion: 'Chabacano', linea: '9', afluencia: 'lleno',
+          tipos: ['tren_detenido']
+        }]
+      }), 'equilibrada');
+      return {
+        changed: normal.fingerprint !== withAlert.fingerprint,
+        initial: normal.legs.map(l => l.line),
+        after: withAlert.legs.map(l => l.line)
+      };
+    }""")
+    assert switched["changed"]
+    assert switched["initial"] == ["2", "9"]
+    assert switched["after"] == ["2", "1"]
