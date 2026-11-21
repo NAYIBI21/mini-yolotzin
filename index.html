@@ -508,6 +508,12 @@
     .notice-source { align-self: center; color: var(--muted); font-size: .66rem; }
     .today-alerts { grid-column: 1 / -1; display: grid; gap: 10px; }
     .today-alerts .link-btn { margin-top: 0; justify-self: start; }
+    .today-alerts-toggle { list-style: none; display: flex; align-items: center; gap: 9px; width: fit-content; cursor: pointer; padding: 9px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-solid); color: var(--text-2); font-size: .82rem; font-weight: 700; }
+    .today-alerts-toggle::-webkit-details-marker { display: none; }
+    .today-alerts-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .today-alerts-chevron { margin-left: 5px; }
+    .today-alerts[open] .today-alerts-chevron { transform: rotate(180deg); }
+    .today-alerts-content { display: grid; gap: 10px; margin-top: 10px; }
     .notice strong { display: block; font-size: .86rem; }
     .notice p { margin: 3px 0 0; color: var(--text-2); font-size: .78rem; line-height: 1.45; }
     .link-btn { margin-top: 12px; border: 0; background: transparent; color: #a78bfa; font-weight: 700; cursor: pointer; padding: 6px 0; font-size: .8rem; }
@@ -815,7 +821,9 @@
         <h2 id="todayGreeting">Hola.</h2>
         <p id="todaySummary">—</p>
       </section>
-      <section class="today-alerts" aria-label="Avisos del día">
+      <details class="today-alerts" aria-label="Avisos del día">
+        <summary class="today-alerts-toggle"><span aria-hidden="true">⚠</span> Avisos del día <span class="today-alerts-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="today-alerts-content">
         <div class="notice weather" id="todayWeather">
           <span class="ico" id="weatherIcon" aria-hidden="true"></span>
           <div><strong id="weatherTitle">Clima</strong><p id="weatherText">Consultando el pronóstico…</p></div>
@@ -823,7 +831,8 @@
         </div>
         <div class="notice-list" id="todayNotices" aria-live="polite"></div>
         <button type="button" class="link-btn" data-goto="agenda">Ver toda la agenda ›</button>
-      </section>
+        </div>
+      </details>
       <section class="card-block" id="tripsSection" aria-labelledby="tripsTitle">
         <div class="trips-head"><h3 id="tripsTitle">Mis viajes</h3><button type="button" class="mini-btn" id="tripAddToggle" aria-expanded="false" aria-controls="tripForm">+ Agregar</button></div>
         <div class="trip-list" id="tripList" aria-live="polite"></div>
