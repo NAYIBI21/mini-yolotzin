@@ -234,6 +234,7 @@
     .station-head p { margin: 5px 0 0; color: var(--muted); font-size: .72rem; }
     .line-pill { min-width: 25px; height: 25px; border-radius: 7px; display: grid; place-items: center; font-size: .66rem; font-weight: 850; color: #fff; border: 1px solid rgba(255, 255, 255, .2); background: #b7a52b; }
     .risk { margin-top: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 10px; border: 1px solid; }
+    #reliabilityNote:not([hidden]) { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border-radius: 50%; cursor: help; font-size: 1.05rem; }
     .risk span { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; }
     .risk strong { font-size: .84rem; }
     .risk.baja { background: rgba(98, 211, 148, .08); border-color: rgba(98, 211, 148, .2); color: var(--good); }
@@ -1828,7 +1829,11 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
       : `En esta estación el modelo no supera la línea base (${Math.abs(gain).toFixed(1)}% más error). Se reporta con transparencia.`;
     const errorShare = station.metrics.modelMae / station.summary.median;
     $('reliabilityNote').hidden = errorShare <= LOW_RELIABILITY;
-    $('reliabilityNote').textContent = `Confiabilidad baja: el error típico equivale al ${Math.round(errorShare * 100)}% de la afluencia habitual de esta estación. Toma la estimación solo como referencia.`;
+    const reliabilityMessage = `Estimación orientativa: el error típico equivale al ${Math.round(errorShare * 100)}% de la afluencia habitual de esta estación.`;
+    $('reliabilityNote').textContent = '⚠';
+    $('reliabilityNote').setAttribute('title', reliabilityMessage);
+    $('reliabilityNote').setAttribute('aria-label', reliabilityMessage);
+    $('reliabilityNote').setAttribute('role', 'img');
     $('testPeriod').textContent = `Validación cronológica: ${shortDate(station.metrics.testStart)} – ${shortDate(station.metrics.testEnd)}.${station.summary.closedDays ? ` Se excluyeron ${format(station.summary.closedDays)} días sin servicio.` : ''}`;
 
     renderBars(station, prediction.value, date);
