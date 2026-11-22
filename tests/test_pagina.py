@@ -122,6 +122,26 @@ def test_station_search_does_not_hide_map(page):
     assert page.locator("#networkViewport .station.filtered-out").count() == 0
 
 
+@pytest.mark.parametrize("width", [390, 1440])
+def test_map_shows_every_station_name_and_allows_selection(page, width):
+    page.set_viewport_size({"width": width, "height": 900})
+    go(page, "map")
+    page.wait_for_selector("#networkMap[viewBox]")
+    labels = page.locator("#networkViewport .station-label")
+    assert labels.count() == 163
+    assert page.locator("#networkViewport .route[data-map-line]").count() == 12
+    assert labels.evaluate_all("""labels => {
+        const map = document.getElementById('networkMap').getBoundingClientRect();
+        return labels.every(label => {
+            const box = label.getBoundingClientRect();
+            return box.width > 0 && box.height > 0 && box.left >= map.left && box.right <= map.right
+                && box.top >= map.top && box.bottom <= map.bottom;
+        });
+    }""")
+    labels.filter(has_text=re.compile(r"^Pantitlán$")).click()
+    assert page.text_content("#sheetName") == "Pantitlán"
+
+
 def test_map_playback_and_zoom(page):
     go(page, "map")
     before = page.text_content("#dateLabel")

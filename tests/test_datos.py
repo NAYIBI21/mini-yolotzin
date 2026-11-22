@@ -6,7 +6,7 @@ import csv
 from datetime import date, timedelta
 
 import build_model_data as model
-from conftest import ROOT
+from conftest import ROOT, load_js_object
 
 
 def test_model_data_structure(model_data):
@@ -36,6 +36,25 @@ def test_every_catalog_station_has_a_model_record(model_data, catalog):
     catalog_keys = {(c["line"], model.station_key(c["name"])) for c in catalog["stations"]}
     assert catalog_keys - model_keys == set()
     assert model_keys - catalog_keys == set()
+
+
+def test_diagram_includes_all_metro_stations_in_route_order(catalog):
+    diagram = load_js_object(ROOT / "metro-diagram.js")
+    stations = {station["name"]: station for station in diagram["stations"]}
+    assert len(stations) == len(diagram["stations"]) == 163
+    assert stations.keys() == {record["name"] for record in catalog["stations"]}
+    assert {route["line"] for route in diagram["lines"]} == {record["line"] for record in catalog["stations"]}
+    assert len(diagram["lines"]) == 12
+    for station in stations.values():
+        text = " ".join(station["label"][4]).replace("/ ", "/")
+        assert model.station_key(text) == model.station_key(station["name"])
+
+    for route in diagram["lines"]:
+        remaining = iter(route["points"])
+        for record in catalog["stations"]:
+            if record["line"] == route["line"]:
+                stop = stations[record["name"]]
+                assert any(point == [stop["x"], stop["y"]] for point in remaining), record["name"]
 
 
 def test_event_adjustments_are_consistent(model_data):

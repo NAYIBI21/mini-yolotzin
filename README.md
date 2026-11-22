@@ -47,7 +47,7 @@ La pestaña **Rutas** muestra alternativas de recorrido desde cualquier estació
 - Etiqueta de días festivos, fechas especiales y vacaciones en la fecha elegida.
 - En las estaciones de correspondencia se puede elegir la línea. Indios Verdes, La Raza, Hidalgo, Centro Médico y Universidad (Línea 3) siguen como estaciones destacadas.
 - Comparación del modelo Random Forest contra una línea base histórica.
-- Mapa geográfico de la red completa (catálogo oficial SEMOVI/STC: 163 estaciones, 195 registros estación-línea) con reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
+- Mapa esquemático de las 12 líneas, con los nombres de las 163 estaciones, aros para los transbordos, reproducción por fecha (1, 3 o 7 días), zoom, arrastre y selección con ratón o teclado.
 - Búsqueda de estaciones (sin importar acentos), filtro por línea y ficha geográfica para las estaciones que no tienen modelo.
 - Historial mensual en barras y lista de estaciones ordenadas por demanda relativa.
 - Páginas **Cómo se calcula** y **Datos** (enlazadas al pie de cada estación) con el proceso, la cobertura y la validación por estación.
@@ -73,7 +73,7 @@ Al abrir la app por primera vez se crea un perfil (o se inicia sesión con el se
 No requiere instalación para visualizarla:
 
 1. Descarga o clona el repositorio.
-2. Conserva juntos `index.html`, `model-data.js`, `metro-catalog.js` y `weather-summary.js`.
+2. Conserva los archivos del repositorio en sus carpetas originales.
 3. Abre `index.html` con Chrome, Safari, Firefox o Edge.
 
 ## App instalable y sin conexión
@@ -278,6 +278,7 @@ La versión en GitHub Pages (`https://nayibi21.github.io/mini-yolotzin/`) usa **
 - `assets/`: capturas de la interfaz usadas en este README.
 - `model-data.js`: datos agregados, métricas y predicciones precalculadas.
 - `metro-catalog.js`: ubicación oficial de líneas y estaciones del Metro (solo geografía, sin afluencia).
+- `metro-diagram.js`: trazado esquemático y posición de los nombres del mapa.
 - `manifest.webmanifest`, `sw.js`, `icons/`: app instalable y modo sin conexión.
 - `eventos.csv`: eventos registrados por el equipo, con fuente (se usan al generar el modelo).
 - `weather-summary.js`: resumen del análisis del clima (lo genera `scripts/analizar_clima.py`; no entra al modelo).

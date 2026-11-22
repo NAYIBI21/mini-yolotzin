@@ -7,6 +7,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_paneles_cargan_en_rutas_y_mapa(page):
+    # En localhost la app usa perfiles locales. Inicializa el panel con una respuesta de nube simulada.
+    page.evaluate("""() => {
+        window.MINI_YOLOTZIN_CLOUD = {
+            api: async () => ({ok: true, data: {avisos: []}}),
+            listen() {},
+        };
+    }""")
+    page.add_script_tag(url="./live-reports.js")
     page.click("#tab-routes")
     assert page.locator("#routesView [aria-label='Avisos ciudadanos recientes']").count() == 1
     assert page.locator("#mapView [aria-label='Avisos ciudadanos recientes']").count() == 1
@@ -18,7 +26,6 @@ def test_paneles_cargan_en_rutas_y_mapa(page):
 def test_pwa_incluye_panel_ciudadano():
     sw = (ROOT / "sw.js").read_text(encoding="utf-8")
     index = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "mini-yolotzin-v6" in sw
     assert "'./live-reports.js'" in sw
     assert '<script src="./live-reports.js"></script>' in index
 

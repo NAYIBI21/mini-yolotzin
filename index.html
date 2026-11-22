@@ -13,6 +13,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%236a44d6'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' transform='translate(3 3) scale(.75)'%3E%3Cpath d='M12 22s7.5-6.4 7.5-12.2a7.5 7.5 0 1 0-15 0C4.5 15.6 12 22 12 22z'/%3E%3Cpath d='M7.8 10.2h2l1.3-2.6 1.8 4.8 1.3-2.2h2'/%3E%3C/g%3E%3C/svg%3E">
   <script src="./model-data.js"></script>
   <script src="./metro-catalog.js"></script>
+  <script src="./metro-diagram.js"></script>
   <script src="./weather-summary.js"></script>
   <script src="./gtfs-segments.js"></script>
   <script src="./route-engine.js"></script>
@@ -196,29 +197,42 @@
     .disclaimer { margin-top: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255, 189, 89, .16); background: rgba(255, 189, 89, .07); color: #e7c989; font-size: .68rem; line-height: 1.5; }
 
     /* Mapa */
-    .map-wrap { min-width: 0; min-height: 0; position: relative; overflow: hidden; }
-    #networkMap { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: none; }
+    .map-wrap { min-width: 0; }
+    .map-canvas {
+      height: clamp(500px, calc(100dvh - 240px), 880px);
+      position: relative; overflow: hidden;
+      background: radial-gradient(ellipse at 46% 50%, #101f2d, transparent 71%);
+    }
+    #networkMap { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: pan-y; }
+    #networkMap.zoomed { touch-action: none; }
     #networkMap.dragging { cursor: grabbing; }
-    .grid-line { stroke: rgba(159, 187, 210, .055); stroke-width: 1; vector-effect: non-scaling-stroke; }
-    .route-bg { fill: none; stroke: #081019; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-    .route { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .92; }
-    .route.dim { opacity: .45; }
-    .route-label circle { stroke: #081019; stroke-width: 3; vector-effect: non-scaling-stroke; }
-    .route-label text { fill: #fff; font-size: 9px; font-weight: 850; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+    .route, .route-bg, .route-stripe { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .route-bg { stroke: var(--bg); stroke-width: var(--map-track-outline, 10.3px); }
+    .route { stroke-width: var(--map-track, 7.5px); }
+    .route-stripe { stroke: #a7b9b8; stroke-width: calc(var(--map-track, 7.5px) * .32); }
+    .route-label { pointer-events: none; }
+    .route-label text { fill: var(--bg); font-size: 18px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
     .station-hit { fill: transparent; cursor: pointer; }
-    .station-halo { opacity: .22; pointer-events: none; }
-    .station-core { fill: #8193a3; stroke: #0a1420; stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
-    .station.interchange .station-core { fill: #0d1b29; stroke: #9fb0bf; stroke-width: 2.6; }
-    .station.modeled .station-core { fill: #e9f2f8; stroke: #0a1420; stroke-width: 3; }
-    .station.selected .station-core { fill: #fff; stroke: var(--accent); stroke-width: 4; }
-    .station-label { fill: #8fa2b3; font-size: calc(10px / var(--z, 1)); font-weight: 600; paint-order: stroke; stroke: #081019; stroke-width: calc(4px / var(--z, 1)); stroke-linejoin: round; pointer-events: none; }
-    .station.featured .station-label { fill: #f4f8fb; font-size: calc(12px / var(--z, 1)); font-weight: 800; }
-    #networkMap:not(.show-labels) .station:not(.featured):not(.selected) .station-label { display: none; }
-    .map-title { position: absolute; z-index: 2; left: 14px; top: 12px; max-width: calc(100% - 28px); padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .72); backdrop-filter: blur(10px); pointer-events: none; }
+    .station-halo { pointer-events: none; }
+    .station-core { fill: #9aabbb; stroke: var(--bg); stroke-width: 1.4; pointer-events: none; }
+    .station.modeled .station-core { fill: #e9f2f8; }
+    .station.interchange .station-core { fill: var(--bg); stroke: var(--text); stroke-width: 2.5; }
+    .station.selected .station-core { stroke: var(--cyan); stroke-width: 2.2; vector-effect: non-scaling-stroke; }
+    .station-label {
+      fill: #c0cedc; font-family: Arial, sans-serif; font-size: var(--map-label-size, 14.8px);
+      dominant-baseline: central; paint-order: stroke; stroke: var(--bg); stroke-width: .09em;
+      stroke-linejoin: round; cursor: pointer; pointer-events: visibleFill;
+    }
+    .station.interchange .station-label { fill: var(--text); font-weight: 700; }
+    .station.selected .station-label { fill: #d7c8ff; }
+    .station-guide { stroke: #a6b8ca; stroke-width: .7; opacity: .65; vector-effect: non-scaling-stroke; pointer-events: none; }
+    .map-header { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; padding: 12px 16px 6px; }
     .map-title h2 { margin: 0; font-size: 1rem; }
     .map-title p { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
-    .zoom-controls { position: absolute; z-index: 2; right: 16px; bottom: 18px; display: grid; gap: 7px; }
-    .zoom-btn { width: 40px; height: 40px; min-height: 0; display: grid; place-items: center; font-size: 1rem; box-shadow: var(--shadow); }
+    .zoom-controls { display: flex; gap: 6px; }
+    .zoom-controls[hidden] { display: none; }
+    .zoom-btn { min-height: 0; display: grid; place-items: center; font-size: 1rem; }
+    .map-unavailable { padding: 0 16px; color: var(--muted); }
     .tooltip {
       position: absolute; pointer-events: none; z-index: 30; min-width: 170px; padding: 10px 12px;
       border: 1px solid var(--line); border-radius: 10px; background: rgba(8, 16, 25, .96); box-shadow: var(--shadow);
@@ -426,7 +440,6 @@
       .profile-button { margin-left: auto; }
       .workspace { grid-template-columns: 260px minmax(0, 1fr); }
       .side { overflow: visible; }
-      .map-wrap { min-height: 640px; }
       .details { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 24px; }
       .details .section + .section { margin-top: 0; padding-top: 0; border-top: 0; }
       .page { overflow: visible; }
@@ -443,7 +456,6 @@
       .metric strong { font-size: .95rem; }
       .workspace { display: flex; flex-direction: column; }
       .controls { border-right: 0; border-bottom: 1px solid var(--line); }
-      .map-wrap { min-height: 0; height: 420px; }
       .details { display: block; }
       .details .section + .section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
       .page { padding: 20px 14px 30px; }
@@ -571,11 +583,11 @@
     #historySection[hidden], #weekSection[hidden] { display: none; }
     .side-col { display: grid; gap: 18px; }
     .small-print { margin: 0; font-size: .7rem; }
-    .map-view { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
-    .map-view .map-wrap { min-height: 520px; }
+    .map-view { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 330px; overflow: auto; }
     .map-side { min-height: 0; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; border-left: 1px solid var(--line); background: var(--panel); }
-    .map-legend { position: absolute; z-index: 2; left: 14px; bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; background: rgba(8, 16, 25, .82); font-size: .72rem; }
+    .map-legend { display: flex; gap: 5px 14px; flex-wrap: wrap; padding: 4px 16px 6px; font-size: .72rem; }
     .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .map-legend-transfer { width: 10px; height: 10px; border: 2px solid var(--text); border-radius: 50%; }
     .zoom-btn { width: 44px; height: 44px; border-color: var(--accent); color: #c4b5fd; background: rgba(14, 27, 41, .95); }
     .sheet-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
     .sheet-head h3 { margin: 0; font-size: 1.15rem; }
@@ -648,8 +660,8 @@
     @media (max-width: 1180px) {
       .station-grid { grid-template-columns: 260px minmax(0, 1fr); }
       .side-col { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
-      .map-view { grid-template-columns: 1fr; }
-      .map-view .map-wrap { min-height: 0; height: 560px; }
+      .map-view { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+      .map-canvas { height: clamp(370px, 91vw, 870px); }
       .map-side { border-left: 0; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
       .tab-page { overflow: visible; }
     }
@@ -670,7 +682,6 @@
       .search-col select.result-list { height: 112px; }
       .today-grid, .station-grid, .side-col { grid-template-columns: 1fr; }
       .tab-page { padding: 16px 14px 28px; }
-      .map-view .map-wrap { height: 460px; }
       .map-side { padding: 14px; }
     }
     @media (max-width: 450px) {
@@ -948,21 +959,26 @@
   <!-- Mapa -->
   <main class="view map-view" id="mapView" role="tabpanel" aria-labelledby="tab-map" tabindex="-1">
     <section class="map-wrap" aria-label="Mapa esquemático del Metro">
-      <div class="map-title"><h2>Red del Metro CDMX</h2><p id="mapSubtitle">Nivel de gente esperado por estación</p></div>
-      <svg id="networkMap" viewBox="0 0 1040 640" role="group" aria-label="Mapa geográfico del Metro CDMX con demanda diaria estimada por estación. Usa Tab para recorrer las estaciones destacadas o la pestaña Estaciones para buscar cualquier estación.">
-        <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter></defs>
-        <g id="networkViewport"></g>
-      </svg>
-      <div class="tooltip" id="tooltip" aria-hidden="true"></div>
-      <div class="map-legend" aria-label="Leyenda">
-        <span><i class="heat-dot dot-high"></i>Más gente</span>
-        <span><i class="heat-dot dot-mid"></i>Lo normal</span>
-        <span><i class="heat-dot dot-low"></i>Menos gente</span>
+      <div class="map-header">
+        <div class="map-title"><h2>Red del Metro CDMX</h2><p>Estimación diaria por estación · Mapa sin escala</p></div>
+        <div class="zoom-controls" id="mapZoom" role="group" aria-label="Zoom del mapa">
+          <button class="zoom-btn" id="zoomIn" aria-label="Acercar">+</button>
+          <button class="zoom-btn" id="zoomOut" aria-label="Alejar">−</button>
+          <button class="zoom-btn" id="zoomReset" aria-label="Restablecer vista">⌂</button>
+        </div>
       </div>
-      <div class="zoom-controls" aria-label="Zoom del mapa">
-        <button class="zoom-btn" id="zoomIn" aria-label="Acercar">+</button>
-        <button class="zoom-btn" id="zoomOut" aria-label="Alejar">−</button>
-        <button class="zoom-btn" id="zoomReset" aria-label="Restablecer vista">⌂</button>
+      <div class="map-legend" aria-label="Leyenda">
+        <span><i class="heat-dot dot-high" aria-hidden="true"></i>Más gente</span>
+        <span><i class="heat-dot dot-mid" aria-hidden="true"></i>Lo normal</span>
+        <span><i class="heat-dot dot-low" aria-hidden="true"></i>Menos gente</span>
+        <span><i class="map-legend-transfer" aria-hidden="true"></i>Transbordo</span>
+      </div>
+      <p id="mapUnavailable" class="map-unavailable" hidden>El mapa no está disponible. Puedes consultar las estimaciones en Estaciones.</p>
+      <div class="map-canvas" id="mapCanvas">
+        <svg id="networkMap" role="group" aria-label="Mapa esquemático de las 12 líneas del Metro CDMX. Usa Tab para recorrer las estaciones destacadas o la pestaña Estaciones para buscar cualquier estación.">
+          <g id="networkViewport"></g>
+        </svg>
+        <div class="tooltip" id="tooltip" aria-hidden="true"></div>
       </div>
     </section>
     <aside class="map-side" aria-label="Estación seleccionada y recorrido por fechas">
@@ -1586,12 +1602,12 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   // ---------- Mapa esquemático ----------
   const NS = 'http://www.w3.org/2000/svg';
   const lineColors = { '1': '#e94b8c', '2': '#2789c8', '3': '#b7a52b', '4': '#75c9bb', '5': '#f1cb32', '6': '#d53342', '7': '#dc762d', '8': '#36a95b', '9': '#8c5a3c', 'A': '#9b4b91', 'B': '#a7afb7', '12': '#c7a44c' };
-  // Catálogo geográfico oficial (SEMOVI/STC). Solo ubica estaciones; no contiene afluencia.
+  // La geometría del dibujo y las ubicaciones reales se usan por separado.
   const catalog = window.METRO_CATALOG?.stations || [];
-  const project = (lon, lat) => ({ x: 55 + (lon + 99.23) / .29 * 930, y: 50 + (19.55 - lat) / .28 * 545 });
-  const mapRoutes = Object.fromEntries([...new Set(catalog.map(s => s.line))].map(line => [line, catalog.filter(s => s.line === line).map(s => { const p = project(s.lon, s.lat); return [s.name, p.x, p.y]; })]));
+  const diagram = window.METRO_DIAGRAM;
+  const mapLines = [...new Set(catalog.map(record => record.line))];
   const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const mapNodes = new Map(), routeLabels = [], view = { w: 1040, h: 640 };
+  const mapNodes = new Map(), routeLabels = [], view = { w: 0, h: 0 };
   const nodeByKey = name => [...mapNodes.values()].find(node => stationKey(node.name) === stationKey(name));
   const svg = $('networkMap'), viewport = $('networkViewport'), tooltip = $('tooltip');
   const make = (tag, attrs = {}, parent = viewport) => {
@@ -1602,65 +1618,95 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   };
 
   function initNetworkMap() {
-    for (let x = -460; x < 1540; x += 55) make('line', { x1: x, y1: -400, x2: x, y2: 1040, class: 'grid-line' });
-    for (let y = -405; y < 1040; y += 55) make('line', { x1: -460, y1: y, x2: 1540, y2: y, class: 'grid-line' });
-
-    Object.entries(mapRoutes).forEach(([line, route]) => {
-      const points = route.map(item => `${item[1]},${item[2]}`).join(' ');
-      make('polyline', { points, class: 'route-bg', 'data-map-line': line });
-      make('polyline', { points, class: `route${line === '3' ? '' : ' dim'}`, stroke: lineColors[line] || '#a7afb7', 'data-map-line': line });
-      const [, x, y] = route[0];
-      const label = make('g', { class: 'route-label', transform: `translate(${x - 18} ${y - 18})`, 'data-map-line': line });
-      routeLabels.push({ el: label, x: x - 18, y: y - 18 });
-      make('circle', { r: 12, fill: lineColors[line] || '#a7afb7' }, label);
-      make('text', { x: 0, y: 1 }, label).textContent = line;
-    });
-
     catalog.forEach(record => {
-      const { x, y } = project(record.lon, record.lat);
-      if (!mapNodes.has(record.name)) mapNodes.set(record.name, { name: record.name, x, y, lines: [], records: [] });
+      if (!mapNodes.has(record.name)) mapNodes.set(record.name, { name: record.name, lines: [], records: [] });
       const node = mapNodes.get(record.name);
       node.records.push(record);
       if (!node.lines.includes(record.line)) node.lines.push(record.line);
     });
-    // Respaldo: si faltara el catálogo, las estaciones destacadas siguen visibles.
-    (data.featured || []).forEach((f, i) => { if (!nodeByKey(f.name)) mapNodes.set(f.name, { name: f.name, x: 420, y: 80 + i * 110, lines: [f.line], records: [] }); });
-    mapNodes.forEach(node => { node.modelRecords = node.lines.map(line => recordByLineKey.get(`${line}|${stationKey(node.name)}`)).filter(Boolean); });
-
+    (data.featured || []).forEach(f => {
+      if (!nodeByKey(f.name)) mapNodes.set(f.name, { name: f.name, lines: [f.line], records: [] });
+    });
     mapNodes.forEach(node => {
+      node.modelRecords = node.lines.map(line => recordByLineKey.get(`${line}|${stationKey(node.name)}`)).filter(Boolean);
+    });
+
+    if (!diagram) {
+      $('mapCanvas').hidden = true;
+      $('mapZoom').hidden = true;
+      $('mapUnavailable').hidden = false;
+      return;
+    }
+
+    const tracks = make('g', { 'aria-hidden': 'true' });
+    diagram.lines.forEach(({ line, color, points, badges }) => {
+      const coords = points.map(point => point.join(',')).join(' ');
+      make('polyline', { points: coords, class: 'route-bg' }, tracks);
+      make('polyline', { points: coords, class: 'route', stroke: color, 'data-map-line': line }, tracks);
+      if (line === 'B') make('polyline', { points: coords, class: 'route-stripe' }, tracks);
+      badges.forEach(([x, y, dx, dy]) => {
+        const width = line === '12' ? 34 : 28;
+        const label = make('g', { class: 'route-label', 'aria-hidden': 'true' });
+        routeLabels.push({ el: label, x: x + 29 * dx, y: y + 29 * dy });
+        make('rect', { x: -width / 2, y: -13, width, height: 26, rx: 6, fill: line === 'B' ? '#8eb9a7' : color }, label);
+        make('text', { y: 1 }, label).textContent = line;
+      });
+    });
+
+    const geometry = new Map(diagram.stations.map(item => [item.name, item]));
+    mapNodes.forEach(node => {
+      const position = geometry.get(node.name);
+      if (!position) return;
+      const { x, y, label, guide } = position;
+      const transfer = node.lines.length > 1;
       const modeled = node.modelRecords.length > 0;
       const featured = node.lines.some(line => featuredKeys.has(`${line}|${stationKey(node.name)}`));
-      const group = make('g', { class: `station${node.lines.length > 1 ? ' interchange' : ''}${modeled ? ' modeled' : ''}${featured ? ' featured' : ''}` });
-      const halo = modeled ? make('circle', { cx: node.x, cy: node.y, r: 8, class: 'station-halo', fill: levelColor.media, filter: featured ? 'url(#glow)' : null }, group) : null;
-      if (halo && !featured) halo.removeAttribute('filter');
-      make('circle', { cx: node.x, cy: node.y, r: featured ? 6.5 : node.lines.length > 1 ? 4.8 : 3.6, class: 'station-core' }, group);
-      const hit = make('circle', { cx: node.x, cy: node.y, r: featured ? 16 : 8, class: 'station-hit' }, group);
-      const right = node.x < 820;
-      make('text', { x: node.x + (right ? 9 : -9), y: node.y - 8, class: 'station-label', 'text-anchor': right ? 'start' : 'end' }, group).textContent = node.name;
+      const group = make('g', {
+        class: `station${transfer ? ' interchange' : ''}${modeled ? ' modeled' : ''}${featured ? ' featured' : ''}`,
+      });
+      const mark = make('g', { transform: `translate(${x} ${y})` }, group);
+      const halo = modeled ? make('circle', { r: 8, class: 'station-halo', fill: levelColor.media }, mark) : null;
+      make('circle', { r: transfer ? 7.4 : 3.25, class: 'station-core' }, mark);
+      const hit = make('circle', { r: transfer ? 10 : 8, class: 'station-hit' }, mark);
+
+      const [lx, ly, angle, align, rows] = label;
+      const connector = guide ? make('line', {
+        class: 'station-guide', x1: guide[0][0], y1: guide[0][1],
+      }, group) : null;
+      const text = make('text', {
+        class: 'station-label', 'text-anchor': align, transform: `translate(${lx} ${ly}) rotate(${angle})`,
+      }, group);
+      rows.forEach((row, i) => {
+        make('tspan', { x: 0, y: `${(i - (rows.length - 1) / 2) * .98}em` }, text).textContent = row;
+      });
+
       group.addEventListener('pointerenter', event => showTooltip(event, node));
       group.addEventListener('pointermove', moveTooltip);
       group.addEventListener('pointerleave', hideTooltip);
-      // Todas las estaciones se seleccionan con el ratón; las destacadas además con Tab.
-      // El resto es accesible por teclado desde el selector, la búsqueda y la lista de resultados.
-      const choose = event => { event.stopPropagation(); selectStation(node.name); };
-      hit.addEventListener('pointerdown', event => event.stopPropagation());
-      hit.addEventListener('click', choose);
+      group.addEventListener('pointerdown', event => event.stopPropagation());
+      const choose = () => selectStation(node.name);
+      group.addEventListener('click', choose);
+      // El resto de las estaciones es accesible por teclado desde Estaciones.
       if (featured) {
         hit.setAttribute('tabindex', '0');
         hit.setAttribute('role', 'button');
         hit.setAttribute('aria-label', `Ver estimación de ${node.name}`);
-        hit.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(event); } });
+        hit.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(); }
+        });
       }
-      node.el = { group, halo };
+      node.el = { group, mark, halo, hit, position, connector };
     });
 
     svg.addEventListener('wheel', event => {
+      // En la vista general, deja que la rueda desplace la página.
+      if (!event.ctrlKey && !event.metaKey && state.zoom <= home.zoom) return;
       event.preventDefault();
       const rect = svg.getBoundingClientRect();
-      setZoom(state.zoom * (event.deltaY < 0 ? 1.12 : .89), (event.clientX - rect.left) / rect.width * view.w, (event.clientY - rect.top) / rect.height * view.h);
+      setZoom(state.zoom * (event.deltaY < 0 ? 1.12 : .89), event.clientX - rect.left, event.clientY - rect.top);
     }, { passive: false });
     svg.addEventListener('pointerdown', event => {
-      if (event.button !== 0) return;
+      if (event.button !== 0 || !event.isPrimary) return;
       svg.setPointerCapture(event.pointerId);
       state.drag = { x: event.clientX, y: event.clientY, tx: state.tx, ty: state.ty };
       svg.classList.add('dragging');
@@ -1676,6 +1722,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     const endDrag = () => { state.drag = null; svg.classList.remove('dragging'); };
     svg.addEventListener('pointerup', endDrag);
     svg.addEventListener('pointercancel', endDrag);
+    svg.addEventListener('lostpointercapture', endDrag);
   }
 
   function showTooltip(event, node) {
@@ -1691,42 +1738,69 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   }
   function moveTooltip(event) {
     const box = svg.parentElement.getBoundingClientRect();
+    const popup = tooltip.getBoundingClientRect();
     let x = event.clientX - box.left + 14, y = event.clientY - box.top + 14;
-    if (x + 210 > box.width) x -= 225;
-    if (y + 70 > box.height) y -= 82;
-    tooltip.style.left = `${x}px`;
-    tooltip.style.top = `${y}px`;
+    if (x + popup.width > box.width) x -= popup.width + 28;
+    if (y + popup.height > box.height) y -= popup.height + 28;
+    tooltip.style.left = `${Math.max(8, x)}px`;
+    tooltip.style.top = `${Math.max(8, y)}px`;
   }
   function hideTooltip() { tooltip.classList.remove('show'); }
   const home = { zoom: 1, tx: 0, ty: 0 };
-  // El viewBox sigue el tamaño real del área del mapa para aprovechar todo el espacio.
+  let drawnZoom = 0;
   function fitNetwork() {
+    if (!diagram) return;
     const rect = svg.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     view.w = rect.width; view.h = rect.height;
     svg.setAttribute('viewBox', `0 0 ${view.w} ${view.h}`);
-    const nodes = [...mapNodes.values()];
-    if (!nodes.length) return;
-    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y), pad = 30, top = 76, bottom = 20;
-    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
-    home.zoom = Math.min(view.w / (maxX - minX), (view.h - top - bottom) / (maxY - minY));
+    const [minX, minY, maxX, maxY] = diagram.bounds;
+    home.zoom = Math.min((view.w - 16) / (maxX - minX), (view.h - 16) / (maxY - minY));
     home.tx = view.w / 2 - (minX + maxX) / 2 * home.zoom;
-    home.ty = top + (view.h - top - bottom) / 2 - (minY + maxY) / 2 * home.zoom;
+    home.ty = view.h / 2 - (minY + maxY) / 2 * home.zoom;
     Object.assign(state, home);
     applyTransform();
   }
   function applyTransform() {
     viewport.setAttribute('transform', `translate(${state.tx} ${state.ty}) scale(${state.zoom})`);
-    svg.style.setProperty('--z', state.zoom.toFixed(3));
-    const k = 1 / state.zoom;
-    routeLabels.forEach(item => item.el.setAttribute('transform', `translate(${item.x} ${item.y}) scale(${k.toFixed(3)})`));
-    svg.classList.toggle('show-labels', state.zoom >= home.zoom * 1.6);
+    const zoomed = state.zoom > home.zoom;
+    svg.classList.toggle('zoomed', zoomed);
+    $('zoomOut').disabled = !zoomed;
+    $('zoomIn').disabled = state.zoom >= home.zoom * 6;
+    if (drawnZoom === state.zoom) return;
+    drawnZoom = state.zoom;
+    const labelSize = Math.min(diagram.labelSize, 15 / state.zoom);
+    const track = Math.max(2, Math.min(6.2, 7.5 * state.zoom));
+    svg.style.setProperty('--map-label-size', `${labelSize}px`);
+    svg.style.setProperty('--map-track', `${track / state.zoom}px`);
+    svg.style.setProperty('--map-track-outline', `${(track + Math.min(1.6, 2.8 * state.zoom)) / state.zoom}px`);
+
+    const badgeScale = Math.min(1, 1.08 / state.zoom);
+    routeLabels.forEach(({ el, x, y }) => el.setAttribute('transform', `translate(${x} ${y}) scale(${badgeScale})`));
+    const markScale = Math.min(1, .84 / state.zoom);
+    const labelScale = labelSize / diagram.labelSize;
+    mapNodes.forEach(node => {
+      if (!node.el) return;
+      const { mark, hit, position, connector } = node.el;
+      const { x, y, label, guide } = position;
+      mark.setAttribute('transform', `translate(${x} ${y}) scale(${markScale})`);
+      hit.setAttribute('r', Math.max(node.lines.length > 1 ? 10 : 8, 5 / (state.zoom * markScale)));
+      if (connector) {
+        const [lx, ly] = label, [gx, gy] = guide[1];
+        connector.setAttribute('x2', lx + (gx - lx) * labelScale);
+        connector.setAttribute('y2', ly + (gy - ly) * labelScale);
+      }
+    });
   }
   function setZoom(next, cx = view.w / 2, cy = view.h / 2) {
     const previous = state.zoom;
-    state.zoom = Math.max(home.zoom * .7, Math.min(home.zoom * 6, next));
-    state.tx = cx - (cx - state.tx) * (state.zoom / previous);
-    state.ty = cy - (cy - state.ty) * (state.zoom / previous);
+    state.zoom = Math.max(home.zoom, Math.min(home.zoom * 6, next));
+    if (state.zoom === home.zoom) Object.assign(state, home);
+    else {
+      state.tx = cx - (cx - state.tx) * (state.zoom / previous);
+      state.ty = cy - (cy - state.ty) * (state.zoom / previous);
+    }
+    hideTooltip();
     applyTransform();
   }
 
@@ -1756,7 +1830,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
         const level = preds.reduce((a, p) => levelRank[p.level] > levelRank[a] ? p.level : a, 'baja');
         item.el.halo.setAttribute('fill', levelColor[level]);
         item.el.halo.setAttribute('r', (5 + Math.min(17, Math.sqrt(sum) / 22)).toFixed(1));
-        item.el.halo.setAttribute('opacity', level === 'alta' ? '.5' : '.32');
+        item.el.halo.setAttribute('opacity', level === 'alta' ? '.34' : '.23');
       }
       item.el?.group.classList.toggle('selected', item === node);
     });
@@ -2252,7 +2326,7 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   // ---------- Búsqueda y filtro de la red ----------
   function initStationSearch() {
     const filter = $('mapLineFilter');
-    Object.keys(mapRoutes).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).forEach(line => {
+    mapLines.sort((a, b) => a.localeCompare(b, 'es', { numeric: true })).forEach(line => {
       const option = document.createElement('option');
       option.value = line;
       option.textContent = `Línea ${line}`;
@@ -2368,9 +2442,9 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
     state.speed = +button.dataset.speed;
     document.querySelectorAll('.speed-btn').forEach(item => { item.classList.toggle('active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
   }));
-  $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.22));
-  $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.22));
-  $('zoomReset').addEventListener('click', () => { Object.assign(state, home); applyTransform(); });
+  $('zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.42));
+  $('zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.42));
+  $('zoomReset').addEventListener('click', () => setZoom(home.zoom));
 
   // ---------- Inicio ----------
   $('dateInput').min = dataset.forecastStart;
@@ -2455,7 +2529,6 @@ if (!['127.0.0.1', 'localhost'].includes(location.hostname) ||
   [...$('stationSelect').querySelectorAll('optgroup')].forEach(group => { $('tripFrom').appendChild(group.cloneNode(true)); $('tripTo').appendChild(group.cloneNode(true)); $('reportStationSelect').appendChild(group.cloneNode(true)); });
   $('tripList').dataset.ready = '1';
   fitNetwork();
-  applyTransform();
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitNetwork, 120); });
   render();
